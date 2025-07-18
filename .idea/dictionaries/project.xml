@@ -12,9 +12,11 @@
       <w>diffplug</w>
       <w>dorg</w>
       <w>hashi</w>
+      <w>jreleaser</w>
       <w>ktfmt</w>
       <w>ktlint</w>
       <w>kushal</w>
+      <w>mavencentral</w>
       <w>nugetconf</w>
       <w>otel</w>
       <w>pactual</w>
@@ -22,6 +24,7 @@
       <w>ppublish</w>
       <w>publicid</w>
       <w>serialversionid</w>
+      <w>softprops</w>
     </words>
   </dictionary>
 </component>

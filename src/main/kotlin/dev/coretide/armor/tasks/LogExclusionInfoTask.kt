@@ -13,10 +13,12 @@ package dev.coretide.armor.tasks
 import dev.coretide.armor.CodeArmorExtension
 import dev.coretide.armor.utils.ExclusionUtils
 import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.options.Option
 
 open class LogExclusionInfoTask : DefaultTask() {
+    @get:Internal
     @Option(option = "verbose", description = "Show detailed exclusion patterns")
     var verbose: Boolean = false
 
