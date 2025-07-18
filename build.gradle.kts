@@ -189,6 +189,19 @@ signing {
     sign(publishing.publications)
 }
 
+tasks.withType<AbstractPublishToMaven>().configureEach {
+    val signingTasks = tasks.withType<Sign>()
+    mustRunAfter(signingTasks)
+}
+
+tasks.withType<PublishToMavenRepository>().configureEach {
+    dependsOn(tasks.withType<Sign>())
+}
+
+tasks.named("publishPlugins") {
+    dependsOn(tasks.withType<Sign>())
+}
+
 tasks.named<Jar>("jar") {
     archiveFileName.set("code-armor-plugin-$version.jar")
 }
