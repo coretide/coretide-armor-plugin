@@ -1,0 +1,20 @@
+/*
+ * Copyright 2025 Kushal Patel
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ */
+
+package dev.coretide.armor
+
+enum class ProjectType {
+    JAVA_APPLICATION,
+    JAVA_LIBRARY,
+    KOTLIN_APPLICATION,
+    KOTLIN_LIBRARY,
+    MIXED_APPLICATION,
+    MIXED_LIBRARY,
+}

@@ -1,0 +1,167 @@
+name: Tag Validation and Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  validate-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate tag format
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "Validating tag: $TAG_NAME"
+          
+          # Define the regex pattern for semantic versioning (no "v" prefix)
+          VALID_PATTERN="^([0-9]+)\.([0-9]+)\.([0-9]+)(-alpha|-beta|-gamma|-dev|-rc\.[0-9]+)?$"
+          
+          if [[ $TAG_NAME =~ $VALID_PATTERN ]]; then
+            echo "✅ Tag '$TAG_NAME' is valid!"
+            echo "Major: ${BASH_REMATCH[1]}"
+            echo "Minor: ${BASH_REMATCH[2]}"
+            echo "Patch: ${BASH_REMATCH[3]}"
+            if [[ -n "${BASH_REMATCH[4]}" ]]; then
+              echo "Pre-release: ${BASH_REMATCH[4]}"
+            fi
+          else
+            echo "❌ Invalid tag format: '$TAG_NAME'"
+            echo ""
+            echo "Valid formats:"
+            echo "  - 1.0.0"
+            echo "  - 1.2.3-alpha"
+            echo "  - 2.0.0-beta"
+            echo "  - 1.0.0-gamma"
+            echo "  - 1.0.0-dev"
+            echo "  - 1.0.0-rc.1"
+            echo ""
+            echo "Pattern: {Major}.{Minor}.{Patch}[-alpha|-beta|-gamma|-dev|-rc.{N}]"
+            exit 1
+          fi
+
+  build-and-process:
+    needs: validate-tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release-exists: ${{ steps.check.outputs.exists }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build project
+        run: ./gradlew build
+
+      - name: Check if release already exists
+        id: check
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "Checking if release exists for tag: $TAG_NAME"
+          
+          # Check if release exists using GitHub API
+          RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME")
+          
+          if echo "$RESPONSE" | grep -q '"id"'; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Release already exists for $TAG_NAME"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "❌ No release found for $TAG_NAME"
+          fi
+
+      - name: Get previous tag
+        id: prev_tag
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+          echo "Previous tag: $PREV_TAG"
+
+      - name: Generate changelog
+        id: changelog
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          PREV_TAG="${{ steps.prev_tag.outputs.prev_tag }}"
+          
+          echo "## 🚀 Changes in $CURRENT_TAG" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          
+          if [ -z "$PREV_TAG" ]; then
+            echo "### 🎉 Initial Release" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            git log --pretty=format:"- %s (%h)" --no-merges >> CHANGELOG.md
+          else
+            echo "### 📝 Changes since $PREV_TAG" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            git log --pretty=format:"- %s (%h)" --no-merges $PREV_TAG..HEAD >> CHANGELOG.md
+          fi
+          
+          echo "" >> CHANGELOG.md
+          echo "---" >> CHANGELOG.md
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...$CURRENT_TAG" >> CHANGELOG.md
+          
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat CHANGELOG.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Determine if pre-release
+        id: prerelease
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          if [[ $TAG_NAME =~ -alpha|-beta|-gamma|-dev|-rc\. ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "This is a pre-release: $TAG_NAME"
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "This is a stable release: $TAG_NAME"
+          fi
+
+      - name: Create Release
+        id: create_release
+        if: steps.check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          draft: false
+          prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
+          files: |
+            ./build/libs/code-armor-plugin-*.jar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload assets to existing release
+        if: steps.check.outputs.exists == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            ./build/libs/code-armor-plugin-*.jar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log final status
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          if [ "${{ steps.check.outputs.exists }}" == "true" ]; then
+            echo "✅ Assets uploaded to existing release: $TAG_NAME"
+          else
+            echo "✅ New release created with assets: $TAG_NAME"
+          fi

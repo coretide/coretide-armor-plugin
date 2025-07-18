@@ -1,0 +1,31 @@
+CodeArmor
+Copyright 2025 Kushal Patel
+
+This product includes software developed at Coretide (https://coretide.dev)
+
+================================================================================
+
+This product includes software developed by third parties:
+
+JaCoCo - Java Code Coverage Library
+Copyright (c) 2009, 2024 Mountainminds GmbH & Co. KG and Contributors
+License: Eclipse Public License v2.0
+Website: https://www.jacoco.org/
+
+Spotless - Keep your code spotless
+Copyright 2016-2024 DiffPlug
+License: Apache License 2.0
+Website: https://github.com/diffplug/spotless
+
+OWASP Dependency Check
+Copyright (c) 2012-2024 OWASP Foundation
+License: Apache License 2.0
+Website: https://owasp.org/www-project-dependency-check/
+
+================================================================================
+
+The complete text of licenses can be found in the licenses directory or at:
+- Apache License 2.0: http://www.apache.org/licenses/LICENSE-2.0
+- Eclipse Public License v2.0: https://www.eclipse.org/legal/epl-2.0/
+
+This NOTICE file is part of the CodeArmor distribution.
