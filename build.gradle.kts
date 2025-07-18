@@ -135,6 +135,7 @@ publishing {
 
         withType<MavenPublication> {
             pom {
+                name = "CodeArmor Plugin"
                 description = "Comprehensive code quality and security plugin for Java/Kotlin projects"
                 url = "https://github.com/coretide/coretide-armor-plugin"
 
