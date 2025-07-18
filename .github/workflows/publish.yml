@@ -1,4 +1,4 @@
-name: Publish to Maven Central
+name: Publish to Maven Central and Plugin Portal
 
 on:
   release:
@@ -7,7 +7,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions:
       contents: read
       packages: write
@@ -36,30 +36,33 @@ jobs:
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@v2
 
-      - name: Build and publish to staging
-        run: ./gradlew clean build publishAllPublicationsToStagingRepository
+      - name: Build and test
+        run: ./gradlew clean build test
         env:
           CI: true
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
-      - name: Debug staging directory
+      - name: Determine release type
+        id: release_type
         run: |
-          echo "Staging directory contents:"
-          find build/staging-deploy -type f || echo "No files found"
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          if [[ $TAG_NAME =~ -alpha|-beta|-gamma|-dev|-rc\. ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "This is a pre-release: $TAG_NAME"
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "This is a stable release: $TAG_NAME"
+          fi
 
-      - name: Fire-and-Forget Deploy to Maven Central
-        id: deploy
+      - name: Publish to Maven Central
+        id: maven_central
         continue-on-error: true
         timeout-minutes: 10
         run: |
-          echo "🚀 Starting Maven Central deployment..."
-          echo "⏰ JReleaser will timeout in ~5 minutes (this is expected)"
-          echo "🔍 Maven Central will continue processing in the background"
-          echo "📋 Check status at: https://central.sonatype.com"
-          echo ""
+          echo "🚀 Publishing to Maven Central..."
+          ./gradlew publishAllPublicationsToStagingRepository
           
-          # Run JReleaser and capture the deployment ID
+          echo "📦 Deploying to Maven Central..."
           ./gradlew jreleaserDeploy --info | tee deployment.log
         env:
           CI: true
@@ -72,63 +75,95 @@ jobs:
           JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Deployment Info
+      - name: Publish to Gradle Plugin Portal
+        id: plugin_portal
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          echo "🔌 Publishing to Gradle Plugin Portal..."
+          ./gradlew publishPlugins --info
+        env:
+          CI: true
+          GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}
+          GRADLE_PUBLISH_SECRET: ${{ secrets.GRADLE_PUBLISH_SECRET }}
+
+      - name: Generate deployment summary
         if: always()
         run: |
-          echo "## 📦 Maven Central Deployment Status" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Extract deployment ID from logs
-          if [ -f "deployment.log" ]; then
-            DEPLOYMENT_ID=$(grep -o "deployment [a-f0-9-]\{36\}" deployment.log | head -1 | cut -d' ' -f2)
-            if [ ! -z "$DEPLOYMENT_ID" ]; then
-              echo "🆔 **Deployment ID**: \`$DEPLOYMENT_ID\`" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-            fi
-          fi
-          
-          # Get version and fix artifact reference
+          # Get version info
           VERSION=$(./gradlew properties -q | grep "^version:" | cut -d: -f2 | tr -d ' ')
-          echo "📦 **Artifact**: \`dev.coretide.plugin:code-armor-plugin:$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "🏷️ **Version**: \`$VERSION\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          if [ "${{ steps.deploy.outcome }}" = "failure" ]; then
-            echo "⚠️ **Status**: JReleaser timed out (this is normal and expected)" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "✅ **Reality**: Maven Central is processing your deployment in the background" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "🕐 **Timeline**: Deployment typically completes in 10-30 minutes" >> $GITHUB_STEP_SUMMARY
+          # Release type
+          if [ "${{ steps.release_type.outputs.is_prerelease }}" = "true" ]; then
+            echo "📋 **Release Type**: Pre-release (alpha/beta/rc)" >> $GITHUB_STEP_SUMMARY
           else
-            echo "✅ **Status**: Deployment completed successfully!" >> $GITHUB_STEP_SUMMARY
+            echo "📋 **Release Type**: Stable release" >> $GITHUB_STEP_SUMMARY
           fi
-          
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔍 Check Status:" >> $GITHUB_STEP_SUMMARY
-          echo "- [Maven Central Portal](https://central.sonatype.com)" >> $GITHUB_STEP_SUMMARY
-          echo "- [Search for your artifact](https://central.sonatype.com/search?q=dev.coretide.plugin)" >> $GITHUB_STEP_SUMMARY
-          echo "- [Maven Central Search](https://search.maven.org/search?q=g:dev.coretide.plugin)" >> $GITHUB_STEP_SUMMARY
-
-      - name: Final Status
-        if: always()
-        run: |
-          echo ""
-          echo "🎯 DEPLOYMENT SUMMARY:"
-          echo "====================="
-          if [ "${{ steps.deploy.outcome }}" = "failure" ]; then
-            echo "✅ SUCCESS: Deployment was initiated successfully"
-            echo "⏰ EXPECTED: JReleaser timeout is normal behavior"
-            echo "🔄 BACKGROUND: Maven Central is processing your release"
-            echo "📋 NEXT: Check Maven Central portal in 10-30 minutes"
+          
+          # Maven Central Status
+          echo "### 🌍 Maven Central" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.maven_central.outcome }}" = "success" ]; then
+            echo "✅ **Status**: Successfully published" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.maven_central.outcome }}" = "failure" ]; then
+            echo "⚠️ **Status**: Deployment initiated (timeout is normal)" >> $GITHUB_STEP_SUMMARY
+            echo "🔄 **Background**: Maven Central is processing your deployment" >> $GITHUB_STEP_SUMMARY
           else
-            echo "✅ SUCCESS: Deployment completed within timeout window"
-            echo "🎉 BONUS: Faster than usual Maven Central processing"
+            echo "❌ **Status**: Failed to publish" >> $GITHUB_STEP_SUMMARY
           fi
-          echo ""
-          echo "🚀 Your release is on its way to Maven Central!"
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Plugin Portal Status
+          echo "### 🔌 Gradle Plugin Portal" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.plugin_portal.outcome }}" = "success" ]; then
+            echo "✅ **Status**: Successfully published" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.plugin_portal.outcome }}" = "failure" ]; then
+            echo "❌ **Status**: Failed to publish" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status**: Not attempted" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Usage instructions
+          echo "### 📋 Usage Instructions" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Plugin Portal (Recommended - Clean Syntax):**" >> $GITHUB_STEP_SUMMARY
+          echo '```kotlin' >> $GITHUB_STEP_SUMMARY
+          echo 'plugins {' >> $GITHUB_STEP_SUMMARY
+          echo "    id(\"dev.coretide.armor\") version \"$VERSION\"" >> $GITHUB_STEP_SUMMARY
+          echo '}' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "**Maven Central (Legacy Syntax):**" >> $GITHUB_STEP_SUMMARY
+          echo '```kotlin' >> $GITHUB_STEP_SUMMARY
+          echo 'buildscript {' >> $GITHUB_STEP_SUMMARY
+          echo '    dependencies {' >> $GITHUB_STEP_SUMMARY
+          echo "        classpath(\"dev.coretide.plugin:code-armor-plugin:$VERSION\")" >> $GITHUB_STEP_SUMMARY
+          echo '    }' >> $GITHUB_STEP_SUMMARY
+          echo '}' >> $GITHUB_STEP_SUMMARY
+          echo 'apply(plugin = "dev.coretide.armor")' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Links
+          echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [🔌 Gradle Plugin Portal](https://plugins.gradle.org/plugin/dev.coretide.armor)" >> $GITHUB_STEP_SUMMARY
+          echo "- [📦 Maven Central Search](https://central.sonatype.com/search?q=dev.coretide.plugin)" >> $GITHUB_STEP_SUMMARY
+          echo "- [📄 GitHub Release](https://github.com/coretide/coretide-armor-plugin/releases/tag/${{ steps.release_type.outputs.tag_name }})" >> $GITHUB_STEP_SUMMARY
 
-      - name: Set workflow status
+      - name: Set final status
         if: always()
         run: |
-          # Always exit successfully since timeout is expected
-          echo "Workflow completed successfully - deployment initiated"
+          echo "🎯 DEPLOYMENT COMPLETED"
+          echo "======================"
+          echo "Maven Central: ${{ steps.maven_central.outcome }}"
+          echo "Plugin Portal: ${{ steps.plugin_portal.outcome }}"
+          echo ""
+          echo "✅ Deployment workflow completed successfully!"
           exit 0

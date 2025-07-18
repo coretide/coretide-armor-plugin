@@ -4,6 +4,7 @@ plugins {
     `maven-publish`
     signing
     id("org.jreleaser") version "1.18.0"
+    id("com.gradle.plugin-publish") version "1.3.1"
 }
 
 group = "dev.coretide.plugin"
@@ -20,7 +21,7 @@ fun extractVersionFromGitTag(): String {
     val gitDir = File(".git")
     if (!gitDir.exists()) {
         println("Warning: Not in a git repository (.git directory not found)")
-        return "0.1.0-SNAPSHOT"
+        return "0.1.0-alpha"
     }
     return try {
         val exactTagProcess =
@@ -49,11 +50,11 @@ fun extractVersionFromGitTag(): String {
                     .trim()
             "$gitTag-SNAPSHOT"
         } else {
-            "0.1.0-SNAPSHOT"
+            "0.1.0-alpha"
         }
     } catch (e: Exception) {
         println("Warning: Could not extract version from Git tag: ${e.message}")
-        "0.1.0-SNAPSHOT"
+        "0.1.0-alpha"
     }
 }
 
@@ -131,6 +132,34 @@ publishing {
                 }
             }
         }
+
+        withType<MavenPublication> {
+            pom {
+                description = "Comprehensive code quality and security plugin for Java/Kotlin projects"
+                url = "https://github.com/coretide/coretide-armor-plugin"
+
+                licenses {
+                    license {
+                        name = "Apache License, Version 2.0"
+                        url = "https://www.apache.org/licenses/LICENSE-2.0"
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = "coretide"
+                        name = "Kushal Patel"
+                        email = "contact@coretide.dev"
+                    }
+                }
+
+                scm {
+                    connection = "scm:git:git://github.com/coretide/coretide-armor-plugin.git"
+                    developerConnection = "scm:git:ssh://github.com/coretide/coretide-armor-plugin.git"
+                    url = "https://github.com/coretide/coretide-armor-plugin"
+                }
+            }
+        }
     }
 
     repositories {
@@ -142,7 +171,10 @@ publishing {
 }
 
 signing {
-    isRequired = gradle.taskGraph.hasTask("jreleaserDeploy") || gradle.taskGraph.hasTask("publishToSonatype")
+    isRequired =
+        gradle.taskGraph.hasTask("jreleaserDeploy") ||
+        gradle.taskGraph.hasTask("publishToSonatype") ||
+        gradle.taskGraph.hasTask("publishPlugins")
     if (System.getenv("CI") == "true") {
         val signingKey = System.getenv("GPG_PRIVATE_KEY") ?: System.getenv("JRELEASER_GPG_SECRET_KEY")
         val signingPassword = System.getenv("GPG_PASSPHRASE") ?: System.getenv("JRELEASER_GPG_PASSPHRASE")
@@ -154,7 +186,7 @@ signing {
     } else {
         useGpgCmd()
     }
-    sign(publishing.publications["maven"])
+    sign(publishing.publications)
 }
 
 tasks.named<Jar>("jar") {
@@ -202,6 +234,10 @@ jreleaser {
     release {
         github {
             enabled.set(false)
+            name.set("coretide-armor-plugin")
+            repoUrl.set("https://github.com/coretide/coretide-armor-plugin")
+            tagName.set("{{projectVersion}}")
+            releaseName.set("{{projectVersion}}")
         }
     }
 }

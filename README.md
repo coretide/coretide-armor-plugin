@@ -1,12 +1,12 @@
 # 🛡️ CodeArmor Plugin
 
 [![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)]()
-[![Latest Release](https://img.shields.io/github/v/release/coretide/coretide-armor-plugin?style=flat-square&logo=github)](https://github.com/coretide/coretide-armor-plugin/releases)
+[![Latest Release](https://img.shields.io/github/v/release/coretide/coretide-armor-plugin?include_prereleases&style=flat-square&logo=github)](https://github.com/coretide/coretide-armor-plugin/releases)
 [![Version](https://img.shields.io/badge/version-0.1.0--alpha-blue?style=flat-square)](https://github.com/coretide/coretide-armor-plugin)
-[![License](https://img.shields.io/github/license/coretide/coretide-armor-plugin?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/dev.coretide.armor?style=flat-square&logo=gradle)](https://plugins.gradle.org/plugin/dev.coretide.armor)
+[![Maven Central](https://img.shields.io/maven-central/v/dev.coretide.plugin/code-armor-plugin?style=flat-square&logo=apache-maven)](https://central.sonatype.com/artifact/dev.coretide.plugin/code-armor-plugin)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/coretide/coretide-armor-plugin/ci.yml?style=flat-square&logo=github-actions)](https://github.com/coretide/coretide-armor-plugin/actions)
-
 > **Comprehensive code quality and security plugin for Java/Kotlin projects**
 
 > ⚠️ **Status:** Alpha — This plugin is under active development (version: 0.1.0-alpha). Expect breaking changes and frequent updates until 1.0.0.
