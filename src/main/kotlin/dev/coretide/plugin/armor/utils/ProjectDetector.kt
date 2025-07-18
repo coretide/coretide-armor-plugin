@@ -8,9 +8,9 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.armor.utils
+package dev.coretide.plugin.armor.utils
 
-import dev.coretide.armor.ProjectType
+import dev.coretide.plugin.armor.ProjectType
 import org.gradle.api.Project
 
 object ProjectDetector {

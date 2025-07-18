@@ -8,10 +8,10 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.armor.configurators
+package dev.coretide.plugin.armor.configurators
 
-import dev.coretide.armor.CodeArmorExtension
-import dev.coretide.armor.ProjectType
+import dev.coretide.plugin.armor.CodeArmorExtension
+import dev.coretide.plugin.armor.ProjectType
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.Project
 import org.gradle.api.tasks.Copy

@@ -8,7 +8,7 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.armor
+package dev.coretide.plugin.armor
 
 enum class ProjectType {
     JAVA_APPLICATION,

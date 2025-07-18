@@ -21,7 +21,7 @@ fun extractVersionFromGitTag(): String {
     val gitDir = File(".git")
     if (!gitDir.exists()) {
         println("Warning: Not in a git repository (.git directory not found)")
-        return "0.1.0-alpha"
+        return "0.1.0-SNAPSHOT"
     }
     return try {
         val exactTagProcess =
@@ -50,11 +50,11 @@ fun extractVersionFromGitTag(): String {
                     .trim()
             "$gitTag-SNAPSHOT"
         } else {
-            "0.1.0-alpha"
+            "0.1.0-SNAPSHOT"
         }
     } catch (e: Exception) {
         println("Warning: Could not extract version from Git tag: ${e.message}")
-        "0.1.0-alpha"
+        "0.1.0-SNAPSHOT"
     }
 }
 
@@ -90,8 +90,8 @@ gradlePlugin {
 
     plugins {
         create("codeArmor") {
-            id = "dev.coretide.armor"
-            implementationClass = "dev.coretide.armor.CodeArmorPlugin"
+            id = "dev.coretide.plugin.armor"
+            implementationClass = "dev.coretide.plugin.armor.CodeArmorPlugin"
             displayName = "CodeArmor Plugin"
             description = "Comprehensive code quality and security plugin for Java/Kotlin projects"
             tags = listOf("code-quality", "security", "formatting", "kotlin", "java")

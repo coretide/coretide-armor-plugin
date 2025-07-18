@@ -8,7 +8,7 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.armor.utils
+package dev.coretide.plugin.armor.utils
 
 import org.gradle.api.Project
 import org.gradle.api.Task

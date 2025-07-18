@@ -8,11 +8,11 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.armor.tasks
+package dev.coretide.plugin.armor.tasks
 
-import dev.coretide.armor.CodeArmorExtension
-import dev.coretide.armor.utils.ConfiguratorUtils
-import dev.coretide.armor.utils.ProjectDetector
+import dev.coretide.plugin.armor.CodeArmorExtension
+import dev.coretide.plugin.armor.utils.ConfiguratorUtils
+import dev.coretide.plugin.armor.utils.ProjectDetector
 import org.gradle.api.Project
 
 object MultiModuleTaskCreator {
@@ -40,7 +40,7 @@ object MultiModuleTaskCreator {
     private fun configureSingleModuleProject(
         project: Project,
         extension: CodeArmorExtension,
-        projectType: dev.coretide.armor.ProjectType,
+        projectType: dev.coretide.plugin.armor.ProjectType,
     ) {
         ConfiguratorUtils.registerConfigurators(project, extension, projectType)
         TaskCreator.createCustomTasks(project, extension, projectType)

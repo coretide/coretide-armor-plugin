@@ -8,15 +8,15 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.armor
+package dev.coretide.plugin.armor
 
-import dev.coretide.armor.git.GitHooksManager
-import dev.coretide.armor.git.VersionManager
-import dev.coretide.armor.tasks.MultiModuleTaskCreator
-import dev.coretide.armor.tasks.TaskCreator
-import dev.coretide.armor.utils.ConfigurationCacheUtils
-import dev.coretide.armor.utils.ConfiguratorUtils
-import dev.coretide.armor.utils.ProjectDetector
+import dev.coretide.plugin.armor.git.GitHooksManager
+import dev.coretide.plugin.armor.git.VersionManager
+import dev.coretide.plugin.armor.tasks.MultiModuleTaskCreator
+import dev.coretide.plugin.armor.tasks.TaskCreator
+import dev.coretide.plugin.armor.utils.ConfigurationCacheUtils
+import dev.coretide.plugin.armor.utils.ConfiguratorUtils
+import dev.coretide.plugin.armor.utils.ProjectDetector
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 

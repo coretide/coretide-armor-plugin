@@ -8,14 +8,14 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.armor.configurators
+package dev.coretide.plugin.armor.configurators
 
 import com.github.spotbugs.snom.Confidence
 import com.github.spotbugs.snom.Effort
 import com.github.spotbugs.snom.SpotBugsExtension
 import com.github.spotbugs.snom.SpotBugsTask
-import dev.coretide.armor.CodeArmorExtension
-import dev.coretide.armor.utils.FileUtils
+import dev.coretide.plugin.armor.CodeArmorExtension
+import dev.coretide.plugin.armor.utils.FileUtils
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 

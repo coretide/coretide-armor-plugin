@@ -8,11 +8,11 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.armor.tasks
+package dev.coretide.plugin.armor.tasks
 
-import dev.coretide.armor.CodeArmorExtension
-import dev.coretide.armor.ProjectType
-import dev.coretide.armor.utils.ProjectDetector
+import dev.coretide.plugin.armor.CodeArmorExtension
+import dev.coretide.plugin.armor.ProjectType
+import dev.coretide.plugin.armor.utils.ProjectDetector
 import org.gradle.api.Project
 
 object TaskCreator {

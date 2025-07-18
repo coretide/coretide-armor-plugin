@@ -8,9 +8,9 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.armor
+package dev.coretide.plugin.armor
 
-import dev.coretide.armor.config.SpotlessFormats
+import dev.coretide.plugin.armor.config.SpotlessFormats
 
 enum class KotlinFormatter {
     KTLINT,

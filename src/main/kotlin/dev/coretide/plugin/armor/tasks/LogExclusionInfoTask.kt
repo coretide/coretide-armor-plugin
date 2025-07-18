@@ -8,10 +8,10 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.armor.tasks
+package dev.coretide.plugin.armor.tasks
 
-import dev.coretide.armor.CodeArmorExtension
-import dev.coretide.armor.utils.ExclusionUtils
+import dev.coretide.plugin.armor.CodeArmorExtension
+import dev.coretide.plugin.armor.utils.ExclusionUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction

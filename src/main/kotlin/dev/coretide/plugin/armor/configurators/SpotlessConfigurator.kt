@@ -8,15 +8,15 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.armor.configurators
+package dev.coretide.plugin.armor.configurators
 
 import com.diffplug.gradle.spotless.KotlinExtension
 import com.diffplug.gradle.spotless.SpotlessExtension
-import dev.coretide.armor.CodeArmorExtension
-import dev.coretide.armor.KotlinFormatter
-import dev.coretide.armor.KtfmtStyle
-import dev.coretide.armor.ProjectType
-import dev.coretide.armor.utils.FileUtils
+import dev.coretide.plugin.armor.CodeArmorExtension
+import dev.coretide.plugin.armor.KotlinFormatter
+import dev.coretide.plugin.armor.KtfmtStyle
+import dev.coretide.plugin.armor.ProjectType
+import dev.coretide.plugin.armor.utils.FileUtils
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 

@@ -8,7 +8,7 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.armor.git
+package dev.coretide.plugin.armor.git
 
 import org.gradle.api.Project
 import java.io.File

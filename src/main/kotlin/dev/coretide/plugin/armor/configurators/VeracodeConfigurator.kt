@@ -8,7 +8,7 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.armor.configurators
+package dev.coretide.plugin.armor.configurators
 
 import org.gradle.api.Project
 
