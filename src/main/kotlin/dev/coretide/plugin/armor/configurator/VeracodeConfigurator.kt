@@ -8,8 +8,9 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.plugin.armor.configurators
+package dev.coretide.plugin.armor.configurator
 
+import dev.coretide.plugin.armor.util.LogUtil
 import org.gradle.api.Project
 
 object VeracodeConfigurator {
@@ -18,7 +19,7 @@ object VeracodeConfigurator {
             project.tasks.findByName("veracodeUpload")?.let { task ->
                 task.group = "verification"
                 task.doLast {
-                    println("✅ Veracode upload completed")
+                    LogUtil.verbose("✅ Veracode upload completed")
                 }
             }
         }

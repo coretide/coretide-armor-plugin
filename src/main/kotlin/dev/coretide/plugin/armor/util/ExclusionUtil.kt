@@ -8,11 +8,11 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.plugin.armor.utils
+package dev.coretide.plugin.armor.util
 
 import dev.coretide.plugin.armor.CodeArmorExtension
 
-object ExclusionUtils {
+object ExclusionUtil {
     val DEFAULT_COVERAGE_EXCLUSIONS =
         listOf(
             "annotation",

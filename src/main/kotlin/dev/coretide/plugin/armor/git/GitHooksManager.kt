@@ -11,6 +11,7 @@
 package dev.coretide.plugin.armor.git
 
 import dev.coretide.plugin.armor.CodeArmorExtension
+import dev.coretide.plugin.armor.util.LogUtil
 import org.gradle.api.Project
 import java.io.File
 
@@ -19,18 +20,9 @@ object GitHooksManager {
         project: Project,
         extension: CodeArmorExtension,
     ) {
-        if (extension.enableGitHooks) {
-            setupGitHooksDirectory(project, extension)
-        }
-    }
-
-    private fun setupGitHooksDirectory(
-        project: Project,
-        extension: CodeArmorExtension,
-    ) {
         val gitHooksDir = project.file(".git/hooks")
         if (!gitHooksDir.exists()) {
-            println("ℹ️ Git hooks directory not found. Skipping Git hooks setup.")
+            LogUtil.verbose("ℹ️ Git hooks directory not found. Skipping Git hooks setup.")
             return
         }
         if (extension.preCommitEnabled) {
@@ -39,11 +31,12 @@ object GitHooksManager {
         if (extension.prePushEnabled) {
             createPrePushHook(gitHooksDir)
         }
-        println("🪝 Git hooks configured successfully")
+        LogUtil.essential("🪝 Git hooks configured successfully")
     }
 
     private fun createPreCommitHook(hooksDir: File) {
         val preCommitFile = File(hooksDir, "pre-commit")
+        LogUtil.verbose("📜🪝 Creating pre-commit hook at ${preCommitFile.absolutePath}... ")
         val preCommitContent =
             """
             #!/bin/bash
@@ -95,6 +88,7 @@ object GitHooksManager {
 
     private fun createPrePushHook(hooksDir: File) {
         val prePushFile = File(hooksDir, "pre-push")
+        LogUtil.verbose("🫸🪝 Creating pre-push hook at ${prePushFile.absolutePath}...")
         val prePushContent =
             """
             #!/bin/bash

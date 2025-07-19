@@ -8,13 +8,15 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.plugin.armor.configurators
+package dev.coretide.plugin.armor.configurator
 
 import dev.coretide.plugin.armor.CodeArmorExtension
-import dev.coretide.plugin.armor.utils.ExclusionUtils
-import dev.coretide.plugin.armor.utils.ExclusionUtils.generateJacocoVerificationExclusions
+import dev.coretide.plugin.armor.util.ExclusionUtil
+import dev.coretide.plugin.armor.util.ExclusionUtil.generateJacocoVerificationExclusions
+import dev.coretide.plugin.armor.util.LogUtil
 import org.gradle.api.Project
 import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.withType
 import org.gradle.testing.jacoco.plugins.JacocoPluginExtension
@@ -35,7 +37,7 @@ object JacocoConfigurator {
                 testTask.useJUnitPlatform()
                 testTask.testLogging {
                     it.events("passed", "skipped", "failed", "standardOut", "standardError")
-                    it.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+                    it.exceptionFormat = TestExceptionFormat.FULL
                     it.showExceptions = true
                     it.showCauses = true
                     it.showStackTraces = true
@@ -50,7 +52,7 @@ object JacocoConfigurator {
                     reports.html.required.set(true)
                     reports.csv.required.set(false)
                 }
-                val jacocoExclusions = ExclusionUtils.generateJacocoReportExclusions(extension)
+                val jacocoExclusions = ExclusionUtil.generateJacocoReportExclusions(extension)
                 report.classDirectories.setFrom(
                     project.files(
                         report.classDirectories.files.map { file ->
@@ -59,7 +61,7 @@ object JacocoConfigurator {
                     ),
                 )
                 report.doLast {
-                    println("📊 JaCoCo coverage report generated")
+                    LogUtil.verbose("📊 JaCoCo coverage report generated")
                 }
             }
             project.tasks.named("jacocoTestCoverageVerification", JacocoCoverageVerification::class.java) { verification ->
@@ -81,7 +83,7 @@ object JacocoConfigurator {
                     }
                 }
                 verification.doLast {
-                    println("✅ JaCoCo coverage verification completed")
+                    LogUtil.verbose("✅ JaCoCo coverage verification completed")
                 }
             }
         }

@@ -8,10 +8,11 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.plugin.armor.configurators
+package dev.coretide.plugin.armor.configurator
 
 import dev.coretide.plugin.armor.CodeArmorExtension
-import dev.coretide.plugin.armor.utils.FileUtils
+import dev.coretide.plugin.armor.util.FileUtil
+import dev.coretide.plugin.armor.util.LogUtil
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 import org.owasp.dependencycheck.gradle.extension.DependencyCheckExtension
@@ -34,11 +35,11 @@ object OwaspConfigurator {
                 if (suppressionFileObj.exists()) {
                     this.suppressionFile = suppressionFileObj.absolutePath
                 } else {
-                    FileUtils.createDefaultOwaspSuppression(project, suppressionFileObj)
+                    FileUtil.createDefaultOwaspSuppression(project, suppressionFileObj)
                     this.suppressionFile = suppressionFileObj.absolutePath
                 }
             } ?: run {
-                val defaultSuppressionFile = FileUtils.createDefaultOwaspSuppression(project)
+                val defaultSuppressionFile = FileUtil.createDefaultOwaspSuppression(project)
                 this.suppressionFile = defaultSuppressionFile.absolutePath
             }
             System.setProperty("dependencycheck.autoUpdate", extension.owaspAutoUpdate.toString())
@@ -62,8 +63,8 @@ object OwaspConfigurator {
         }
         project.tasks.named("dependencyCheckAnalyze") { task ->
             task.doLast {
-                println("✅ OWASP Dependency Check analysis completed")
-                println("📊 Reports available at: build/reports/dependency-check/")
+                LogUtil.verbose("✅ OWASP Dependency Check analysis completed")
+                LogUtil.verbose("📊 Reports available at: build/reports/dependency-check/")
             }
         }
     }
@@ -78,7 +79,7 @@ object OwaspConfigurator {
                 ?: System.getenv("NVD_API_KEY")
                 ?: System.getProperty("nvd.api.key")
         if (apiKey != null) {
-            println("🔑 CodeArmor: Using NVD API key for faster vulnerability lookups")
+            LogUtil.essential("🔑 CodeArmor: Using NVD API key for faster vulnerability lookups")
             System.setProperty("nvd.api.key", apiKey)
             System.setProperty("nvd.api.delay", extension.owaspNvdApiDelay.toString())
             System.setProperty("nvd.api.max.retry.count", extension.owaspNvdMaxRetryCount.toString())
@@ -86,9 +87,9 @@ object OwaspConfigurator {
             System.setProperty("nvd.api.datafeed.validation.enabled", "true")
             System.setProperty("nvd.api.endpoint", "https://services.nvd.nist.gov/rest/json/cves/2.0/")
         } else {
-            println("⚠️  CodeArmor: No NVD API key configured. Using slower public access.")
-            println("💡 To speed up scans, set NVD_API_KEY environment variable or configure in build.gradle")
-            println("🌐 Get your free API key at: https://nvd.nist.gov/developers/request-an-api-key")
+            LogUtil.essential("⚠️  CodeArmor: No NVD API key configured. Using slower public access.")
+            LogUtil.essential("💡 To speed up scans, set NVD_API_KEY environment variable or configure in build.gradle")
+            LogUtil.essential("🌐 Get your free API key at: https://nvd.nist.gov/developers/request-an-api-key")
         }
     }
 }
