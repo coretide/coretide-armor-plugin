@@ -1,3 +1,12 @@
+import org.gradle.api.provider.Property
+import org.gradle.api.provider.ValueSource
+import org.gradle.api.provider.ValueSourceParameters
+import org.gradle.process.ExecOperations
+import org.gradle.process.ExecResult
+import java.io.ByteArrayOutputStream
+import java.io.File
+import javax.inject.Inject
+
 plugins {
     kotlin("jvm") version "1.9.25"
     `java-gradle-plugin`
@@ -9,56 +18,74 @@ plugins {
 
 group = "dev.coretide.plugin"
 
-fun extractVersionFromGitTag(): String {
-    val tagRef = System.getenv("CI_COMMIT_TAG")
-    if (!tagRef.isNullOrBlank()) {
-        return tagRef.trim()
+abstract class BuildscriptGitValueSource : ValueSource<String, BuildscriptGitValueSource.Parameters> {
+    interface Parameters : ValueSourceParameters {
+        val projectDir: Property<String>
     }
-    val githubRef = System.getenv("GITHUB_REF")
-    if (githubRef?.startsWith("refs/tags/") == true) {
-        return githubRef.replace("refs/tags/", "").trim()
-    }
-    val gitDir = File(".git")
-    if (!gitDir.exists()) {
-        println("Warning: Not in a git repository (.git directory not found)")
-        return "0.1.0-SNAPSHOT"
-    }
-    return try {
-        val exactTagProcess =
-            ProcessBuilder("git", "describe", "--tags", "--exact-match", "HEAD")
-                .directory(projectDir)
-                .start()
-        exactTagProcess.waitFor()
-        if (exactTagProcess.exitValue() == 0) {
-            val gitTag =
-                exactTagProcess.inputStream
-                    .bufferedReader()
-                    .readText()
-                    .trim()
-            return gitTag
+
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
+    override fun obtain(): String {
+        val projectDirPath = parameters.projectDir.get()
+        val projectDir = File(projectDirPath)
+
+        val tagRef = System.getenv("CI_COMMIT_TAG")
+        if (tagRef?.startsWith("v") == true) {
+            return tagRef.replace("v", "")
         }
-        val latestTagProcess =
-            ProcessBuilder("git", "describe", "--tags", "--abbrev=0")
-                .directory(projectDir)
-                .start()
-        latestTagProcess.waitFor()
-        if (latestTagProcess.exitValue() == 0) {
-            val gitTag =
-                latestTagProcess.inputStream
-                    .bufferedReader()
-                    .readText()
-                    .trim()
-            "$gitTag-SNAPSHOT"
-        } else {
+
+        val githubRef = System.getenv("GITHUB_REF")
+        if (githubRef?.startsWith("refs/tags/v") == true) {
+            return githubRef.replace("refs/tags/v", "")
+        }
+
+        val gitDir = File(projectDir, ".git")
+        if (!gitDir.exists()) {
+            return "0.1.0-SNAPSHOT"
+        }
+
+        return try {
+            val exactTagOutput = ByteArrayOutputStream()
+            val exactTagResult: ExecResult =
+                execOperations.exec {
+                    workingDir = projectDir
+                    commandLine("git", "describe", "--tags", "--exact-match", "HEAD")
+                    standardOutput = exactTagOutput
+                    isIgnoreExitValue = true
+                }
+            if (exactTagResult.exitValue == 0) {
+                val tag = exactTagOutput.toString().trim()
+                return if (tag.startsWith("v")) tag.replace("v", "") else tag
+            }
+            val latestOutput = ByteArrayOutputStream()
+            val latestTagResult: ExecResult =
+                execOperations.exec {
+                    workingDir = projectDir
+                    commandLine("git", "describe", "--tags", "--abbrev=0")
+                    standardOutput = latestOutput
+                    isIgnoreExitValue = true
+                }
+            if (latestTagResult.exitValue == 0) {
+                val tag = latestOutput.toString().trim()
+                val version = if (tag.startsWith("v")) tag.replace("v", "") else tag
+                "$version-SNAPSHOT"
+            } else {
+                "0.1.0-SNAPSHOT"
+            }
+        } catch (e: Exception) {
+            println("   ❌ Git command failed: ${e.message}")
             "0.1.0-SNAPSHOT"
         }
-    } catch (e: Exception) {
-        println("Warning: Could not extract version from Git tag: ${e.message}")
-        "0.1.0-SNAPSHOT"
     }
 }
 
-version = extractVersionFromGitTag()
+val gitVersionProvider: Provider<String> =
+    providers.of(BuildscriptGitValueSource::class.java) {
+        parameters.projectDir.set(project.projectDir.absolutePath)
+    }
+
+version = gitVersionProvider.get()
 
 java {
     toolchain {
@@ -204,7 +231,13 @@ tasks.named("publishPlugins") {
 }
 
 tasks.named<Jar>("jar") {
-    archiveFileName.set("code-armor-plugin-$version.jar")
+    archiveFileName.set("code-armor-plugin-${gitVersionProvider.get()}.jar")
+}
+
+tasks.register("showVersion") {
+    doLast {
+        println("Current version: ${gitVersionProvider.get()}")
+    }
 }
 
 jreleaser {

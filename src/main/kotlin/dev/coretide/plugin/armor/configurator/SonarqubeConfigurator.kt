@@ -8,12 +8,13 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.plugin.armor.configurators
+package dev.coretide.plugin.armor.configurator
 
 import dev.coretide.plugin.armor.CodeArmorExtension
 import dev.coretide.plugin.armor.ProjectType
-import dev.coretide.plugin.armor.utils.ExclusionUtils
-import dev.coretide.plugin.armor.utils.ProjectDetector
+import dev.coretide.plugin.armor.util.ExclusionUtil
+import dev.coretide.plugin.armor.util.LogUtil
+import dev.coretide.plugin.armor.util.ProjectDetector
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 import org.sonarqube.gradle.SonarExtension
@@ -76,7 +77,7 @@ object SonarqubeConfigurator {
                 sonarProperties.property("sonar.java.coveragePlugin", "jacoco")
                 sonarProperties.property("sonar.coverage.jacoco.xmlReportPaths", "build/reports/jacoco/test/jacocoTestReport.xml")
                 sonarProperties.property("sonar.coverage.minimum", "${(extension.coverageMinimum * 100).toInt()}")
-                val sonarCoverageExclusions = ExclusionUtils.generateSonarCoverageExclusions(extension)
+                val sonarCoverageExclusions = ExclusionUtil.generateSonarCoverageExclusions(extension)
                 sonarProperties.property("sonar.coverage.exclusions", sonarCoverageExclusions.joinToString(","))
                 sonarProperties.property(
                     "sonar.exclusions",
@@ -129,8 +130,8 @@ object SonarqubeConfigurator {
                     task.dependsOn("dependencyCheckAnalyze")
                 }
                 task.doLast {
-                    println("✅ SonarQube analysis completed")
-                    println(
+                    LogUtil.verbose("✅ SonarQube analysis completed")
+                    LogUtil.verbose(
                         "🔍 View results at: ${extension.sonarHostUrl}/dashboard?id=${
                             extension.sonarProjectKey?.ifEmpty {
                                 "${project.group}:${project.name}"

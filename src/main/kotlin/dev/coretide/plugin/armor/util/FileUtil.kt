@@ -8,13 +8,13 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.plugin.armor.utils
+package dev.coretide.plugin.armor.util
 
 import org.gradle.api.Project
 import java.io.File
 
 @Suppress("HttpUrlsUsage")
-object FileUtils {
+object FileUtil {
     fun createDefaultSpotbugsExclude(
         project: Project,
         excludeFile: File? = null,
@@ -102,7 +102,7 @@ object FileUtils {
                 </FindBugsFilter>
                 """.trimIndent(),
             )
-            println("📝 Created default SpotBugs exclude file: ${file.absolutePath}")
+            LogUtil.verbose("📝 Created default SpotBugs exclude file: ${file.absolutePath}")
         }
         return file
     }
@@ -135,7 +135,7 @@ object FileUtils {
                 """.trimIndent(),
             )
 
-            println("📝 Created default license header: ${file.absolutePath}")
+            LogUtil.verbose("📝 Created default license header: ${file.absolutePath}")
         }
         return file
     }
@@ -194,7 +194,7 @@ object FileUtils {
                 </suppressions>
                 """.trimIndent(),
             )
-            println("📝 Created default OWASP suppression file: ${file.absolutePath}")
+            LogUtil.verbose("📝 Created default OWASP suppression file: ${file.absolutePath}")
         }
         return file
     }

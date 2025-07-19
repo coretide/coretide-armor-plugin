@@ -8,11 +8,13 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.plugin.armor.tasks
+package dev.coretide.plugin.armor.task
 
 import dev.coretide.plugin.armor.CodeArmorExtension
-import dev.coretide.plugin.armor.utils.ConfiguratorUtils
-import dev.coretide.plugin.armor.utils.ProjectDetector
+import dev.coretide.plugin.armor.ProjectType
+import dev.coretide.plugin.armor.util.ConfiguratorUtil
+import dev.coretide.plugin.armor.util.LogUtil
+import dev.coretide.plugin.armor.util.ProjectDetector
 import org.gradle.api.Project
 
 object MultiModuleTaskCreator {
@@ -40,9 +42,9 @@ object MultiModuleTaskCreator {
     private fun configureSingleModuleProject(
         project: Project,
         extension: CodeArmorExtension,
-        projectType: dev.coretide.plugin.armor.ProjectType,
+        projectType: ProjectType,
     ) {
-        ConfiguratorUtils.registerConfigurators(project, extension, projectType)
+        ConfiguratorUtil.registerConfigurators(project, extension, projectType)
         TaskCreator.createCustomTasks(project, extension, projectType)
     }
 
@@ -59,7 +61,7 @@ object MultiModuleTaskCreator {
                 }
             }
             task.doLast {
-                println("🎯 All modules code quality checks completed!")
+                LogUtil.essential("🎯 All modules code quality checks completed!")
             }
         }
     }

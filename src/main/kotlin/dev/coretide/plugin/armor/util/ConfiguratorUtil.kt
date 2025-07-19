@@ -8,24 +8,25 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.plugin.armor.utils
+package dev.coretide.plugin.armor.util
 
 import dev.coretide.plugin.armor.CodeArmorExtension
-import dev.coretide.plugin.armor.configurators.CheckstyleConfigurator
-import dev.coretide.plugin.armor.configurators.JacocoConfigurator
-import dev.coretide.plugin.armor.configurators.OwaspConfigurator
-import dev.coretide.plugin.armor.configurators.ResourceConfigurator
-import dev.coretide.plugin.armor.configurators.SonarqubeConfigurator
-import dev.coretide.plugin.armor.configurators.SpotbugsConfigurator
-import dev.coretide.plugin.armor.configurators.SpotlessConfigurator
-import dev.coretide.plugin.armor.configurators.VeracodeConfigurator
+import dev.coretide.plugin.armor.ProjectType
+import dev.coretide.plugin.armor.configurator.CheckstyleConfigurator
+import dev.coretide.plugin.armor.configurator.JacocoConfigurator
+import dev.coretide.plugin.armor.configurator.OwaspConfigurator
+import dev.coretide.plugin.armor.configurator.ResourceConfigurator
+import dev.coretide.plugin.armor.configurator.SonarqubeConfigurator
+import dev.coretide.plugin.armor.configurator.SpotbugsConfigurator
+import dev.coretide.plugin.armor.configurator.SpotlessConfigurator
+import dev.coretide.plugin.armor.configurator.VeracodeConfigurator
 import org.gradle.api.Project
 
-object ConfiguratorUtils {
+object ConfiguratorUtil {
     fun registerConfigurators(
         project: Project,
         extension: CodeArmorExtension,
-        projectType: dev.coretide.plugin.armor.ProjectType,
+        projectType: ProjectType,
     ) {
         ResourceConfigurator.configure(project, extension, projectType)
         if (extension.jacoco) JacocoConfigurator.configureJacoco(project, extension)

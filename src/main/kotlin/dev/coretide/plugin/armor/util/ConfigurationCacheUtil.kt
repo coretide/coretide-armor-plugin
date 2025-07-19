@@ -8,12 +8,12 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.plugin.armor.utils
+package dev.coretide.plugin.armor.util
 
 import org.gradle.api.Project
 import org.gradle.api.Task
 
-object ConfigurationCacheUtils {
+object ConfigurationCacheUtil {
     fun configureTaskForConfigurationCache(
         task: Task,
         reason: String,
@@ -24,12 +24,12 @@ object ConfigurationCacheUtils {
         }
         task.doLast {
             restoreConfigurationCacheWarnings()
-            println("💡 Task completed - any configuration cache warnings are from third-party plugins")
+            LogUtil.verbose("💡 Task completed - any configuration cache warnings are from third-party plugins")
         }
     }
 
     fun optimizeThirdPartyPlugins(project: Project) {
-        println("🔧 Applying third-party plugin compatibility optimizations")
+        LogUtil.verbose("🔧 Applying third-party plugin compatibility optimizations")
         project.tasks.matching { it.name.contains("dependencyCheck") }.configureEach { task ->
             configureTaskForConfigurationCache(task, "OWASP dependency check uses runtime project access")
         }
@@ -41,8 +41,8 @@ object ConfigurationCacheUtils {
         }
         project.gradle.projectsEvaluated {
             if (hasConfigurationCacheIndicators()) {
-                println("📋 Configuration cache optimizations applied")
-                println("💡 Any remaining warnings are from third-party plugins, not your code")
+                LogUtil.verbose("📋 Configuration cache optimizations applied")
+                LogUtil.verbose("💡 Any remaining warnings are from third-party plugins, not your code")
             }
         }
     }

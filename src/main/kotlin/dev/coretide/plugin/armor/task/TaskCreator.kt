@@ -8,11 +8,12 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.coretide.plugin.armor.tasks
+package dev.coretide.plugin.armor.task
 
 import dev.coretide.plugin.armor.CodeArmorExtension
 import dev.coretide.plugin.armor.ProjectType
-import dev.coretide.plugin.armor.utils.ProjectDetector
+import dev.coretide.plugin.armor.util.LogUtil
+import dev.coretide.plugin.armor.util.ProjectDetector
 import org.gradle.api.Project
 
 object TaskCreator {
@@ -55,9 +56,9 @@ object TaskCreator {
             val projectName = project.name
             task.dependsOn("assemble", "test")
             task.doLast {
-                println("⚡ Quick build completed for $projectName")
-                println("🚀 Ready for development (no quality checks)")
-                println("💡 Run './gradlew codeQuality' before pushing")
+                LogUtil.verbose("⚡ Quick build completed for $projectName")
+                LogUtil.verbose("🚀 Ready for development (no quality checks)")
+                LogUtil.verbose("💡 Run './gradlew codeQuality' before pushing")
             }
         }
     }
@@ -75,10 +76,10 @@ object TaskCreator {
                 task.dependsOn(*dependencies.toTypedArray())
             }
             task.doLast {
-                println("✅ Code formatting completed successfully")
+                LogUtil.verbose("✅ Code formatting completed successfully")
                 if (extension.spotless) {
                     val formatter = extension.kotlinFormatter.name.lowercase()
-                    println("🎨 Spotless formatting applied using $formatter")
+                    LogUtil.verbose("🎨 Spotless formatting applied using $formatter")
                 }
             }
         }
@@ -114,20 +115,20 @@ object TaskCreator {
                 task.dependsOn(*dependencies.toTypedArray())
             }
             task.doLast {
-                println("✅ Pre-push code quality checks completed for $projectName")
+                LogUtil.verbose("✅ Pre-push code quality checks completed for $projectName")
                 if (extension.jacoco) {
-                    println("📊 JaCoCo coverage: build/reports/jacoco/test/html/index.html")
+                    LogUtil.verbose("📊 JaCoCo coverage: build/reports/jacoco/test/html/index.html")
                 }
                 if (extension.spotbugs) {
-                    println("📊 SpotBugs report: build/reports/spotbugs/main.html")
+                    LogUtil.verbose("📊 SpotBugs report: build/reports/spotbugs/main.html")
                 }
                 if (extension.checkstyle && ProjectDetector.needsCheckstyle(projectType)) {
-                    println("📊 Checkstyle report: build/reports/checkstyle/main.html")
+                    LogUtil.verbose("📊 Checkstyle report: build/reports/checkstyle/main.html")
                 }
                 if (extension.sonarqube) {
-                    println("🔍 SonarQube analysis uploaded")
+                    LogUtil.verbose("🔍 SonarQube analysis uploaded")
                 }
-                println("🚀 Ready to push to SCM!")
+                LogUtil.verbose("🚀 Ready to push to SCM!")
             }
         }
     }
@@ -153,18 +154,18 @@ object TaskCreator {
                 task.dependsOn(*dependencies.toTypedArray())
             }
             task.doLast {
-                println("✅ Full analysis completed for $projectName")
+                LogUtil.verbose("✅ Full analysis completed for $projectName")
                 if (extension.owasp) {
-                    println("📊 OWASP report: build/reports/dependency-check/dependency-check-report.html")
+                    LogUtil.verbose("📊 OWASP report: build/reports/dependency-check/dependency-check-report.html")
                 }
                 if (extension.veracode) {
                     if (hasVeracodeCredentials()) {
-                        println("🔍 Veracode scan uploaded")
+                        LogUtil.verbose("🔍 Veracode scan uploaded")
                     } else {
-                        println("⚠️  Veracode credentials not found - scan skipped")
+                        LogUtil.verbose("⚠️  Veracode credentials not found - scan skipped")
                     }
                 }
-                println("🎯 Complete analysis pipeline finished!")
+                LogUtil.verbose("🎯 Complete analysis pipeline finished!")
             }
         }
     }

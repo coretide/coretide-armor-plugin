@@ -2,21 +2,21 @@
 
 [![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)]()
 [![Latest Release](https://img.shields.io/github/v/release/coretide/coretide-armor-plugin?include_prereleases&style=flat-square&logo=github)](https://github.com/coretide/coretide-armor-plugin/releases)
-[![Version](https://img.shields.io/badge/version-0.1.0--alpha-blue?style=flat-square)](https://github.com/coretide/coretide-armor-plugin)
+[![Version](https://img.shields.io/badge/version-0.1.1--alpha-blue?style=flat-square)](https://github.com/coretide/coretide-armor-plugin)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/dev.coretide.armor?style=flat-square&logo=gradle)](https://plugins.gradle.org/plugin/dev.coretide.armor)
 [![Maven Central](https://img.shields.io/maven-central/v/dev.coretide.plugin/code-armor-plugin?style=flat-square&logo=apache-maven)](https://central.sonatype.com/artifact/dev.coretide.plugin/code-armor-plugin)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/coretide/coretide-armor-plugin/ci.yml?style=flat-square&logo=github-actions)](https://github.com/coretide/coretide-armor-plugin/actions)
 > **Comprehensive code quality and security plugin for Java/Kotlin projects**
 
-> ⚠️ **Status:** Alpha — This plugin is under active development (version: 0.1.0-alpha). Expect breaking changes and frequent updates until 1.0.0.
+> ⚠️ **Status:** Alpha — This plugin is under active development (version: 0.1.1-alpha). Expect breaking changes and frequent updates until 1.0.0.
 
 CodeArmor is a powerful Gradle plugin that integrates multiple code quality, security, and formatting tools into a unified, easy-to-use solution. It provides automated project detection, intelligent configuration, and optimized development workflows for both single-module and multi-module projects.
 
 ## ✨ Features
 
 - 🔍 **Comprehensive Code Quality**: JaCoCo, Checkstyle, SpotBugs, SonarQube integration
-- 🎨 **Code Formatting**: Spotless with configurable Kotlin formatters (KtLint/KtFmt)
+- 🎨 **Code Formatting**: Spotless with configurable Java (Google Java Format, Eclipse, Palantir) and Kotlin formatters (KtLint/KtFmt)
 - 🔒 **Security Analysis**: OWASP Dependency Check (**Veracode integration in development**)
 - 🚀 **Optimized Workflows**: Custom tasks for different development stages
 - 🪝 **Smart Git Hooks**: Enhanced pre-commit and pre-push quality checks with file filtering
@@ -26,6 +26,28 @@ CodeArmor is a powerful Gradle plugin that integrates multiple code quality, sec
 - ⚡ **Configuration Cache**: Optimized for Gradle's configuration cache
 - 📝 **Resource Processing**: Automatic token replacement in application configuration files
 
+## 🆕 What's New in 0.1.1-alpha
+
+### Enhanced Code Formatting
+- **🎨 Multiple Java Formatters**: Support for Google Java Format, Eclipse, Palantir Java Format, and custom formatters
+- **🔧 Advanced Kotlin Configuration**: Enhanced KtLint and KtFmt configuration with custom rules and styles
+- **⚙️ Granular Control**: Detailed formatter configuration with version control, style options, and file targeting
+- **🎯 Custom Formatter Support**: Ability to use custom formatting commands for both Java and Kotlin
+
+### Improved Code Organization
+- **📁 Package Restructuring**: Reorganized internal packages for better maintainability
+  - `utils` → `util`
+  - `tasks` → `task` 
+  - `configurators` → `configurator`
+- **🏗️ Enhanced Configuration Classes**: New dedicated configuration classes for formatter options
+- **📋 Better Type Safety**: Improved enumerations for formatter and style selections
+
+### Configuration Enhancements
+- **JavaFormatterConfig**: Comprehensive Java formatting configuration
+- **KotlinFormatterConfig**: Advanced Kotlin formatting options with KtLint rule overrides
+- **KtfmtStyle**: Support for KOTLINLANG, GOOGLE, and META styles
+- **Target File Control**: Configurable include/exclude patterns for formatting
+
 ## 🚀 Quick Start
 
 ### Installation
@@ -33,7 +55,7 @@ CodeArmor is a powerful Gradle plugin that integrates multiple code quality, sec
 Add the plugin to your `build.gradle.kts`:
 ```kotlin
 plugins {
-  id("dev.coretide.armor") version "0.1.0-alpha"
+  id("dev.coretide.armor") version "0.1.1-alpha"
 }
 ```
 
@@ -41,7 +63,7 @@ Or using the legacy plugin application:
 ```kotlin
 buildscript {
     dependencies {
-        classpath("dev.coretide:coretide-armor-plugin:0.1.0-alpha")
+        classpath("dev.coretide:coretide-armor-plugin:0.1.1-alpha")
     }
 }
 
@@ -279,10 +301,12 @@ codeArmor {
 ```kotlin
 codeArmor {
     spotless = true
-    kotlinFormatter = KotlinFormatter.KTLINT  // KTLINT or KTFMT
-    ktlintVersion = "1.6.0"
-    ktfmtVersion = "0.46"
-    ktfmtStyle = KtfmtStyle.KOTLINLANG       // KOTLINLANG, GOOGLE, META
+    
+    // Java formatter options
+    javaFormatter = JavaFormatter.ECLIPSE    // GOOGLE_JAVA_FORMAT, ECLIPSE, PALANTIR_JAVA_FORMAT, CUSTOM
+    
+    // Kotlin formatter options
+    kotlinFormatter = KotlinFormatter.KTLINT  // KTLINT, KTFMT, CUSTOM
     spotlessApplyLicenseHeader = false
     
     // Configure additional formats
@@ -293,10 +317,33 @@ codeArmor {
         markdown = true
     }
     
-    // Configure KtLint rules
-    ktlintRules {
-        "ktlint_standard_no-wildcard-imports" = "disabled"
-        "ktlint_standard_max-line-length" = "disabled"
+    // Advanced Java formatter configuration
+    javaFormatter {
+        googleJavaFormatVersion = "1.17.0"
+        googleJavaFormatStyle = "GOOGLE"      // GOOGLE, AOSP
+        eclipseVersion = "4.26.0"
+        palantirVersion = "2.28.0"
+        customFormatterCommand = "custom-java-formatter"
+        customFormatterArgs = listOf("--style=custom")
+        targetIncludes = listOf("src/main/java/**/*.java", "src/test/java/**/*.java")
+        targetExcludes = listOf("**/generated/**", "**/build/**")
+    }
+    
+    // Advanced Kotlin formatter configuration
+    kotlinFormatter {
+        ktlintVersion = "1.6.0"
+        ktlintEditorConfigOverrides = mapOf(
+            "ktlint_standard_no-wildcard-imports" to "disabled",
+            "ktlint_standard_max-line-length" to "disabled"
+        )
+        ktfmtVersion = "0.46"
+        ktfmtStyle = KtfmtStyle.KOTLINLANG   // KOTLINLANG, GOOGLE, META
+        customFormatterCommand = "custom-kotlin-formatter"
+        customFormatterArgs = listOf("--style=custom")
+        endWithNewline = true
+        trimTrailingWhitespace = true
+        targetIncludes = listOf("src/main/kotlin/**/*.kt", "src/test/kotlin/**/*.kt")
+        targetExcludes = listOf("**/generated/**", "**/build/**")
     }
 }
 ```
@@ -338,6 +385,43 @@ codeArmor {
 }
 ```
 
+### Logging Configuration
+
+#### Log Levels
+CodeArmor provides configurable logging levels to control the verbosity of plugin output:
+
+```kotlin
+codeArmor {
+    logLevel = ArmorLogLevel.ESSENTIAL        // VERBOSE, ESSENTIAL, STEALTH
+}
+```
+
+**Available Log Levels:**
+
+- **`VERBOSE`** - 📢 **All logs**: Shows detailed information about all plugin operations, configurations, and processes. Ideal for debugging and understanding what the plugin is doing.
+
+- **`ESSENTIAL`** - ⚖️ **Default logging**: Shows important information, warnings, and errors. Provides a good balance between information and noise. This is the default level.
+
+- **`STEALTH`** - 🤫 **No logs**: Suppresses all plugin output except critical errors. Perfect for CI/CD environments where you want minimal console output.
+
+**Usage Examples:**
+
+```kotlin
+// For debugging and development
+codeArmor {
+    logLevel = ArmorLogLevel.VERBOSE
+}
+
+// For production builds with minimal output
+codeArmor {
+    logLevel = ArmorLogLevel.STEALTH
+}
+
+// Default balanced logging (can be omitted)
+codeArmor {
+    logLevel = ArmorLogLevel.ESSENTIAL
+}
+```
 
 ### Git Integration
 

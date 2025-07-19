@@ -10,12 +10,14 @@
 
 package dev.coretide.plugin.armor
 
+import dev.coretide.plugin.armor.config.CheckstyleConfig
+import dev.coretide.plugin.armor.config.JavaFormatterConfig
+import dev.coretide.plugin.armor.config.KotlinFormatterConfig
+import dev.coretide.plugin.armor.config.SpotBugsConfig
 import dev.coretide.plugin.armor.config.SpotlessFormats
-
-enum class KotlinFormatter {
-    KTLINT,
-    KTFMT,
-}
+import dev.coretide.plugin.armor.enumeration.ArmorLogLevel
+import dev.coretide.plugin.armor.enumeration.JavaFormatter
+import dev.coretide.plugin.armor.enumeration.KotlinFormatter
 
 @Suppress("unused")
 open class CodeArmorExtension {
@@ -41,13 +43,7 @@ open class CodeArmorExtension {
     var owaspNvdApiDelay: Int = 4000
     var owaspNvdMaxRetryCount: Int = 10
     var owaspNvdValidForHours: Int = 24
-    var checkstyleConfigFile: String? = null
-    var checkstyleSuppressionFile: String? = null
-    var checkstyleMaxWarnings: Int = 0
     var spotlessApplyLicenseHeader: Boolean = false
-    var spotbugsExcludeFile: String? = null
-    var spotbugsEffort: String = "MAX"
-    var spotbugsReportLevel: String = "HIGH"
     var sonarHostUrl: String = "http://localhost:9000"
     var sonarProjectKey: String? = ""
     var sonarProjectName: String? = ""
@@ -62,23 +58,31 @@ open class CodeArmorExtension {
     var enableVersionFromGit: Boolean = true
     var enableResourceProcessing: Boolean = true
     var spotlessFormats: SpotlessFormats = SpotlessFormats()
+    var javaFormatter: JavaFormatter = JavaFormatter.ECLIPSE
+    var javaFormatterConfig: JavaFormatterConfig = JavaFormatterConfig()
     var kotlinFormatter: KotlinFormatter = KotlinFormatter.KTLINT
-    var ktlintVersion: String = "1.6.0"
-    var ktfmtVersion: String = "0.46"
-    var ktfmtStyle: KtfmtStyle = KtfmtStyle.KOTLINLANG // For ktfmt
-    var ktlintEditorConfigOverrides: MutableMap<String, String> = mutableMapOf()
+    var kotlinFormatterConfig: KotlinFormatterConfig = KotlinFormatterConfig()
+    var checkstyleConfig: CheckstyleConfig = CheckstyleConfig()
+    var spotbugsConfig: SpotBugsConfig = SpotBugsConfig()
+    var logLevel: ArmorLogLevel = ArmorLogLevel.ESSENTIAL
 
     fun spotlessFormats(configure: SpotlessFormats.() -> Unit) {
         spotlessFormats.configure()
     }
 
-    fun ktlintRules(configure: MutableMap<String, String>.() -> Unit) {
-        ktlintEditorConfigOverrides.configure()
+    fun javaFormatter(configure: JavaFormatterConfig.() -> Unit) {
+        javaFormatterConfig.configure()
     }
-}
 
-enum class KtfmtStyle {
-    KOTLINLANG,
-    GOOGLE,
-    META,
+    fun kotlinFormatter(configure: KotlinFormatterConfig.() -> Unit) {
+        kotlinFormatterConfig.configure()
+    }
+
+    fun checkstyle(configure: CheckstyleConfig.() -> Unit) {
+        checkstyleConfig.configure()
+    }
+
+    fun spotbugs(configure: SpotBugsConfig.() -> Unit) {
+        spotbugsConfig.configure()
+    }
 }
