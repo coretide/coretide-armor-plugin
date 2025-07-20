@@ -3,7 +3,7 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- * You may obtain a copy at
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
@@ -58,6 +58,7 @@ object SpotlessConfigurator {
                     it.target("**/*.json")
                     it.targetExclude("**/build/**", "**/generated/**", "**/node_modules/**")
                     it.gson().indentWithSpaces(extension.spotlessFormats.jsonIndentSpaces)
+                    it.lineEndings = extension.spotlessFormats.lineEndings.spotlessLineEnding
                     it.endWithNewline()
                     it.trimTrailingWhitespace()
                 }
@@ -67,6 +68,7 @@ object SpotlessConfigurator {
                     it.target("**/*.xml")
                     it.targetExclude("**/build/**", "**/generated/**", "**/target/**")
                     it.eclipseWtp(EclipseWtpFormatterStep.XML)
+                    it.lineEndings = extension.spotlessFormats.lineEndings.spotlessLineEnding
                     it.endWithNewline()
                     it.trimTrailingWhitespace()
                 }
@@ -82,6 +84,7 @@ object SpotlessConfigurator {
                             "parser" to "yaml",
                         ),
                     )
+                    it.lineEndings = extension.spotlessFormats.lineEndings.spotlessLineEnding
                     it.endWithNewline()
                     it.trimTrailingWhitespace()
                 }
@@ -90,6 +93,7 @@ object SpotlessConfigurator {
                 format("properties") {
                     it.target("**/*.properties")
                     it.targetExclude("**/build/**", "**/generated/**", "**/target/**")
+                    it.lineEndings = extension.spotlessFormats.lineEndings.spotlessLineEnding
                     it.endWithNewline()
                     it.trimTrailingWhitespace()
                 }
@@ -106,6 +110,7 @@ object SpotlessConfigurator {
                             "parser" to "markdown",
                         ),
                     )
+                    it.lineEndings = extension.spotlessFormats.lineEndings.spotlessLineEnding
                     it.endWithNewline()
                     it.trimTrailingWhitespace()
                 }
@@ -122,6 +127,7 @@ object SpotlessConfigurator {
                             "parser" to "html",
                         ),
                     )
+                    it.lineEndings = extension.spotlessFormats.lineEndings.spotlessLineEnding
                     it.endWithNewline()
                     it.trimTrailingWhitespace()
                 }
@@ -138,6 +144,7 @@ object SpotlessConfigurator {
                             "parser" to "css",
                         ),
                     )
+                    it.lineEndings = extension.spotlessFormats.lineEndings.spotlessLineEnding
                     it.endWithNewline()
                     it.trimTrailingWhitespace()
                 }
@@ -146,6 +153,7 @@ object SpotlessConfigurator {
                 format("sql") {
                     it.target("**/*.sql")
                     it.targetExclude("**/build/**", "**/generated/**", "**/target/**")
+                    it.lineEndings = extension.spotlessFormats.lineEndings.spotlessLineEnding
                     it.endWithNewline()
                     it.trimTrailingWhitespace()
                     if (extension.spotlessFormats.sqlUppercaseKeywords) {
@@ -193,6 +201,7 @@ object SpotlessConfigurator {
         if (config.trimTrailingWhitespace) {
             java.trimTrailingWhitespace()
         }
+        java.lineEndings = config.lineEndings.spotlessLineEnding
         config.importOrderFile?.let { importOrderFile ->
             val file = project.file(importOrderFile)
             if (file.exists()) {
@@ -304,6 +313,8 @@ object SpotlessConfigurator {
         if (config.trimTrailingWhitespace) {
             kotlin.trimTrailingWhitespace()
         }
+
+        kotlin.lineEndings = config.lineEndings.spotlessLineEnding
 
         if (extension.spotlessApplyLicenseHeader) {
             configureKotlinLicenseHeader(kotlin, project)

@@ -3,7 +3,7 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- * You may obtain a copy at
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
@@ -11,6 +11,7 @@
 package dev.coretide.plugin.armor.config
 
 import dev.coretide.plugin.armor.enumeration.KtfmtStyle
+import dev.coretide.plugin.armor.enumeration.LineEndingType
 
 open class KotlinFormatterConfig {
     var ktlintVersion: String = "1.6.0"
@@ -21,6 +22,7 @@ open class KotlinFormatterConfig {
     var customFormatterArgs: List<String> = emptyList()
     var endWithNewline: Boolean = true
     var trimTrailingWhitespace: Boolean = true
+    var lineEndings: LineEndingType = LineEndingType.UNIX
     var targetIncludes: List<String> = listOf("src/main/kotlin/**/*.kt", "src/test/kotlin/**/*.kt")
     var targetExcludes: List<String> = listOf("**/generated/**", "**/build/**")
 }

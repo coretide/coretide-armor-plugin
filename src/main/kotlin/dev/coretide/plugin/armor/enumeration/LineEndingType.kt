@@ -10,9 +10,14 @@
 
 package dev.coretide.plugin.armor.enumeration
 
-enum class JavaFormatter {
-    GOOGLE_JAVA_FORMAT,
-    ECLIPSE,
-    PALANTIR_JAVA_FORMAT,
-    CUSTOM,
+import com.diffplug.spotless.LineEnding
+
+enum class LineEndingType(
+    val spotlessLineEnding: LineEnding,
+) {
+    UNIX(LineEnding.UNIX),
+    WINDOWS(LineEnding.WINDOWS),
+    MAC_CLASSIC(LineEnding.MAC_CLASSIC),
+    PLATFORM_NATIVE(LineEnding.PLATFORM_NATIVE),
+    GIT_ATTRIBUTES(LineEnding.GIT_ATTRIBUTES),
 }
