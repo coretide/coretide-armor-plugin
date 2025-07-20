@@ -26,6 +26,9 @@ object TaskCreator {
         if (hasFormattingToolsEnabled(extension)) {
             createFormatCodeTask(project, extension)
         }
+        if (hasValidationToolsEnabled(extension, projectType)) {
+            createValidateCodeStyleTask(project, extension, projectType)
+        }
         if (hasQualityToolsEnabled(extension, projectType)) {
             createCodeQualityTask(project, extension, projectType)
         }
@@ -34,6 +37,13 @@ object TaskCreator {
         }
         createLogExclusionInfoTask(project)
     }
+
+    private fun hasValidationToolsEnabled(
+        extension: CodeArmorExtension,
+        projectType: ProjectType,
+    ): Boolean =
+        extension.spotless ||
+            (extension.checkstyle && ProjectDetector.needsCheckstyle(projectType))
 
     private fun hasQualityToolsEnabled(
         extension: CodeArmorExtension,
@@ -89,6 +99,37 @@ object TaskCreator {
         project.tasks.register("logExclusionInfo", LogExclusionInfoTask::class.java) { task ->
             task.group = "verification"
             task.description = "📋 Log coverage exclusion information for debugging"
+        }
+    }
+
+    private fun createValidateCodeStyleTask(
+        project: Project,
+        extension: CodeArmorExtension,
+        projectType: ProjectType,
+    ) {
+        project.tasks.register("validateCodeStyle") { task ->
+            task.group = "verification"
+            task.description = "🔍 Quick validation (Checkstyle for Java, Spotless for Kotlin/Java)"
+            val dependencies = mutableListOf<String>()
+            if (extension.checkstyle && ProjectDetector.needsCheckstyle(projectType)) {
+                dependencies.addAll(listOf("checkstyleMain", "checkstyleTest"))
+            }
+            if (extension.spotless) {
+                dependencies.add("spotlessCheck")
+            }
+            if (dependencies.isNotEmpty()) {
+                task.dependsOn(*dependencies.toTypedArray())
+            }
+            task.doLast {
+                LogUtil.verbose("✅ Code validation completed")
+                if (extension.checkstyle && ProjectDetector.needsCheckstyle(projectType)) {
+                    LogUtil.verbose("📊 Checkstyle validation: Java code checked")
+                }
+                if (extension.spotless) {
+                    LogUtil.verbose("🎨 Spotless validation: All code formatting checked")
+                }
+                LogUtil.verbose("🚀 Ready for commit!")
+            }
         }
     }
 

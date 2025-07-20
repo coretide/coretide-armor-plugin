@@ -26,10 +26,18 @@ object GitHooksManager {
             return
         }
         if (extension.preCommitEnabled) {
-            createPreCommitHook(gitHooksDir)
+            if (hookExists(gitHooksDir, "pre-commit")) {
+                LogUtil.essential("⚠️ Pre-commit hook already exists. Skipping to preserve custom hooks.")
+            } else {
+                createPreCommitHook(gitHooksDir)
+            }
         }
         if (extension.prePushEnabled) {
-            createPrePushHook(gitHooksDir)
+            if (hookExists(gitHooksDir, "pre-push")) {
+                LogUtil.essential("⚠️ Pre-push hook already exists. Skipping to preserve custom hooks.")
+            } else {
+                createPrePushHook(gitHooksDir)
+            }
         }
         LogUtil.essential("🪝 Git hooks configured successfully")
     }
@@ -57,15 +65,15 @@ object GitHooksManager {
             echo ""
             echo "🔧 Running code formatters..."
             
-            echo "Running Spotless formatter..."
-            if ./gradlew spotlessApply --quiet --daemon; then
-                echo "✅ Spotless formatting completed"
+            echo "Running Configured formatter..."
+            if ./gradlew formatCode --quiet --daemon; then
+                echo "✅ Code formatting completed"
             else
-                echo "⚠️ Spotless found issues - attempting to continue"
+                echo "⚠️ Formatting found issues - attempting to continue"
             fi
             
-            echo "Running checkstyle validation..."
-            ./gradlew checkstyleMain checkstyleTest --quiet --daemon || echo "⚠️ Checkstyle found issues that need manual fixing."
+            echo "Running code validation..."
+            ./gradlew validateCodeStyle --quiet --daemon || echo "⚠️ Validation found issues that need manual fixing."
             
             echo ""
             echo "📝 Re-adding formatted files to staging..."
@@ -115,5 +123,13 @@ object GitHooksManager {
 
         prePushFile.writeText(prePushContent)
         prePushFile.setExecutable(true)
+    }
+
+    private fun hookExists(
+        hooksDir: File,
+        hookName: String,
+    ): Boolean {
+        val hookFile = File(hooksDir, hookName)
+        return hookFile.exists()
     }
 }
