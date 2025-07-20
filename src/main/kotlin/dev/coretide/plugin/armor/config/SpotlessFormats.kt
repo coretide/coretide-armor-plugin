@@ -3,12 +3,14 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- * You may obtain a copy at
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
 package dev.coretide.plugin.armor.config
+
+import dev.coretide.plugin.armor.enumeration.LineEndingType
 
 open class SpotlessFormats {
     var json: Boolean = false
@@ -19,6 +21,7 @@ open class SpotlessFormats {
     var html: Boolean = false
     var css: Boolean = false
     var sql: Boolean = false
+    var lineEndings: LineEndingType = LineEndingType.UNIX
     var jsonIndentSpaces: Int = 2
     var yamlTabWidth: Int = 2
     var yamlPrintWidth: Int = 120

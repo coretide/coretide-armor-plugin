@@ -2,14 +2,14 @@
 
 [![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)]()
 [![Latest Release](https://img.shields.io/github/v/release/coretide/coretide-armor-plugin?include_prereleases&style=flat-square&logo=github)](https://github.com/coretide/coretide-armor-plugin/releases)
-[![Version](https://img.shields.io/badge/version-0.1.1--alpha-blue?style=flat-square)](https://github.com/coretide/coretide-armor-plugin)
+[![Version](https://img.shields.io/badge/version-0.1.2--alpha-blue?style=flat-square)](https://github.com/coretide/coretide-armor-plugin)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/dev.coretide.armor?style=flat-square&logo=gradle)](https://plugins.gradle.org/plugin/dev.coretide.armor)
 [![Maven Central](https://img.shields.io/maven-central/v/dev.coretide.plugin/code-armor-plugin?style=flat-square&logo=apache-maven)](https://central.sonatype.com/artifact/dev.coretide.plugin/code-armor-plugin)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/coretide/coretide-armor-plugin/ci.yml?style=flat-square&logo=github-actions)](https://github.com/coretide/coretide-armor-plugin/actions)
 > **Comprehensive code quality and security plugin for Java/Kotlin projects**
 
-> ⚠️ **Status:** Alpha — This plugin is under active development (version: 0.1.1-alpha). Expect breaking changes and frequent updates until 1.0.0.
+> ⚠️ **Status:** Alpha — This plugin is under active development (version: 0.1.2-alpha). Expect breaking changes and frequent updates until 1.0.0.
 
 CodeArmor is a powerful Gradle plugin that integrates multiple code quality, security, and formatting tools into a unified, easy-to-use solution. It provides automated project detection, intelligent configuration, and optimized development workflows for both single-module and multi-module projects.
 
@@ -26,7 +26,7 @@ CodeArmor is a powerful Gradle plugin that integrates multiple code quality, sec
 - ⚡ **Configuration Cache**: Optimized for Gradle's configuration cache
 - 📝 **Resource Processing**: Automatic token replacement in application configuration files
 
-## 🆕 What's New in 0.1.1-alpha
+## 🆕 What's New in 0.1.2-alpha
 
 ### Enhanced Code Formatting
 - **🎨 Multiple Java Formatters**: Support for Google Java Format, Eclipse, Palantir Java Format, and custom formatters
@@ -47,6 +47,8 @@ CodeArmor is a powerful Gradle plugin that integrates multiple code quality, sec
 - **KotlinFormatterConfig**: Advanced Kotlin formatting options with KtLint rule overrides
 - **KtfmtStyle**: Support for KOTLINLANG, GOOGLE, and META styles
 - **Target File Control**: Configurable include/exclude patterns for formatting
+- **🔧 Line Endings Configuration**: Configurable line endings support for all file types to solve Windows/Unix compatibility issues
+- **Cross-Platform Compatibility**: Default UNIX line endings with platform-specific overrides available
 
 ## 🚀 Quick Start
 
@@ -55,7 +57,7 @@ CodeArmor is a powerful Gradle plugin that integrates multiple code quality, sec
 Add the plugin to your `build.gradle.kts`:
 ```kotlin
 plugins {
-  id("dev.coretide.armor") version "0.1.1-alpha"
+  id("dev.coretide.armor") version "0.1.2-alpha"
 }
 ```
 
@@ -63,7 +65,7 @@ Or using the legacy plugin application:
 ```kotlin
 buildscript {
     dependencies {
-        classpath("dev.coretide:coretide-armor-plugin:0.1.1-alpha")
+        classpath("dev.coretide:coretide-armor-plugin:0.1.2-alpha")
     }
 }
 
@@ -110,6 +112,33 @@ codeArmor {
 }
 ```
 
+#### Line Endings Configuration
+```
+kotlin
+codeArmor {
+    // Configure line endings to solve Windows/Unix compatibility issues
+    kotlinFormatterConfig {
+        lineEndings = LineEndingType.UNIX  // Default: UNIX (recommended)
+    }
+    
+    javaFormatterConfig {
+        lineEndings = LineEndingType.WINDOWS  // Configure per platform
+    }
+    
+    spotlessFormats {
+        lineEndings = LineEndingType.PLATFORM_NATIVE  // Applies to all format files
+        json = true
+        yaml = true
+        xml = true
+    }
+}
+```
+**Available Line Ending Options:**
+- `UNIX` - LF line endings (default, recommended for cross-platform development)
+- `WINDOWS` - CRLF line endings (Windows systems)
+- `PLATFORM_NATIVE` - Uses system native line endings
+- `GIT_ATTRIBUTES` - Respects `.gitattributes` configuration
+- `MAC_CLASSIC` - CR line endings (legacy Mac systems)
 
 ## 📋 Supported Project Types
 
@@ -492,7 +521,6 @@ When enabled, CodeArmor automatically creates intelligent Git hooks with file fi
 # Runs fullAnalysis for security and quality (non-blocking warnings)
 # Provides detailed feedback on what was checked
 ```
-
 
 **Features:**
 - ✅ **Test validation**: Blocks push if tests fail
