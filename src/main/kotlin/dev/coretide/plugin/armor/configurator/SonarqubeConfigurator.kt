@@ -97,9 +97,6 @@ object SonarqubeConfigurator {
                 if (extension.spotbugs) {
                     sonarProperties.property("sonar.java.spotbugs.reportPaths", "build/reports/spotbugs/main.xml")
                 }
-                if (extension.checkstyle && ProjectDetector.needsCheckstyle(projectType)) {
-                    sonarProperties.property("sonar.java.checkstyle.reportPaths", "build/reports/checkstyle/main.xml")
-                }
                 if (extension.owasp) {
                     sonarProperties.property(
                         "sonar.dependencyCheck.reportPath",
@@ -119,9 +116,6 @@ object SonarqubeConfigurator {
                 task.dependsOn("build")
                 if (extension.jacoco) {
                     task.dependsOn("jacocoTestCoverageVerification")
-                }
-                if (extension.checkstyle && ProjectDetector.needsCheckstyle(projectType)) {
-                    task.dependsOn("checkstyleMain")
                 }
                 if (extension.spotbugs) {
                     task.dependsOn("spotbugsMain")

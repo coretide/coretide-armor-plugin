@@ -8,6 +8,8 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
+@file:Suppress("unused")
+
 package dev.coretide.plugin.armor.enumeration
 
 enum class ArmorLogLevel {

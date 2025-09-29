@@ -45,7 +45,7 @@ object MultiModuleTaskCreator {
         projectType: ProjectType,
     ) {
         ConfiguratorUtil.registerConfigurators(project, extension, projectType)
-        TaskCreator.createCustomTasks(project, extension, projectType)
+        TaskCreator.createCustomTasks(project, extension)
     }
 
     fun createMultiModuleTasks(

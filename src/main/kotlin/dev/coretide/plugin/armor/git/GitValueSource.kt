@@ -135,7 +135,7 @@ abstract class GitValueSource : ValueSource<String, GitValueSource.Parameters> {
             } else {
                 "unknown"
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             "unknown"
         }
     }

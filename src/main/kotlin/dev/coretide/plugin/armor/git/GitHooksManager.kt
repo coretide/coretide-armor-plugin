@@ -25,13 +25,6 @@ object GitHooksManager {
             LogUtil.verbose("ℹ️ Git hooks directory not found. Skipping Git hooks setup.")
             return
         }
-        if (extension.preCommitEnabled) {
-            if (hookExists(gitHooksDir, "pre-commit")) {
-                LogUtil.essential("⚠️ Pre-commit hook already exists. Skipping to preserve custom hooks.")
-            } else {
-                createPreCommitHook(gitHooksDir)
-            }
-        }
         if (extension.prePushEnabled) {
             if (hookExists(gitHooksDir, "pre-push")) {
                 LogUtil.essential("⚠️ Pre-push hook already exists. Skipping to preserve custom hooks.")
@@ -40,58 +33,6 @@ object GitHooksManager {
             }
         }
         LogUtil.essential("🪝 Git hooks configured successfully")
-    }
-
-    private fun createPreCommitHook(hooksDir: File) {
-        val preCommitFile = File(hooksDir, "pre-commit")
-        LogUtil.verbose("📜🪝 Creating pre-commit hook at ${preCommitFile.absolutePath}... ")
-        val preCommitContent =
-            """
-            #!/bin/bash
-            echo "🛡️ CodeArmor: Running pre-commit checks..."
-            
-            # Get staged files that need formatting
-            STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(java|kt|kts|xml|json|js|ts|py|go|gradle)$')
-            
-            if [ -z "${'$'}STAGED_FILES" ]; then
-                echo "No relevant files staged for commit. Skipping code formatting."
-                exit 0
-            fi
-            
-            echo "📋 Found staged files to format:"
-            # shellcheck disable=SC2001
-            echo "${'$'}STAGED_FILES" | sed 's/^/  - /'
-            
-            echo ""
-            echo "🔧 Running code formatters..."
-            
-            echo "Running Configured formatter..."
-            if ./gradlew formatCode --quiet --daemon; then
-                echo "✅ Code formatting completed"
-            else
-                echo "⚠️ Formatting found issues - attempting to continue"
-            fi
-            
-            echo "Running code validation..."
-            ./gradlew validateCodeStyle --quiet --daemon || echo "⚠️ Validation found issues that need manual fixing."
-            
-            echo ""
-            echo "📝 Re-adding formatted files to staging..."
-            for FILE in ${'$'}STAGED_FILES; do
-                if [ -f "${'$'}FILE" ]; then
-                    git add "${'$'}FILE"
-                    echo "  ✅ Added: ${'$'}FILE"
-                fi
-            done
-            
-            echo ""
-            echo "✅ Pre-commit formatting completed!"
-            echo "💡 If there were checkstyle issues, fix them manually and commit again"
-            exit 0
-            """.trimIndent()
-
-        preCommitFile.writeText(preCommitContent)
-        preCommitFile.setExecutable(true)
     }
 
     private fun createPrePushHook(hooksDir: File) {
@@ -125,6 +66,7 @@ object GitHooksManager {
         prePushFile.setExecutable(true)
     }
 
+    @Suppress("SameParameterValue")
     private fun hookExists(
         hooksDir: File,
         hookName: String,

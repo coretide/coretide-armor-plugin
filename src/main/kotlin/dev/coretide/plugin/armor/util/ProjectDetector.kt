@@ -49,8 +49,4 @@ object ProjectDetector {
     }
 
     fun detectMultiModule(project: Project): Boolean = project.subprojects.isNotEmpty()
-
-    fun needsCheckstyle(projectType: ProjectType): Boolean =
-        projectType in
-            listOf(ProjectType.JAVA_APPLICATION, ProjectType.JAVA_LIBRARY, ProjectType.MIXED_APPLICATION, ProjectType.MIXED_LIBRARY)
 }

@@ -58,6 +58,6 @@ class CodeArmorPlugin : Plugin<Project> {
         projectType: ProjectType,
     ) {
         ConfiguratorUtil.registerConfigurators(project, extension, projectType)
-        TaskCreator.createCustomTasks(project, extension, projectType)
+        TaskCreator.createCustomTasks(project, extension)
     }
 }

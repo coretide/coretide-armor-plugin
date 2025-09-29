@@ -11,26 +11,17 @@
 package dev.coretide.plugin.armor.task
 
 import dev.coretide.plugin.armor.CodeArmorExtension
-import dev.coretide.plugin.armor.ProjectType
 import dev.coretide.plugin.armor.util.LogUtil
-import dev.coretide.plugin.armor.util.ProjectDetector
 import org.gradle.api.Project
 
 object TaskCreator {
     fun createCustomTasks(
         project: Project,
         extension: CodeArmorExtension,
-        projectType: ProjectType,
     ) {
         createQuickBuildTask(project)
-        if (hasFormattingToolsEnabled(extension)) {
-            createFormatCodeTask(project, extension)
-        }
-        if (hasValidationToolsEnabled(extension, projectType)) {
-            createValidateCodeStyleTask(project, extension, projectType)
-        }
-        if (hasQualityToolsEnabled(extension, projectType)) {
-            createCodeQualityTask(project, extension, projectType)
+        if (hasQualityToolsEnabled(extension)) {
+            createCodeQualityTask(project, extension)
         }
         if (hasSecurityToolsEnabled(extension)) {
             createFullAnalysisTask(project, extension)
@@ -38,24 +29,10 @@ object TaskCreator {
         createLogExclusionInfoTask(project)
     }
 
-    private fun hasValidationToolsEnabled(
-        extension: CodeArmorExtension,
-        projectType: ProjectType,
-    ): Boolean =
-        extension.spotless ||
-            (extension.checkstyle && ProjectDetector.needsCheckstyle(projectType))
-
-    private fun hasQualityToolsEnabled(
-        extension: CodeArmorExtension,
-        projectType: ProjectType,
-    ): Boolean =
+    private fun hasQualityToolsEnabled(extension: CodeArmorExtension): Boolean =
         extension.jacoco ||
-            (extension.checkstyle && ProjectDetector.needsCheckstyle(projectType)) ||
             extension.spotbugs ||
-            extension.spotless ||
             extension.sonarqube
-
-    private fun hasFormattingToolsEnabled(extension: CodeArmorExtension): Boolean = extension.spotless
 
     private fun hasSecurityToolsEnabled(extension: CodeArmorExtension): Boolean = extension.owasp || extension.veracode
 
@@ -73,28 +50,6 @@ object TaskCreator {
         }
     }
 
-    private fun createFormatCodeTask(
-        project: Project,
-        extension: CodeArmorExtension,
-    ) {
-        project.tasks.register("formatCode") { task ->
-            task.group = "formatting"
-            task.description = "⚡ Quick code formatting (development workflow)"
-            val dependencies = mutableListOf<String>()
-            if (extension.spotless) dependencies.add("spotlessApply")
-            if (dependencies.isNotEmpty()) {
-                task.dependsOn(*dependencies.toTypedArray())
-            }
-            task.doLast {
-                LogUtil.verbose("✅ Code formatting completed successfully")
-                if (extension.spotless) {
-                    val formatter = extension.kotlinFormatter.name.lowercase()
-                    LogUtil.verbose("🎨 Spotless formatting applied using $formatter")
-                }
-            }
-        }
-    }
-
     private fun createLogExclusionInfoTask(project: Project) {
         project.tasks.register("logExclusionInfo", LogExclusionInfoTask::class.java) { task ->
             task.group = "verification"
@@ -102,51 +57,15 @@ object TaskCreator {
         }
     }
 
-    private fun createValidateCodeStyleTask(
-        project: Project,
-        extension: CodeArmorExtension,
-        projectType: ProjectType,
-    ) {
-        project.tasks.register("validateCodeStyle") { task ->
-            task.group = "verification"
-            task.description = "🔍 Quick validation (Checkstyle for Java, Spotless for Kotlin/Java)"
-            val dependencies = mutableListOf<String>()
-            if (extension.checkstyle && ProjectDetector.needsCheckstyle(projectType)) {
-                dependencies.addAll(listOf("checkstyleMain", "checkstyleTest"))
-            }
-            if (extension.spotless) {
-                dependencies.add("spotlessCheck")
-            }
-            if (dependencies.isNotEmpty()) {
-                task.dependsOn(*dependencies.toTypedArray())
-            }
-            task.doLast {
-                LogUtil.verbose("✅ Code validation completed")
-                if (extension.checkstyle && ProjectDetector.needsCheckstyle(projectType)) {
-                    LogUtil.verbose("📊 Checkstyle validation: Java code checked")
-                }
-                if (extension.spotless) {
-                    LogUtil.verbose("🎨 Spotless validation: All code formatting checked")
-                }
-                LogUtil.verbose("🚀 Ready for commit!")
-            }
-        }
-    }
-
     private fun createCodeQualityTask(
         project: Project,
         extension: CodeArmorExtension,
-        projectType: ProjectType,
     ) {
         project.tasks.register("codeQuality") { task ->
             task.group = "verification"
             task.description = "🔍 All code quality checks"
             val projectName = project.name
             val dependencies = mutableListOf<String>()
-            if (extension.checkstyle && ProjectDetector.needsCheckstyle(projectType)) {
-                dependencies.addAll(listOf("checkstyleMain", "checkstyleTest"))
-            }
-            if (extension.spotless) dependencies.add("spotlessCheck")
             if (extension.spotbugs) dependencies.add("spotbugsMain")
             if (extension.jacoco) {
                 dependencies.addAll(listOf("jacocoTestReport", "jacocoTestCoverageVerification"))
@@ -162,9 +81,6 @@ object TaskCreator {
                 }
                 if (extension.spotbugs) {
                     LogUtil.verbose("📊 SpotBugs report: build/reports/spotbugs/main.html")
-                }
-                if (extension.checkstyle && ProjectDetector.needsCheckstyle(projectType)) {
-                    LogUtil.verbose("📊 Checkstyle report: build/reports/checkstyle/main.html")
                 }
                 if (extension.sonarqube) {
                     LogUtil.verbose("🔍 SonarQube analysis uploaded")

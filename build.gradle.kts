@@ -8,12 +8,12 @@ import java.io.File
 import javax.inject.Inject
 
 plugins {
-    kotlin("jvm") version "1.9.25"
+    kotlin("jvm") version "2.2.0"
     `java-gradle-plugin`
     `maven-publish`
     signing
-    id("org.jreleaser") version "1.18.0"
-    id("com.gradle.plugin-publish") version "1.3.1"
+    id("org.jreleaser") version "1.20.0"
+    id("com.gradle.plugin-publish") version "2.0.0"
 }
 
 group = "dev.coretide.plugin"
@@ -103,11 +103,9 @@ repositories {
 dependencies {
     implementation(gradleApi())
     implementation(gradleKotlinDsl())
-    implementation("com.github.spotbugs.snom:spotbugs-gradle-plugin:6.2.2")
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:7.1.0")
-    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:6.2.0.5505")
+    implementation("com.github.spotbugs.snom:spotbugs-gradle-plugin:6.4.2")
+    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:6.3.1.5724")
     implementation("org.owasp:dependency-check-gradle:12.1.3")
-    implementation("org.jlleitschuh.gradle:ktlint-gradle:12.1.1")
     testImplementation(kotlin("test"))
 }
 
@@ -116,7 +114,7 @@ gradlePlugin {
     vcsUrl = "https://github.com/coretide/coretide-armor-plugin"
 
     plugins {
-        create("codeArmor") {
+        register("codeArmor") {
             id = "dev.coretide.plugin.armor"
             implementationClass = "dev.coretide.plugin.armor.CodeArmorPlugin"
             displayName = "CodeArmor Plugin"
@@ -265,7 +263,7 @@ jreleaser {
     deploy {
         maven {
             mavenCentral {
-                create("sonatype") {
+                register("sonatype") {
                     active.set(org.jreleaser.model.Active.RELEASE)
                     url.set("https://central.sonatype.com/api/v1/publisher")
                     connectTimeout.set(60)
