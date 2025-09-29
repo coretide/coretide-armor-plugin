@@ -11,7 +11,7 @@
 package dev.coretide.plugin.armor.config
 
 open class SpotBugsConfig {
-    var toolVersion: String = "4.8.6"
+    var toolVersion: String = "4.9.5"
     var effort: String = "MAX"
     var reportLevel: String = "HIGH"
     var ignoreFailures: Boolean = false
