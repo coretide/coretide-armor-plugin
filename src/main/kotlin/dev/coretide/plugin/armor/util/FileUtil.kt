@@ -10,20 +10,22 @@
 
 package dev.coretide.plugin.armor.util
 
-import org.gradle.api.Project
 import java.io.File
 
+/**
+ * Default content for the config files armor manages, plus scaffolding helpers.
+ *
+ * Content and writing are deliberately separate: the configurators wire the *content* into a
+ * generator task whose output lives under `build/`, because writing into the project tree during
+ * configuration invalidates Gradle's configuration cache on the following run. Writing into
+ * `config/` is now an explicit opt-in via the `armorScaffoldConfigs` task.
+ */
 object FileUtil {
-    fun createDefaultSpotbugsExclude(
-        project: Project,
-        excludeFile: File? = null,
-    ): File {
-        val configDir = project.file("config/spotbugs")
-        configDir.mkdirs()
-        val file = excludeFile ?: configDir.resolve("spotbugs-exclude.xml")
-        if (!file.exists()) {
-            file.writeText(
-                """
+    const val SPOTBUGS_EXCLUDE_FILENAME = "spotbugs-exclude.xml"
+    const val OWASP_SUPPRESSION_FILENAME = "suppressions.xml"
+
+    fun defaultSpotbugsExcludeContent(): String =
+        """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <FindBugsFilter>
                     <!-- 
@@ -99,23 +101,10 @@ object FileUtil {
                         <Class name="~.*\.dto\..*"/>
                     </Match>
                 </FindBugsFilter>
-                """.trimIndent(),
-            )
-            LogUtil.verbose("📝 Created default SpotBugs exclude file: ${file.absolutePath}")
-        }
-        return file
-    }
+        """.trimIndent()
 
-    fun createDefaultOwaspSuppression(
-        project: Project,
-        suppressionFile: File? = null,
-    ): File {
-        val configDir = project.file("config/owasp")
-        configDir.mkdirs()
-        val file = suppressionFile ?: configDir.resolve("suppressions.xml")
-        if (!file.exists()) {
-            file.writeText(
-                """
+    fun defaultOwaspSuppressionContent(): String =
+        """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
                     <!-- 
@@ -158,10 +147,23 @@ object FileUtil {
                         <packageUrl regex="true">^pkg:maven/org\.mockito/.*$</packageUrl>
                     </suppress>
                 </suppressions>
-                """.trimIndent(),
-            )
-            LogUtil.verbose("📝 Created default OWASP suppression file: ${file.absolutePath}")
+        """.trimIndent()
+
+    /**
+     * Writes [content] to [file] only when it is absent, creating parent directories.
+     * Returns true when a file was actually written.
+     *
+     * Only ever called from task execution (`armorScaffoldConfigs`) — never at configuration time.
+     */
+    fun scaffoldIfAbsent(
+        file: File,
+        content: String,
+    ): Boolean {
+        if (file.exists()) {
+            return false
         }
-        return file
+        file.parentFile?.mkdirs()
+        file.writeText(content)
+        return true
     }
 }

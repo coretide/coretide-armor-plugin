@@ -26,7 +26,14 @@ object TaskCreator {
         if (hasSecurityToolsEnabled(extension)) {
             createFullAnalysisTask(project, extension)
         }
-        createLogExclusionInfoTask(project)
+        createLogExclusionInfoTask(project, extension)
+        createScaffoldConfigsTask(project)
+    }
+
+    private fun createScaffoldConfigsTask(project: Project) {
+        project.tasks.register("armorScaffoldConfigs", ScaffoldConfigsTask::class.java) { task ->
+            task.configDirectory.set(project.layout.projectDirectory.dir("config"))
+        }
     }
 
     private fun hasQualityToolsEnabled(extension: CodeArmorExtension): Boolean =
@@ -50,10 +57,14 @@ object TaskCreator {
         }
     }
 
-    private fun createLogExclusionInfoTask(project: Project) {
+    private fun createLogExclusionInfoTask(
+        project: Project,
+        extension: CodeArmorExtension,
+    ) {
         project.tasks.register("logExclusionInfo", LogExclusionInfoTask::class.java) { task ->
             task.group = "verification"
             task.description = "📋 Log coverage exclusion information for debugging"
+            task.reportLines.set(LogExclusionInfoTask.renderReport(extension))
         }
     }
 

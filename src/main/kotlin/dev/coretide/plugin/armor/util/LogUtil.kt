@@ -14,18 +14,27 @@ import dev.coretide.plugin.armor.CodeArmorExtension
 import dev.coretide.plugin.armor.enumeration.ArmorLogLevel
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.logging.Logger
+import org.gradle.api.logging.Logging
 
 object LogUtil {
+    /**
+     * Log level is shared static state, so in a multi-module build the last project to configure
+     * wins. That is acceptable for armor's own status output, but note it is not per-project.
+     *
+     * Deliberately a static Gradle logger rather than a retained `Project.logger`: the Gradle
+     * daemon keeps this object alive between builds, so holding a Project's logger both leaks the
+     * build's object graph and risks logging into an already-finished build.
+     */
+    @Volatile
     private var currentLogLevel: ArmorLogLevel = ArmorLogLevel.VERBOSE
-    private var projectLogger: Logger? = null
+
+    private val logger = Logging.getLogger("CodeArmor")
 
     fun initialize(
-        project: Project,
+        @Suppress("UNUSED_PARAMETER") project: Project,
         extension: CodeArmorExtension,
     ) {
-        currentLogLevel = extension.logLevel // Assuming you'll add this to your extension
-        projectLogger = project.logger
+        currentLogLevel = extension.logLevel
     }
 
     fun verbose(message: String) {
@@ -71,6 +80,6 @@ object LogUtil {
     }
 
     private fun log(message: String) {
-        projectLogger?.lifecycle(message) ?: println(message)
+        logger.lifecycle(message)
     }
 }

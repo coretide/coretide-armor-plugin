@@ -30,7 +30,7 @@ object JacocoConfigurator {
     ) {
         project.pluginManager.apply("jacoco")
         project.configure<JacocoPluginExtension> {
-            toolVersion = "0.8.12"
+            toolVersion = "0.8.15"
         }
         project.afterEvaluate {
             project.tasks.withType<Test>().configureEach { testTask ->

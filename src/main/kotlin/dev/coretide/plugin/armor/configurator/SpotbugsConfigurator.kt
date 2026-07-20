@@ -16,9 +16,12 @@ import com.github.spotbugs.snom.SpotBugsExtension
 import com.github.spotbugs.snom.SpotBugsTask
 import dev.coretide.plugin.armor.CodeArmorExtension
 import dev.coretide.plugin.armor.config.SpotBugsConfig
+import dev.coretide.plugin.armor.task.GenerateConfigFileTask
 import dev.coretide.plugin.armor.util.FileUtil
 import dev.coretide.plugin.armor.util.LogUtil
 import org.gradle.api.Project
+import org.gradle.api.file.RegularFile
+import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.configure
 
 object SpotbugsConfigurator {
@@ -37,7 +40,7 @@ object SpotbugsConfigurator {
             showProgress.set(config.showProgress)
             effort.set(Effort.valueOf(config.effort))
             reportLevel.set(Confidence.valueOf(config.reportLevel))
-            resolveExcludeFile(project, config).let { excludeFilter.set(it) }
+            excludeFilter.set(resolveExcludeFile(project, config))
             config.includeFile?.let { includeFilePath ->
                 val includeFileObj = project.file(includeFilePath)
                 if (includeFileObj.exists()) {
@@ -71,17 +74,38 @@ object SpotbugsConfigurator {
         LogUtil.verbose("✅ SpotBugs configured with version ${config.toolVersion}")
     }
 
+    /**
+     * A user-supplied exclude file wins; otherwise armor generates its default under `build/`.
+     *
+     * Generation is a task rather than a configuration-time write: writing into the project tree
+     * while configuring invalidates the configuration cache on the next run.
+     */
     private fun resolveExcludeFile(
         project: Project,
         config: SpotBugsConfig,
-    ) = config.excludeFile?.let { excludeFilePath ->
-        val excludeFileObj = project.file(excludeFilePath)
-        if (excludeFileObj.exists()) {
-            excludeFileObj
-        } else {
-            FileUtil.createDefaultSpotbugsExclude(project, excludeFileObj)
+    ): Provider<RegularFile> {
+        config.excludeFile?.let { excludeFilePath ->
+            val excludeFileObj = project.file(excludeFilePath)
+            if (excludeFileObj.exists()) {
+                return project.layout.file(project.provider { excludeFileObj })
+            }
+            LogUtil.essential("⚠️ SpotBugs exclude file not found, using armor default: $excludeFilePath")
         }
-    } ?: FileUtil.createDefaultSpotbugsExclude(project)
+
+        val generator =
+            project.tasks.register(
+                "generateSpotbugsExcludeFile",
+                GenerateConfigFileTask::class.java,
+            ) { task ->
+                task.description = "Generates the default SpotBugs exclude filter"
+                task.content.set(FileUtil.defaultSpotbugsExcludeContent())
+                task.outputFile.set(
+                    project.layout.buildDirectory.file("codearmor/${FileUtil.SPOTBUGS_EXCLUDE_FILENAME}"),
+                )
+            }
+
+        return generator.flatMap { it.outputFile }
+    }
 
     private fun configureSpotBugsTask(
         task: SpotBugsTask,

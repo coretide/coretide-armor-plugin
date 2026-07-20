@@ -39,7 +39,7 @@ open class CodeArmorExtension {
     var sonarProjectName: String? = ""
     var sonarToken: String? = ""
     var sonarQualityGateWait: Boolean = false
-    var sonarJavaVersion: String = "11"
+    var sonarJavaVersion: String = "21"
     var enableGitHooks: Boolean = true
     var prePushEnabled: Boolean = true
     var enableVersionFromGit: Boolean = true

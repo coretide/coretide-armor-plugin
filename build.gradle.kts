@@ -8,12 +8,12 @@ import java.io.File
 import javax.inject.Inject
 
 plugins {
-    kotlin("jvm") version "2.2.0"
+    kotlin("jvm") version "2.2.21"
     `java-gradle-plugin`
     `maven-publish`
     signing
-    id("org.jreleaser") version "1.20.0"
-    id("com.gradle.plugin-publish") version "2.0.0"
+    id("org.jreleaser") version "1.25.0"
+    id("com.gradle.plugin-publish") version "2.1.1"
 }
 
 group = "dev.coretide.plugin"
@@ -89,7 +89,7 @@ version = gitVersionProvider.get()
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(11)
+        languageVersion = JavaLanguageVersion.of(21)
     }
     withSourcesJar()
     withJavadocJar()
@@ -103,10 +103,12 @@ repositories {
 dependencies {
     implementation(gradleApi())
     implementation(gradleKotlinDsl())
-    implementation("com.github.spotbugs.snom:spotbugs-gradle-plugin:6.4.2")
-    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:6.3.1.5724")
-    implementation("org.owasp:dependency-check-gradle:12.1.3")
+    implementation("com.github.spotbugs.snom:spotbugs-gradle-plugin:6.5.9")
+    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:7.3.1.8318")
+    implementation("org.owasp:dependency-check-gradle:12.2.2")
     testImplementation(kotlin("test"))
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 gradlePlugin {
@@ -306,7 +308,7 @@ tasks.test {
 }
 
 kotlin {
-    jvmToolchain(11)
+    jvmToolchain(21)
 }
 
 tasks.configureEach {

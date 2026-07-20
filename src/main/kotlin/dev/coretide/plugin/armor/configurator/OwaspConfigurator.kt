@@ -11,9 +11,11 @@
 package dev.coretide.plugin.armor.configurator
 
 import dev.coretide.plugin.armor.CodeArmorExtension
+import dev.coretide.plugin.armor.task.GenerateConfigFileTask
 import dev.coretide.plugin.armor.util.FileUtil
 import dev.coretide.plugin.armor.util.LogUtil
 import org.gradle.api.Project
+import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.configure
 import org.owasp.dependencycheck.gradle.extension.DependencyCheckExtension
 
@@ -24,24 +26,20 @@ object OwaspConfigurator {
     ) {
         project.pluginManager.apply("org.owasp.dependencycheck")
         project.configure<DependencyCheckExtension> {
-            skipProjects = listOf("*")
-            failBuildOnCVSS = extension.owaspFailBuildOnCVSS.toFloat()
-            formats = listOf("HTML", "XML", "JSON")
-            outputDirectory = project.file("build/reports/dependency-check").absolutePath
-            autoUpdate = extension.owaspAutoUpdate
+            // dependency-check 12.2.x exposes lazy Gradle properties; plugin source must call
+            // set() explicitly (the `=` form is a Kotlin DSL script-only convenience).
+            skipProjects.set(listOf("*"))
+            failBuildOnCVSS.set(extension.owaspFailBuildOnCVSS.toFloat())
+            formats.set(listOf("HTML", "XML", "JSON"))
+            outputDirectory.set(project.layout.buildDirectory.dir("reports/dependency-check"))
+            autoUpdate.set(extension.owaspAutoUpdate)
             configureNvdApiSettings(project, extension)
-            extension.owaspSuppressionFile?.let { suppressionFile ->
-                val suppressionFileObj = project.file(suppressionFile)
-                if (suppressionFileObj.exists()) {
-                    this.suppressionFile = suppressionFileObj.absolutePath
-                } else {
-                    FileUtil.createDefaultOwaspSuppression(project, suppressionFileObj)
-                    this.suppressionFile = suppressionFileObj.absolutePath
-                }
-            } ?: run {
-                val defaultSuppressionFile = FileUtil.createDefaultOwaspSuppression(project)
-                this.suppressionFile = defaultSuppressionFile.absolutePath
-            }
+            this.suppressionFile.set(resolveSuppressionFile(project, extension))
+            // These System properties are set during *configuration*. That is only safe because
+            // dependencyCheckAnalyze is marked notCompatibleWithConfigurationCache (see
+            // ConfigurationCacheUtil), which forces a full configuration whenever it runs. If that
+            // opt-out is ever removed, a configuration-cache hit would skip these and the scan
+            // would silently run without the NVD API key and with the disabled analyzers re-enabled.
             System.setProperty("dependencycheck.autoUpdate", extension.owaspAutoUpdate.toString())
             System.setProperty("dependencycheck.failBuildOnCVSS", extension.owaspFailBuildOnCVSS.toString())
             System.setProperty("dependencycheck.formats", "HTML,XML,JSON")
@@ -67,6 +65,40 @@ object OwaspConfigurator {
                 LogUtil.verbose("📊 Reports available at: build/reports/dependency-check/")
             }
         }
+    }
+
+    /**
+     * A user-supplied suppression file wins; otherwise armor generates its default under `build/`.
+     * See [SpotbugsConfigurator] for why this is a task rather than a configuration-time write.
+     *
+     * dependency-check takes the path as a String, so the provider is mapped to an absolute path;
+     * the task dependency is still carried by the provider.
+     */
+    private fun resolveSuppressionFile(
+        project: Project,
+        extension: CodeArmorExtension,
+    ): Provider<String> {
+        extension.owaspSuppressionFile?.let { configuredPath ->
+            val suppressionFileObj = project.file(configuredPath)
+            if (suppressionFileObj.exists()) {
+                return project.provider { suppressionFileObj.absolutePath }
+            }
+            LogUtil.essential("⚠️ OWASP suppression file not found, using armor default: $configuredPath")
+        }
+
+        val generator =
+            project.tasks.register(
+                "generateOwaspSuppressionFile",
+                GenerateConfigFileTask::class.java,
+            ) { task ->
+                task.description = "Generates the default OWASP dependency-check suppression file"
+                task.content.set(FileUtil.defaultOwaspSuppressionContent())
+                task.outputFile.set(
+                    project.layout.buildDirectory.file("codearmor/${FileUtil.OWASP_SUPPRESSION_FILENAME}"),
+                )
+            }
+
+        return generator.flatMap { it.outputFile }.map { it.asFile.absolutePath }
     }
 
     private fun configureNvdApiSettings(

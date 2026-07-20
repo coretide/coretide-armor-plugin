@@ -30,7 +30,9 @@ abstract class GitValueSource : ValueSource<String, GitValueSource.Parameters> {
     abstract val execOperations: ExecOperations
 
     override fun obtain(): String =
-        when (parameters.operation.get()) {
+        // getOrNull(), not get(): keeps the defensive `null` branch reachable when the
+        // parameter was never configured, instead of throwing.
+        when (parameters.operation.getOrNull()) {
             GitOperation.VERSION -> obtainVersion()
             GitOperation.COMMIT_HASH -> obtainCommitHash()
             null -> "unknown"

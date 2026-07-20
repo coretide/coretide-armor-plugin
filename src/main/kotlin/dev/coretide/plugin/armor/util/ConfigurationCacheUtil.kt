@@ -14,18 +14,17 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 
 object ConfigurationCacheUtil {
+    /**
+     * Marks a third-party task as configuration-cache incompatible.
+     *
+     * Note this disables the configuration cache for any invocation whose task graph includes it —
+     * that is Gradle's behaviour for this API, not something armor can narrow.
+     */
     fun configureTaskForConfigurationCache(
         task: Task,
         reason: String,
     ) {
         task.notCompatibleWithConfigurationCache(reason)
-        task.doFirst {
-            suppressConfigurationCacheWarnings()
-        }
-        task.doLast {
-            restoreConfigurationCacheWarnings()
-            LogUtil.verbose("💡 Task completed - any configuration cache warnings are from third-party plugins")
-        }
     }
 
     fun optimizeThirdPartyPlugins(project: Project) {
@@ -39,29 +38,5 @@ object ConfigurationCacheUtil {
         project.tasks.matching { it.name.contains("veracode") }.configureEach { task ->
             configureTaskForConfigurationCache(task, "Veracode uses runtime project access")
         }
-        project.gradle.projectsEvaluated {
-            if (hasConfigurationCacheIndicators()) {
-                LogUtil.verbose("📋 Configuration cache optimizations applied")
-                LogUtil.verbose("💡 Any remaining warnings are from third-party plugins, not your code")
-            }
-        }
-    }
-
-    private fun hasConfigurationCacheIndicators(): Boolean =
-        System.getProperty("org.gradle.configuration-cache") != null ||
-            System.getProperty("org.gradle.unsafe.configuration-cache") != null ||
-            System.getProperty("org.gradle.configuration-cache.problems") != null ||
-            System.getenv("GRADLE_OPTS")?.contains("configuration-cache") == true
-
-    private fun suppressConfigurationCacheWarnings() {
-        System.setProperty("org.gradle.configuration-cache.problems", "warn")
-        System.setProperty("org.gradle.deprecation.trace", "false")
-        System.setProperty("org.gradle.internal.problems.report.enabled", "false")
-    }
-
-    private fun restoreConfigurationCacheWarnings() {
-        System.clearProperty("org.gradle.configuration-cache.problems")
-        System.clearProperty("org.gradle.deprecation.trace")
-        System.clearProperty("org.gradle.internal.problems.report.enabled")
     }
 }
