@@ -1,6 +1,7 @@
 # Builds the plugin, runs the TestKit suite and validates the plugin metadata on
-# every pull request and on every push to main. Releases are handled separately
-# by tag-validation.yml and publish.yml.
+# every pull request and on every push to main, and checks that the plugin still
+# loads in a Gradle build running on JDK 17. Releases are handled separately by
+# tag-validation.yml and publish.yml.
 name: ci
 
 on:
@@ -50,3 +51,44 @@ jobs:
           name: test-reports
           path: build/reports/tests/
           retention-days: 7
+
+  # The plugin is built with JDK 21 but compiled for Java 17. Prove that the
+  # oldest supported setup, Gradle 9.0 running on JDK 17, can resolve it from a
+  # repository and apply it. That also checks the Java version the published
+  # metadata advertises. The build job already covers the wrapper's Gradle on JDK 21.
+  jdk17-consumer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The last version listed becomes the default JAVA_HOME; both are exported
+      # as JAVA_HOME_<version>_X64.
+      - name: Set up JDK 17 and 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+
+      # The wrapper still builds and publishes the plugin; `gradle` on the PATH is
+      # the oldest supported version, used for the consumer build.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.0.0'
+
+      - name: Publish the plugin to Maven local
+        run: ./gradlew publishToMavenLocal --stacktrace
+
+      - name: Apply it in a Gradle 9.0 build running on JDK 17
+        run: |
+          version="$(./gradlew -q properties | sed -n 's/^version: //p')"
+          gradle -p compat/jdk17-consumer \
+            -Dorg.gradle.java.home="$JAVA_HOME_17_X64" \
+            -ParmorVersion="$version" \
+            verifyJdk17 logExclusionInfo --stacktrace

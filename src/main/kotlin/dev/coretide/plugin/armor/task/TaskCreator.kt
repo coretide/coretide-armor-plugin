@@ -114,23 +114,26 @@ object TaskCreator {
                 dependencies.add("codeQuality")
             }
             if (extension.owasp) dependencies.add("dependencyCheckAnalyze")
-
-            if (extension.veracode && hasVeracodeCredentials()) {
-                dependencies.add("veracodeUpload")
-            }
             if (dependencies.isNotEmpty()) {
                 task.dependsOn(*dependencies.toTypedArray())
             }
+            if (extension.veracode && hasVeracodeCredentials()) {
+                // CodeArmor does not create veracodeUpload; a separately applied Veracode plugin
+                // does. Matched by name, lazily, so fullAnalysis still runs when no such plugin
+                // is applied and no other task gets created just to be checked.
+                task.dependsOn(project.tasks.named { name -> name == "veracodeUpload" })
+            }
+            val veracodeUploadPresent = "veracodeUpload" in project.tasks.names
             task.doLast {
                 LogUtil.verbose("✅ Full analysis completed for $projectName")
                 if (extension.owasp) {
                     LogUtil.verbose("📊 OWASP report: build/reports/dependency-check/dependency-check-report.html")
                 }
                 if (extension.veracode) {
-                    if (hasVeracodeCredentials()) {
-                        LogUtil.verbose("🔍 Veracode scan uploaded")
-                    } else {
-                        LogUtil.verbose("⚠️  Veracode credentials not found - scan skipped")
+                    when {
+                        !hasVeracodeCredentials() -> LogUtil.verbose("⚠️  Veracode credentials not found - scan skipped")
+                        !veracodeUploadPresent -> LogUtil.verbose("⚠️  No veracodeUpload task - scan skipped")
+                        else -> LogUtil.verbose("🔍 Veracode scan uploaded")
                     }
                 }
                 LogUtil.verbose("🎯 Complete analysis pipeline finished!")

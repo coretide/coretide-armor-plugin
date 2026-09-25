@@ -166,6 +166,49 @@ class CodeArmorPluginFunctionalTest {
     }
 
     @Test
+    fun `enabling veracode without a Veracode plugin does not break fullAnalysis`(
+        @TempDir dir: File,
+    ) {
+        ArmorTestFixture.writeProject(dir, armorConfig = "    veracode = true")
+
+        // Credentials present is the case that used to fail: fullAnalysis then depended on a
+        // veracodeUpload task that nothing had created.
+        val result =
+            ArmorTestFixture.runWithEnvironment(
+                dir,
+                "fullAnalysis",
+                "--dry-run",
+                set = mapOf("VERACODE_USERNAME" to "user", "VERACODE_PASSWORD" to "secret"),
+            )
+
+        assertContains(result.output, "no veracodeUpload task exists")
+        assertContains(result.output, "BUILD SUCCESSFUL")
+    }
+
+    @Test
+    fun `fullAnalysis runs veracodeUpload when a Veracode plugin provides it`(
+        @TempDir dir: File,
+    ) {
+        ArmorTestFixture.writeProject(
+            dir,
+            armorConfig = "    veracode = true",
+            // Stands in for the task a real Veracode Gradle plugin would register.
+            extraScript = """tasks.register("veracodeUpload")""",
+        )
+
+        val result =
+            ArmorTestFixture.runWithEnvironment(
+                dir,
+                "fullAnalysis",
+                "--dry-run",
+                set = mapOf("VERACODE_USERNAME" to "user", "VERACODE_PASSWORD" to "secret"),
+            )
+
+        assertContains(result.output.lines(), ":veracodeUpload SKIPPED")
+        assertFalse(result.output.contains("no veracodeUpload task exists"))
+    }
+
+    @Test
     fun `quickBuild compiles and tests without running quality checks`(
         @TempDir dir: File,
     ) {

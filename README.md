@@ -4,7 +4,7 @@
 [![Latest Release](https://img.shields.io/github/v/release/coretide/coretide-armor-plugin?include_prereleases&style=flat-square&logo=github)](https://github.com/coretide/coretide-armor-plugin/releases)
 [![Version](https://img.shields.io/badge/version-0.1.4--alpha-blue?style=flat-square)](https://github.com/coretide/coretide-armor-plugin)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
-[![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/dev.coretide.armor?style=flat-square&logo=gradle)](https://plugins.gradle.org/plugin/dev.coretide.armor)
+[![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/dev.coretide.plugin.armor?style=flat-square&logo=gradle)](https://plugins.gradle.org/plugin/dev.coretide.plugin.armor)
 [![Maven Central](https://img.shields.io/maven-central/v/dev.coretide.plugin/code-armor-plugin?style=flat-square&logo=apache-maven)](https://central.sonatype.com/artifact/dev.coretide.plugin/code-armor-plugin)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/coretide/coretide-armor-plugin/ci.yml?style=flat-square&logo=github-actions)](https://github.com/coretide/coretide-armor-plugin/actions)
 
@@ -84,12 +84,17 @@ Starting with version 0.1.4-alpha, CodeArmor no longer includes Spotless or Chec
 
 ## 🚀 Quick Start
 
+### Requirements
+
+- **Gradle 9.0** or newer
+- **JDK 17** or newer to run Gradle
+
 ### Installation
 
 Add the plugin to your `build.gradle.kts`:
 ```kotlin
 plugins {
-  id("dev.coretide.armor") version "0.1.4-alpha"
+  id("dev.coretide.plugin.armor") version "0.1.4-alpha"
 }
 ```
 
@@ -105,9 +110,11 @@ The plugin works out of the box with zero configuration:
 
 For custom configuration:
 ```kotlin
+import dev.coretide.plugin.armor.ProjectType
+
 codeArmor {
     // Project configuration
-    autoDetect = true
+    autoDetect = false                        // projectType is only used when autoDetect = false
     projectType = ProjectType.KOTLIN_APPLICATION
     isMultiModule = false
     
@@ -263,10 +270,15 @@ codeArmor {
     spotbugs {
         effort = "MAX"                        // MIN, DEFAULT, MAX
         reportLevel = "HIGH"                  // LOW, MEDIUM, HIGH
-        excludeFile = "config/spotbugs/exclude.xml"
+        excludeFile = "config/spotbugs/spotbugs-exclude.xml"
     }
 }
 ```
+
+Without `excludeFile`, CodeArmor generates a default filter under `build/codearmor/`. To start from
+that default and customize it, run `./gradlew armorScaffoldConfigs`: it writes
+`config/spotbugs/spotbugs-exclude.xml` and `config/owasp/suppressions.xml` (never overwriting existing
+files), which you then point `excludeFile` and `owaspSuppressionFile` at.
 
 
 #### OWASP Dependency Check
@@ -293,13 +305,13 @@ codeArmor {
     sonarProjectName = "My Project"
     sonarToken = "your-sonar-token"
     sonarQualityGateWait = false             // Wait for quality gate result
-    sonarJavaVersion = "11"
+    sonarJavaVersion = "21"
 }
 ```
 
 
 #### Veracode (In Development)
-> ⚠️ **Note:** Veracode integration is not yet fully implemented. Functionality will be available in a future release once official API/community access is granted.
+> ⚠️ **Note:** Veracode integration is not yet fully implemented. CodeArmor does not create the `veracodeUpload` task itself: `fullAnalysis` runs it only when a separately applied Veracode Gradle plugin provides it and `VERACODE_USERNAME`/`VERACODE_PASSWORD` are set. Without such a plugin, CodeArmor logs a warning and skips the Veracode scan.
 ```kotlin
 codeArmor {
     veracode = true
@@ -312,6 +324,8 @@ codeArmor {
 CodeArmor provides configurable logging levels to control the verbosity of plugin output:
 
 ```kotlin
+import dev.coretide.plugin.armor.enumeration.ArmorLogLevel
+
 codeArmor {
     logLevel = ArmorLogLevel.ESSENTIAL        // VERBOSE, ESSENTIAL, STEALTH
 }
@@ -329,7 +343,6 @@ codeArmor {
 ```kotlin
 codeArmor {
     enableGitHooks = true
-    preCommitEnabled = true                   // Run tests before commit
     prePushEnabled = true                     // Run tests + fullAnalysis before push
 }
 ```
@@ -423,8 +436,8 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ### Development Setup
 1. Clone the repository
-2. Run `./gradlew build` to build the plugin
-3. Run `./gradlew publishToMavenLocal` to publish locally
+2. Run `./gradlew build` to build the plugin (building needs JDK 21; the plugin itself runs on JDK 17+)
+3. Run `./gradlew publishToMavenLocal` to publish locally (no GPG key needed; only releases are signed)
 4. Test in a sample project
 
 ### Reporting Issues

@@ -16,11 +16,17 @@ import org.gradle.api.Project
 object VeracodeConfigurator {
     fun configureVeracode(project: Project) {
         project.afterEvaluate {
-            project.tasks.findByName("veracodeUpload")?.let { task ->
-                task.group = "verification"
-                task.doLast {
-                    LogUtil.verbose("✅ Veracode upload completed")
-                }
+            val upload = project.tasks.findByName("veracodeUpload")
+            if (upload == null) {
+                LogUtil.essential(
+                    "⚠️ CodeArmor: veracode = true, but no veracodeUpload task exists. " +
+                        "Apply a Veracode Gradle plugin; until then fullAnalysis skips the Veracode scan.",
+                )
+                return@afterEvaluate
+            }
+            upload.group = "verification"
+            upload.doLast {
+                LogUtil.verbose("✅ Veracode upload completed")
             }
         }
     }

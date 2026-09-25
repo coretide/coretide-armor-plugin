@@ -33,6 +33,7 @@ object ArmorTestFixture {
         armorConfig: String = "",
         extraPlugins: List<String> = emptyList(),
         withSource: Boolean = true,
+        extraScript: String = "",
     ) {
         dir.mkdirs()
         writeSettings(dir, "armor-fixture")
@@ -60,6 +61,8 @@ object ArmorTestFixture {
                 enableVersionFromGit = false
             $armorConfig
             }
+
+            $extraScript
             """.trimIndent(),
         )
 
@@ -143,6 +146,55 @@ object ArmorTestFixture {
         dir: File,
         vararg args: String,
     ): BuildResult = runner(dir, *args).build()
+
+    /**
+     * Runs with this process's environment, minus [unset], plus [set]. TestKit replaces the whole
+     * environment when one is given, so the rest has to be passed through explicitly.
+     */
+    fun runWithEnvironment(
+        dir: File,
+        vararg args: String,
+        set: Map<String, String> = emptyMap(),
+        unset: Set<String> = emptySet(),
+    ): BuildResult =
+        runner(dir, *args)
+            .withEnvironment(System.getenv() - unset + set)
+            .build()
+
+    /**
+     * Makes [dir] a git repository with one commit, tagged [tag] if given. Signing is switched off
+     * so a developer's global git configuration cannot make the commit or tag prompt or fail.
+     */
+    fun initGitRepository(
+        dir: File,
+        tag: String? = null,
+    ) {
+        git(dir, "init", "--quiet")
+        git(dir, "add", "--all")
+        git(
+            dir,
+            "-c", "user.name=Armor Test",
+            "-c", "user.email=armor@example.test",
+            "-c", "commit.gpgsign=false",
+            "commit", "--quiet", "--message", "fixture",
+        )
+        if (tag != null) {
+            git(dir, "-c", "tag.gpgsign=false", "tag", tag)
+        }
+    }
+
+    private fun git(
+        dir: File,
+        vararg args: String,
+    ) {
+        val process =
+            ProcessBuilder(listOf("git") + args)
+                .directory(dir)
+                .redirectErrorStream(true)
+                .start()
+        val output = process.inputStream.bufferedReader().readText()
+        check(process.waitFor() == 0) { "git ${args.joinToString(" ")} failed:\n$output" }
+    }
 
     fun runAndFail(
         dir: File,

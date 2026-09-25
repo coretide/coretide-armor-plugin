@@ -30,9 +30,10 @@ This project adheres to a code of conduct that we expect all contributors to fol
 
 ### Prerequisites
 
-- **Java 11** or higher
-- **Gradle 7.0** or higher
+- **JDK 21** to build the plugin. The Gradle wrapper (`./gradlew`) provides Gradle itself.
 - **Git** for version control
+
+The plugin you build runs in projects on **Gradle 9.0+** with **JDK 17+**.
 - **IntelliJ IDEA** (recommended) or any IDE with Gradle support
 
 ### Development Setup
@@ -52,19 +53,25 @@ This project adheres to a code of conduct that we expect all contributors to fol
    # Run tests
    ./gradlew test
    
-   # Publish to local Maven repository for testing
+   # Publish to local Maven repository for testing (no GPG key needed; only releases are signed)
    ./gradlew publishToMavenLocal
    ```
 
 3. **Test the plugin in a sample project**
-   ```bash
-   # Create a test project
-   mkdir test-project
-   cd test-project
-   
-   # Add to build.gradle.kts
+
+   Resolve the plugin from Maven local in the sample project's `settings.gradle.kts`:
+   ```kotlin
+   pluginManagement {
+       repositories {
+           mavenLocal()
+           gradlePluginPortal()
+       }
+   }
+   ```
+   Then apply it in its `build.gradle.kts`, using the version `./gradlew properties` prints:
+   ```kotlin
    plugins {
-       id("dev.coretide.armor") version "0.1.0-alpha"
+       id("dev.coretide.plugin.armor") version "0.1.0-SNAPSHOT"
    }
    ```
 
@@ -108,8 +115,7 @@ We welcome feature suggestions! Please:
 
 3. **Test thoroughly**
    ```bash
-   ./gradlew test
-   ./gradlew integrationTest
+   ./gradlew build
    ```
 
 4. **Commit your changes**
@@ -128,7 +134,7 @@ We welcome feature suggestions! Please:
 
 - **Kotlin**: Follow [Kotlin coding conventions](https://kotlinlang.org/docs/coding-conventions.html)
 - **Java**: Follow [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
-- **Formatting**: Use the project's Spotless configuration (`./gradlew spotlessApply`)
+- **Formatting**: Use IntelliJ IDEA with the committed code style in `.idea/codeStyles/` (Ctrl+Alt+L / Cmd+Alt+L)
 
 ### Commit Messages
 
@@ -152,7 +158,7 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 **Examples:**
 ```bash
 feat(jacoco): add support for custom coverage exclusions
-fix(spotless): resolve configuration cache compatibility issue
+fix(sonarqube): resolve configuration cache compatibility issue
 docs(readme): update installation instructions
 ```
 
@@ -160,31 +166,36 @@ docs(readme): update installation instructions
 
 ```
 src/
-├── main/kotlin/dev/coretide/armor/
+├── main/kotlin/dev/coretide/plugin/armor/
 │   ├── CodeArmorPlugin.kt           # Main plugin class
 │   ├── CodeArmorExtension.kt        # Configuration DSL
 │   ├── ProjectType.kt               # Project type enum
-│   ├── configurators/               # Tool configuration
+│   ├── config/                      # Nested configuration (SpotBugsConfig)
+│   ├── configurator/                # Tool configuration
 │   │   ├── JacocoConfigurator.kt
-│   │   ├── SpotlessConfigurator.kt
+│   │   ├── SpotbugsConfigurator.kt
 │   │   └── ...
-│   ├── tasks/                       # Custom task creation
+│   ├── enumeration/                 # ArmorLogLevel
+│   ├── git/                         # Git hooks and git-derived versioning
+│   │   ├── GitHooksManager.kt
+│   │   ├── GitValueSource.kt
+│   │   └── VersionManager.kt
+│   ├── task/                        # Custom tasks and task creation
 │   │   ├── TaskCreator.kt
-│   │   └── MultiModuleTaskCreator.kt
-│   ├── utils/                       # Utility classes
-│   │   ├── ProjectDetector.kt
-│   │   ├── ConfigurationCacheUtils.kt
+│   │   ├── MultiModuleTaskCreator.kt
 │   │   └── ...
-│   └── git/                         # Git integration
-│       ├── GitHooksManager.kt
-│       └── VersionManager.kt
-└── test/                            # Test classes
+│   └── util/                        # Utility classes
+│       ├── ProjectDetector.kt
+│       ├── ConfigurationCacheUtil.kt
+│       └── ...
+└── test/kotlin/dev/coretide/plugin/armor/   # Gradle TestKit tests
+compat/jdk17-consumer/               # Consumer build CI runs on Gradle 9.0 + JDK 17
 ```
 
 
 ### Adding New Features
 
-1. **Create a configurator** for new tools in `configurators/`
+1. **Create a configurator** for new tools in `configurator/`
 2. **Update the extension** to include configuration options
 3. **Add project detection** logic if needed
 4. **Create custom tasks** if required
@@ -197,46 +208,44 @@ All new code must be compatible with Gradle's configuration cache:
 
 - Use `Provider<T>` for lazy evaluation
 - Avoid accessing `Project` at execution time
-- Use `ConfigurationCacheUtils.configureTaskForConfigurationCache()` for tasks that need project access
+- Use `ConfigurationCacheUtil.configureTaskForConfigurationCache()` for tasks that need project access
 
 ## 🧪 Testing
 
 ### Running Tests
 
 ```shell script
-# Unit tests
+# All tests, plus plugin validation
+./gradlew build
+
+# Tests only
 ./gradlew test
-
-# Integration tests
-./gradlew integrationTest
-
-# Test with configuration cache
-./gradlew test --configuration-cache
-
-# Test in different environments
-./gradlew test -PjavaVersion=11
-./gradlew test -PjavaVersion=17
 ```
 
+CI runs `./gradlew build` on every pull request, and also applies the published plugin in
+`compat/jdk17-consumer` using Gradle 9.0 on JDK 17, the oldest supported setup.
 
 ### Test Structure
 
-- **Unit tests**: Test individual components in isolation
-- **Integration tests**: Test plugin behavior in real projects
-- **Functional tests**: Test complete workflows
+Most tests are Gradle TestKit tests: they write a throwaway project to a temporary directory, apply
+the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
+
+- **Functional tests** (`CodeArmorPluginFunctionalTest`): tasks, detection, tool wiring
+- **Configuration cache tests** (`ConfigurationCacheTest`): a second run must reuse the cache
+- **Focused tests** (`GitVersionTest`, `BytecodeTargetTest`): a single behaviour each
 
 ### Writing Tests
 
 ```kotlin
 @Test
-fun `should detect Kotlin application project`() {
-    val project = ProjectBuilder.builder().build()
-    project.plugins.apply("org.jetbrains.kotlin.jvm")
-    project.plugins.apply("application")
-    
-    val result = ProjectDetector.detectProjectType(project)
-    
-    assertThat(result).isEqualTo(ProjectType.KOTLIN_APPLICATION)
+fun `logExclusionInfo reports default exclusions`(
+    @TempDir dir: File,
+) {
+    ArmorTestFixture.writeProject(dir)
+
+    val result = ArmorTestFixture.run(dir, "logExclusionInfo")
+
+    assertContains(result.output, "CodeArmor Exclusion Information")
 }
 ```
 
@@ -277,7 +286,7 @@ fun detectProjectType(project: Project): ProjectType
 
 3. **Create a descriptive PR title**
     ```
-    feat(spotless): add support for custom KtLint rules
+    feat(jacoco): add support for custom coverage exclusions
     ```
 
 4. **Fill out the PR template** with:

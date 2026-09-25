@@ -44,11 +44,11 @@ abstract class GitValueSource : ValueSource<String, GitValueSource.Parameters> {
 
         val tagRef = System.getenv("CI_COMMIT_TAG")
         if (tagRef?.startsWith("v") == true) {
-            return tagRef.replace("v", "")
+            return tagRef.removePrefix("v")
         }
         val githubRef = System.getenv("GITHUB_REF")
         if (githubRef?.startsWith("refs/tags/v") == true) {
-            return githubRef.replace("refs/tags/v", "")
+            return githubRef.removePrefix("refs/tags/v")
         }
 
         val gitDir = File(projectDir, ".git")
@@ -74,7 +74,7 @@ abstract class GitValueSource : ValueSource<String, GitValueSource.Parameters> {
             if (exactTagResult.exitValue == 0) {
                 val tag = exactTagOutput.toString().trim()
                 LogUtil.verbosePrint("   ✅ Found exact tag: $tag")
-                return if (tag.startsWith("v")) tag.replace("v", "") else tag
+                return tag.removePrefix("v")
             } else {
                 LogUtil.verbosePrint("   ℹ️ No exact tag found (normal if not on tagged commit)")
             }
@@ -90,7 +90,7 @@ abstract class GitValueSource : ValueSource<String, GitValueSource.Parameters> {
             LogUtil.verbosePrint("   Latest tag result: exit code ${latestTagResult.exitValue}")
             if (latestTagResult.exitValue == 0) {
                 val tag = latestOutput.toString().trim()
-                val version = if (tag.startsWith("v")) tag.replace("v", "") else tag
+                val version = tag.removePrefix("v")
                 LogUtil.verbosePrint("   ✅ Found latest tag: $tag, using: $version-SNAPSHOT")
                 "$version-SNAPSHOT"
             } else {
