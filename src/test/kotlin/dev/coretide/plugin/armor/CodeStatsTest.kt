@@ -324,29 +324,32 @@ class CodeStatsTest {
         val now = System.currentTimeMillis() / 1000
         machine.queue.resolve("pulse-$now-abc-1.ready.json").writeText("""{"coded_at":"2026-01-01T00:00:00+00:00","xps":[]}""")
         // A stand-in curl that records the request's headers and answers as Code::Stats does.
-        val bin = root.resolve("bin").apply { mkdirs() }
         val curlLog = root.resolve("curl.log")
-        bin.resolve("curl").apply {
-            writeText(
-                """
-                #!/bin/sh
-                previous=""
-                for argument in "${'$'}@"; do
-                  [ "${'$'}previous" = "--config" ] && cat "${'$'}argument" >> '${curlLog.invariantSeparatorsPath}'
-                  previous="${'$'}argument"
-                done
-                printf '201'
-                """.trimIndent() + "\n",
-            )
-            setExecutable(true, false)
-        }
-        val path = bin.absolutePath + File.pathSeparator + System.getenv("PATH")
+        val curl =
+            root.resolve("curl").apply {
+                writeText(
+                    """
+                    #!/bin/sh
+                    previous=""
+                    for argument in "${'$'}@"; do
+                      [ "${'$'}previous" = "--config" ] && cat "${'$'}argument" >> '${curlLog.invariantSeparatorsPath}'
+                      previous="${'$'}argument"
+                    done
+                    printf '201'
+                    """.trimIndent() + "\n",
+                )
+                setExecutable(true, false)
+            }
 
         val result =
             machine.run(
                 repo,
                 "armorCodeStatsFlush",
-                extra = mapOf("PATH" to path, "CODESTATS_ENDPOINT" to "https://codestats.invalid/api/my/pulses"),
+                extra =
+                    mapOf(
+                        "CODESTATS_CURL" to curl.invariantSeparatorsPath,
+                        "CODESTATS_ENDPOINT" to "https://codestats.invalid/api/my/pulses",
+                    ),
             )
 
         assertContains(result.output, "Delivered 1 queued pulse")

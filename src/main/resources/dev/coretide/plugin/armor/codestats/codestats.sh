@@ -17,6 +17,10 @@ unset CDPATH
 # HTTPS, which the guard below then refuses -- no request is ever made, and no
 # test can put XP on a real profile.
 readonly CODESTATS_ENDPOINT="${CODESTATS_ENDPOINT:-https://codestats.net/api/my/pulses}"
+# Overridable so the test suite can stand in for curl. PATH cannot do that on
+# Windows: Git for Windows' bash puts its own bin directories, and its curl,
+# first on PATH.
+readonly CODESTATS_CURL="${CODESTATS_CURL:-curl}"
 # Resolve through symlinks without readlink -f, which BSD and older macOS lack.
 _resolve_dir() {
   local d f link guard=0
@@ -391,7 +395,7 @@ send_queued_pulses() (
     https://*) ;;
     *) return 1 ;;
   esac
-  command -v curl >/dev/null 2>&1 || return 0
+  command -v "$CODESTATS_CURL" >/dev/null 2>&1 || return 0
 
   sent=0
   delivery_failed=0
@@ -404,7 +408,7 @@ send_queued_pulses() (
 
     # --disable must be curl's first option: a user .curlrc must not weaken TLS,
     # enable redirects, or add a destination that receives the token header.
-    http_status="$(curl --disable --silent --show-error --output /dev/null \
+    http_status="$("$CODESTATS_CURL" --disable --silent --show-error --output /dev/null \
       --write-out '%{http_code}' --request POST --url "$CODESTATS_ENDPOINT" \
       --header 'Content-Type: application/json' \
       --data-binary "@$claimed" --connect-timeout 2 --max-time 8 \
