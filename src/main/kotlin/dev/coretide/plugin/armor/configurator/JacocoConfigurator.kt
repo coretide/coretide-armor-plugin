@@ -15,6 +15,7 @@ import dev.coretide.plugin.armor.util.ExclusionUtil
 import dev.coretide.plugin.armor.util.ExclusionUtil.generateJacocoVerificationExclusions
 import dev.coretide.plugin.armor.util.LogUtil
 import org.gradle.api.Project
+import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.kotlin.dsl.configure
@@ -33,6 +34,9 @@ object JacocoConfigurator {
             toolVersion = "0.8.15"
         }
         project.afterEvaluate {
+            // The JaCoCo plugin only creates its report tasks alongside the Java plugin; looking them
+            // up in, say, a docs or aggregator project failed the whole configuration.
+            if (!project.plugins.hasPlugin(JavaPlugin::class.java)) return@afterEvaluate
             project.tasks.withType<Test>().configureEach { testTask ->
                 testTask.useJUnitPlatform()
                 testTask.testLogging {

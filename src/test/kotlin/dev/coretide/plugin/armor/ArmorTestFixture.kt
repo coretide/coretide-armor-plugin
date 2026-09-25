@@ -183,17 +183,64 @@ object ArmorTestFixture {
         }
     }
 
-    private fun git(
+    /** An empty file standing in for the developer's global git configuration. */
+    private val emptyGitConfig: File by lazy {
+        File.createTempFile("armor-empty-gitconfig", "").apply { deleteOnExit() }
+    }
+
+    /**
+     * Environment that hides the machine's global and system git configuration. Without it, a
+     * developer's own global `core.hooksPath` or signing setup would change what these tests see.
+     * Pass it to [runWithEnvironment] for builds whose tasks call git.
+     */
+    val isolatedGitEnvironment: Map<String, String>
+        get() = mapOf("GIT_CONFIG_GLOBAL" to emptyGitConfig.absolutePath, "GIT_CONFIG_NOSYSTEM" to "1")
+
+    class GitResult(
+        val exitCode: Int,
+        val output: String,
+    )
+
+    /** Runs git in [dir] with [isolatedGitEnvironment], returning its exit code and output. */
+    fun runGit(
         dir: File,
         vararg args: String,
-    ) {
-        val process =
+    ): GitResult {
+        val builder =
             ProcessBuilder(listOf("git") + args)
                 .directory(dir)
                 .redirectErrorStream(true)
-                .start()
+        builder.environment().putAll(isolatedGitEnvironment)
+        val process = builder.start()
         val output = process.inputStream.bufferedReader().readText()
-        check(process.waitFor() == 0) { "git ${args.joinToString(" ")} failed:\n$output" }
+        return GitResult(process.waitFor(), output)
+    }
+
+    /** Runs git in [dir] and fails the test when git does. */
+    fun git(
+        dir: File,
+        vararg args: String,
+    ): String {
+        val result = runGit(dir, *args)
+        check(result.exitCode == 0) { "git ${args.joinToString(" ")} failed:\n${result.output}" }
+        return result.output
+    }
+
+    /**
+     * Writes a stand-in `gradlew` into [dir] that records its arguments in `gradlew-calls.txt` and
+     * exits with [exitCode]. It lets tests drive a git hook without running a nested Gradle build.
+     */
+    fun writeFakeGradlew(
+        dir: File,
+        exitCode: Int,
+    ) {
+        dir.resolve("gradlew").writeText(
+            """
+            #!/bin/sh
+            printf '%s\n' "${'$'}*" >> gradlew-calls.txt
+            exit $exitCode
+            """.trimIndent() + "\n",
+        )
     }
 
     fun runAndFail(

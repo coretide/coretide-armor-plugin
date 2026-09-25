@@ -49,6 +49,22 @@ class ConfigurationCacheTest {
     }
 
     @Test
+    fun `a git repository with hooks enabled reuses the configuration cache on a second run`(
+        @TempDir dir: File,
+    ) {
+        // CodeArmor 0.1.x wrote .git/hooks/pre-push while configuring, so the second run found a
+        // file the first had created and threw the cache entry away.
+        ArmorTestFixture.writeProject(dir, armorConfig = "    enableGitHooks = true")
+        ArmorTestFixture.initGitRepository(dir)
+        val environment = ArmorTestFixture.isolatedGitEnvironment
+
+        ArmorTestFixture.runWithEnvironment(dir, "help", "--configuration-cache", set = environment)
+        val second = ArmorTestFixture.runWithEnvironment(dir, "help", "--configuration-cache", set = environment)
+
+        assertContains(second.output, "Configuration cache entry reused")
+    }
+
+    @Test
     fun `multi-module build reuses the configuration cache on a second run`(
         @TempDir dir: File,
     ) {

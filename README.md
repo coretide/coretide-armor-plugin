@@ -19,7 +19,8 @@ CodeArmor is a powerful Gradle plugin that integrates multiple code quality and 
 - 🔍 **Comprehensive Code Quality**: JaCoCo, SpotBugs, SonarQube integration
 - 🔒 **Security Analysis**: OWASP Dependency Check (**Veracode integration in development**)
 - 🚀 **Optimized Workflows**: Custom tasks for different development stages
-- 🪝 **Smart Git Hooks**: Enhanced pre-push quality checks
+- 🪝 **Git Hooks on Request**: A blocking pre-push hook for the basic checks, installed only when you run `armorInstallGitHooks`
+- 🧱 **Check Tiers**: Basic checks before a push, local checks in every build, network checks on CI
 - 📋 **Version Management**: Automatic versioning from Git tags + resource token replacement
 - 🎯 **Smart Detection**: Automatic project type detection (Java/Kotlin/Mixed)
 - 🏗️ **Multi-Module Support**: Seamless configuration for complex projects
@@ -153,7 +154,15 @@ CodeArmor automatically detects and supports:
 
 ## 🎯 Available Tasks
 
-CodeArmor provides optimized tasks for different development workflows:
+CodeArmor organizes its checks in three tiers, from fastest to most thorough:
+
+| Tier | Runs in | Default checks | Needs |
+|---|---|---|---|
+| Basic | the pre-push hook (`quickBuild`) | compile + unit tests | nothing |
+| Local | `./gradlew build` (through `codeQuality`) | SpotBugs, JaCoCo report + coverage verification | nothing |
+| CI | `fullAnalysis` | the local tier + OWASP Dependency Check + SonarQube | network, a SonarQube server |
+
+Each tier's task list is configurable; see [Check Tiers](#check-tiers).
 
 ### Development Tasks
 
@@ -166,20 +175,20 @@ CodeArmor provides optimized tasks for different development workflows:
 
 - **Purpose**: Rapid development iteration
 - **Dependencies**: `assemble`, `test`
-- **Use Case**: Local development, quick feedback
+- **Use Case**: Local development, quick feedback; what the pre-push hook runs by default
 
 ### Quality Assurance Tasks
 
 #### `codeQuality`
-🔍 Comprehensive quality checks (no style checks - use IDE formatting)
+🔍 Local code quality checks, which `./gradlew build` also runs
 ```shell script
 ./gradlew codeQuality
 ```
 
 
-- **Purpose**: Comprehensive quality validation
-- **Dependencies**: `spotbugsMain`, `jacocoTestReport`, `jacocoTestCoverageVerification`, `sonar`
-- **Use Case**: Before pushing to SCM
+- **Purpose**: Quality checks that need no network or server
+- **Dependencies**: the local tier, by default `spotbugsMain`, `jacocoTestReport`, `jacocoTestCoverageVerification`
+- **Use Case**: Every build; `check` (and so `build`) depends on it
 - **Reports Generated**:
     - JaCoCo coverage: `build/reports/jacoco/test/html/index.html`
     - SpotBugs: `build/reports/spotbugs/main.html`
@@ -192,12 +201,20 @@ CodeArmor provides optimized tasks for different development workflows:
 
 
 - **Purpose**: Comprehensive analysis including security scans
-- **Dependencies**: `codeQuality`, `dependencyCheckAnalyze`, `veracodeUpload` (if configured)
+- **Dependencies**: `codeQuality`, then the CI tier, by default `dependencyCheckAnalyze` and `sonar`, plus `veracodeUpload` (if configured)
 - **Use Case**: CI/CD pipelines, release preparation
 - **Reports Generated**:
     - All quality reports from `codeQuality`
     - OWASP: `build/reports/dependency-check/dependency-check-report.html`
     - Veracode scan results (if configured)
+
+### Git Hook Tasks
+
+#### `armorInstallGitHooks` / `armorUninstallGitHooks`
+🪝 Install or remove CodeArmor's git hooks. See [Git Hooks](#-git-hooks).
+```shell script
+./gradlew armorInstallGitHooks
+```
 
 ### Debug and Information Tasks
 
@@ -337,13 +354,38 @@ codeArmor {
 - **`ESSENTIAL`** - ⚖️ **Default logging**: Shows important information, warnings, and errors
 - **`STEALTH`** - 🤫 **No logs**: Suppresses all plugin output except critical errors
 
+### Check Tiers
+
+Each tier is a list of task names. The defaults follow the tool switches above:
+
+```kotlin
+codeArmor {
+    checks {
+        prePush = listOf("quickBuild")                     // basic: run by the pre-push hook
+        build = listOf(                                    // local: run by codeQuality and build
+            "spotbugsMain", "jacocoTestReport", "jacocoTestCoverageVerification",
+        )
+        ci = listOf("dependencyCheckAnalyze", "sonar")     // network/server: added by fullAnalysis
+    }
+}
+```
+
+- Because the local tier includes `jacocoTestCoverageVerification`, `./gradlew build` fails when coverage
+  is below `coverageMinimum` or a class is below `coverageClassMinimum`. Lower those thresholds, or
+  leave `jacocoTestCoverageVerification` out of `build`, to adopt CodeArmor gradually.
+- `build = listOf<String>()` keeps `./gradlew build` free of CodeArmor's checks. The SpotBugs plugin
+  itself still adds its tasks to `check`; `spotbugs = false` removes those.
+- The tiers apply to projects with a Java plugin; other projects, such as a docs module, are left alone.
+- Tasks in `build` must not depend on `build` themselves (as `sonar` does), or `build` would depend on
+  itself.
+
 ### Git Integration
 
 #### Git Hooks
 ```kotlin
 codeArmor {
-    enableGitHooks = true
-    prePushEnabled = true                     // Run tests + fullAnalysis before push
+    enableGitHooks = true                     // Register armorInstallGitHooks / armorUninstallGitHooks
+    prePushEnabled = true                     // armorInstallGitHooks includes the pre-push hook
 }
 ```
 
@@ -365,14 +407,33 @@ codeArmor {
 }
 ```
 
-## 🪝 Enhanced Git Hooks
+## 🪝 Git Hooks
 
-When enabled, CodeArmor automatically creates intelligent Git hooks:
+CodeArmor installs hooks only when you ask it to; a build never writes them:
+
+```shell script
+./gradlew armorInstallGitHooks     # install, or update after changing settings
+./gradlew armorUninstallGitHooks   # remove
+```
 
 ### Pre-push Hook
-- ✅ **Comprehensive testing**: Runs full test suite (blocking)
-- ✅ **Security analysis**: Runs OWASP dependency check and quality scans
-- ✅ **Quality validation**: Non-blocking quality checks with warnings
+- ✅ **Basic checks**: runs the `checks.prePush` tasks, by default `quickBuild` (compile + unit tests)
+- ⛔ **Blocking**: a failure blocks the push; `git push --no-verify` skips the checks once
+- 📁 **Monorepo-aware**: runs from the Gradle root, even when that is a subdirectory of the repository
+
+The heavier checks run in `build` and in `fullAnalysis` on CI, not on every push.
+
+### Existing Hooks
+- A hook CodeArmor did not write is never overwritten. `armorInstallGitHooks` tells you what to add to it
+  instead.
+- Hooks are installed into the repository's own hooks directory (shared by linked worktrees). If
+  `core.hooksPath` points elsewhere, as with husky, Git runs hooks from there instead, and
+  `armorInstallGitHooks` warns and names the hook to call from it.
+
+### Upgrading from 0.1.x
+0.1.x wrote hooks automatically while configuring every build. Run `./gradlew armorInstallGitHooks` once:
+it replaces the old pre-push hook, which ran `fullAnalysis` on every push, and removes the obsolete
+pre-commit hook, which called tasks that no longer exist.
 
 ## 📊 Reports and Output
 
@@ -393,8 +454,9 @@ build/reports/
 ### Development Workflow
 1. **Local Development**: Use `quickBuild` for rapid iteration
 2. **Code Formatting**: Use your IDE's built-in formatting (Ctrl+Alt+L)
-3. **Before Pushing**: Pre-push hook runs tests and security checks
-4. **CI/CD Pipeline**: Use `fullAnalysis` for complete validation
+3. **Every Build**: `./gradlew build` runs the local checks (SpotBugs, coverage verification)
+4. **Before Pushing**: The pre-push hook runs the basic checks (`./gradlew armorInstallGitHooks` once)
+5. **CI/CD Pipeline**: Use `fullAnalysis` for complete validation, including OWASP and SonarQube
 
 ### Configuration Tips
 1. **Start Simple**: Use default configuration initially

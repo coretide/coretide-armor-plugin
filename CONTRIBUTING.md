@@ -232,6 +232,7 @@ the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
 
 - **Functional tests** (`CodeArmorPluginFunctionalTest`): tasks, detection, tool wiring
 - **Configuration cache tests** (`ConfigurationCacheTest`): a second run must reuse the cache
+- **Check tiers and git hooks** (`CheckTiersTest`, `GitHooksTest`): what each tier runs; hooks installed, upgraded and removed only by their tasks, and a real `git push` through the hook
 - **Focused tests** (`GitVersionTest`, `BytecodeTargetTest`): a single behaviour each
 
 ### Writing Tests
