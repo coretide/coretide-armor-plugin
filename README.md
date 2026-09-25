@@ -21,6 +21,7 @@ CodeArmor is a powerful Gradle plugin that integrates multiple code quality and 
 - 🚀 **Optimized Workflows**: Custom tasks for different development stages
 - 🪝 **Git Hooks on Request**: A blocking pre-push hook for the basic checks, installed only when you run `armorInstallGitHooks`
 - 🧱 **Check Tiers**: Basic checks before a push, local checks in every build, network checks on CI
+- 📈 **Code Stats**: Optional [Code::Stats](https://codestats.net) reporting of your commit activity, per repository or machine-wide
 - 📋 **Version Management**: Automatic versioning from Git tags + resource token replacement
 - 🎯 **Smart Detection**: Automatic project type detection (Java/Kotlin/Mixed)
 - 🏗️ **Multi-Module Support**: Seamless configuration for complex projects
@@ -215,6 +216,15 @@ Each tier's task list is configurable; see [Check Tiers](#check-tiers).
 ```shell script
 ./gradlew armorInstallGitHooks
 ```
+
+### Code Stats Tasks
+
+| Task | What it does |
+|---|---|
+| `armorCodeStatsInstall` | Applies the [code stats](#-code-stats) settings: installs, or opts this repository out when disabled |
+| `armorCodeStatsUninstall` | Removes CodeArmor's install and restores the previous `core.hooksPath` |
+| `armorCodeStatsStatus` | Shows the settings in effect, the token, queued pulses and what this repository reports through |
+| `armorCodeStatsFlush` | Retries delivering queued pulses now |
 
 ### Debug and Information Tasks
 
@@ -434,6 +444,75 @@ The heavier checks run in `build` and in `fullAnalysis` on CI, not on every push
 0.1.x wrote hooks automatically while configuring every build. Run `./gradlew armorInstallGitHooks` once:
 it replaces the old pre-push hook, which ran `fullAnalysis` on every push, and removes the obsolete
 pre-commit hook, which called tasks that no longer exist.
+
+## 📈 Code Stats
+
+CodeArmor can report your commit activity to [Code::Stats](https://codestats.net), the free
+programming-activity tracker. After each commit, it sends the number of added plus deleted lines per
+language: an approximation of Code::Stats' usual editor-based XP.
+
+It is **off by default**, and nothing is installed until you run `./gradlew armorCodeStatsInstall`.
+
+### Enabling It
+
+For this repository, in the build script (the team's choice):
+
+```kotlin
+codeArmor {
+    codeStats {
+        enabled = true                        // scope defaults to this repository only
+    }
+}
+```
+
+Each developer can override that in `~/.gradle/gradle.properties`, or with `-P` for one run:
+
+```properties
+codearmor.codestats.enabled=true              # or false, to opt out of the team's setting
+codearmor.codestats.scope=GLOBAL              # every repository on this machine, including future clones
+```
+
+`GLOBAL` is only accepted from those developer settings. A build script or a project's `gradle.properties`
+is shared by the whole team, and must not change every developer's global git configuration.
+
+### Installing
+
+Get your machine API token from https://codestats.net/my/machines, then run once:
+
+```shell script
+CODESTATS_API_TOKEN=<your token> ./gradlew armorCodeStatsInstall
+```
+
+The token is stored in `~/.config/code-stats-hooks/token`, readable only by you, and never in the
+repository or the build files. Later runs reuse it.
+
+- **Your existing hooks keep running.** Code stats takes over `core.hooksPath` and hands every hook over
+  to whatever ran before: the repository's own hooks, husky, or a global hooks directory.
+- **An existing standalone install is left alone.** If a code-stats-hooks install already covers the
+  repository, CodeArmor uses it and changes nothing.
+- **CI is skipped.** With `CI=true`, the install tasks do nothing.
+- A tool that rewrites `core.hooksPath` (husky on `npm install`, say) switches code stats off for that
+  repository; `armorCodeStatsStatus` shows it, and rerunning `armorCodeStatsInstall` fixes it.
+
+### Opting Out
+
+- Disabled for a project (`enabled = false`, or `codearmor.codestats.enabled=false`), running
+  `armorCodeStatsInstall` removes CodeArmor's install from the repository, and opts the repository out of
+  any global install (`git config codestats.enabled false`).
+- `CODESTATS_DISABLE=1 git commit ...` skips a single commit.
+
+### What Counts
+
+- Only commits made on this machine, in repositories outside ignored paths such as `node_modules`,
+  `.cache`, `vendor`. Add more patterns, one per line, to `~/.config/code-stats-hooks/ignore`.
+- Merge commits and pure renames don't count.
+- List the email addresses and names that are yours in `~/.config/code-stats-hooks/identities`, so a
+  cherry-picked commit carrying someone else's authorship doesn't count as your work.
+- A pulse contains only a timestamp, language names and XP counts: no source code, file paths,
+  repository names or commit IDs. It is sent in the background over HTTPS and never delays or fails a
+  commit; failed deliveries are retried for up to seven days.
+
+On Windows, code stats runs in the bash that Git for Windows ships, so it needs nothing else installed.
 
 ## 📊 Reports and Output
 

@@ -201,16 +201,17 @@ object ArmorTestFixture {
         val output: String,
     )
 
-    /** Runs git in [dir] with [isolatedGitEnvironment], returning its exit code and output. */
+    /** Runs git in [dir] with [environment] added, returning its exit code and output. */
     fun runGit(
         dir: File,
         vararg args: String,
+        environment: Map<String, String> = isolatedGitEnvironment,
     ): GitResult {
         val builder =
             ProcessBuilder(listOf("git") + args)
                 .directory(dir)
                 .redirectErrorStream(true)
-        builder.environment().putAll(isolatedGitEnvironment)
+        builder.environment().putAll(environment)
         val process = builder.start()
         val output = process.inputStream.bufferedReader().readText()
         return GitResult(process.waitFor(), output)
@@ -220,8 +221,9 @@ object ArmorTestFixture {
     fun git(
         dir: File,
         vararg args: String,
+        environment: Map<String, String> = isolatedGitEnvironment,
     ): String {
-        val result = runGit(dir, *args)
+        val result = runGit(dir, *args, environment = environment)
         check(result.exitCode == 0) { "git ${args.joinToString(" ")} failed:\n${result.output}" }
         return result.output
     }

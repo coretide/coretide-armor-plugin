@@ -11,7 +11,6 @@
 package dev.coretide.plugin.armor.git
 
 import org.gradle.process.ExecOperations
-import java.io.ByteArrayOutputStream
 import java.io.File
 
 /**
@@ -23,45 +22,34 @@ import java.io.File
  */
 class GitRepository(
     val topLevel: File,
-    val hooksDir: File,
+    val commonDir: File,
     /** `core.hooksPath` as configured, or null when unset. Relative values are relative to [topLevel]. */
     val hooksPath: String?,
+    /** Runs git inside this repository. */
+    val git: GitCommand,
 ) {
+    val hooksDir: File get() = File(commonDir, "hooks")
+
+    /** A `core.hooksPath` value as a directory: relative values are relative to [topLevel]. */
+    fun resolveHooksPath(value: String): File = File(value).let { if (it.isAbsolute) it else File(topLevel, value) }
+
     companion object {
         /** Returns null when [directory] is not inside a git work tree, or git is not installed. */
         fun locate(
             execOperations: ExecOperations,
             directory: File,
         ): GitRepository? {
-            val topLevel = git(execOperations, directory, "rev-parse", "--show-toplevel") ?: return null
-            val commonDir = git(execOperations, directory, "rev-parse", "--git-common-dir") ?: return null
+            val git = GitCommand(execOperations, directory)
+            val topLevel = git.output("rev-parse", "--show-toplevel") ?: return null
+            val commonDir = git.output("rev-parse", "--git-common-dir") ?: return null
             // Older git prints the common dir relative to the working directory.
             val commonDirFile = File(commonDir).let { if (it.isAbsolute) it else File(directory, commonDir) }
             return GitRepository(
                 topLevel = File(topLevel).canonicalFile,
-                hooksDir = File(commonDirFile, "hooks").canonicalFile,
-                hooksPath = git(execOperations, directory, "config", "--get", "core.hooksPath"),
+                commonDir = commonDirFile.canonicalFile,
+                hooksPath = git.output("config", "--get", "core.hooksPath"),
+                git = git,
             )
         }
-
-        private fun git(
-            execOperations: ExecOperations,
-            directory: File,
-            vararg args: String,
-        ): String? =
-            try {
-                val output = ByteArrayOutputStream()
-                val result =
-                    execOperations.exec {
-                        it.workingDir = directory
-                        it.commandLine(listOf("git") + args)
-                        it.standardOutput = output
-                        it.errorOutput = ByteArrayOutputStream()
-                        it.isIgnoreExitValue = true
-                    }
-                output.toString().trim().takeIf { result.exitValue == 0 && it.isNotEmpty() }
-            } catch (_: Exception) {
-                null
-            }
     }
 }

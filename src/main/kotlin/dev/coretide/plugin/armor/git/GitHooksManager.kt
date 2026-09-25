@@ -11,6 +11,8 @@
 package dev.coretide.plugin.armor.git
 
 import dev.coretide.plugin.armor.CodeArmorExtension
+import dev.coretide.plugin.armor.codestats.CodeStatsFiles
+import dev.coretide.plugin.armor.codestats.CodeStatsPaths
 import dev.coretide.plugin.armor.task.InstallGitHooksTask
 import dev.coretide.plugin.armor.task.UninstallGitHooksTask
 import org.gradle.api.Project
@@ -109,8 +111,24 @@ object GitHooksManager {
         logger: Logger,
     ) {
         val configured = repository.hooksPath ?: return
-        val hooksPath = File(configured).let { if (it.isAbsolute) it else File(repository.topLevel, configured) }
+        val hooksPath = repository.resolveHooksPath(configured)
         if (hooksPath.canonicalFile == repository.hooksDir.canonicalFile) return
+        if (CodeStatsFiles.isCodeStatsHooksDir(hooksPath)) {
+            // The code stats router hands every hook over to what Git ran before it was installed.
+            val target = CodeStatsFiles.dispatchDirectory(repository, CodeStatsPaths.fromEnvironment())
+            if (target.canonicalFile == repository.hooksDir.canonicalFile) {
+                logger.lifecycle(
+                    "ℹ️ core.hooksPath points at the code stats hooks, which hand pre-push over to " +
+                        "${repository.hooksDir}, so CodeArmor's pre-push hook runs",
+                )
+            } else {
+                logger.warn(
+                    "⚠️ core.hooksPath points at the code stats hooks, which hand pre-push over to $target. " +
+                        "Run CodeArmor's hook from its pre-push: ${File(repository.hooksDir, "pre-push").absolutePath}",
+                )
+            }
+            return
+        }
         logger.warn(
             "⚠️ core.hooksPath is set to $configured, so Git runs hooks from there instead of " +
                 "${repository.hooksDir}. Unless that directory hands pre-push over to " +

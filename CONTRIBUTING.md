@@ -170,12 +170,13 @@ src/
 │   ├── CodeArmorPlugin.kt           # Main plugin class
 │   ├── CodeArmorExtension.kt        # Configuration DSL
 │   ├── ProjectType.kt               # Project type enum
-│   ├── config/                      # Nested configuration (SpotBugsConfig)
+│   ├── codestats/                   # Code stats: settings, installs, file locations
+│   ├── config/                      # Nested configuration (SpotBugsConfig, ChecksConfig, CodeStatsConfig)
 │   ├── configurator/                # Tool configuration
 │   │   ├── JacocoConfigurator.kt
 │   │   ├── SpotbugsConfigurator.kt
 │   │   └── ...
-│   ├── enumeration/                 # ArmorLogLevel
+│   ├── enumeration/                 # ArmorLogLevel, CodeStatsScope
 │   ├── git/                         # Git hooks and git-derived versioning
 │   │   ├── GitHooksManager.kt
 │   │   ├── GitValueSource.kt
@@ -188,6 +189,7 @@ src/
 │       ├── ProjectDetector.kt
 │       ├── ConfigurationCacheUtil.kt
 │       └── ...
+├── main/resources/dev/coretide/plugin/armor/codestats/   # The code stats hook scripts (POSIX sh, bash)
 └── test/kotlin/dev/coretide/plugin/armor/   # Gradle TestKit tests
 compat/jdk17-consumer/               # Consumer build CI runs on Gradle 9.0 + JDK 17
 ```
@@ -233,7 +235,12 @@ the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
 - **Functional tests** (`CodeArmorPluginFunctionalTest`): tasks, detection, tool wiring
 - **Configuration cache tests** (`ConfigurationCacheTest`): a second run must reuse the cache
 - **Check tiers and git hooks** (`CheckTiersTest`, `GitHooksTest`): what each tier runs; hooks installed, upgraded and removed only by their tasks, and a real `git push` through the hook
+- **Code stats** (`CodeStatsTest`, `CodeStatsSettingsTest`): installs and real commits through the hooks,
+  each in a throwaway home directory and git configuration, and who may choose which setting
 - **Focused tests** (`GitVersionTest`, `BytecodeTargetTest`): a single behaviour each
+
+The code stats scripts are linted in CI with ShellCheck, and the POSIX router is parsed with dash and
+busybox. Run the same locally with `shellcheck -s sh _router` and `shellcheck -s bash codestats.sh`.
 
 ### Writing Tests
 
