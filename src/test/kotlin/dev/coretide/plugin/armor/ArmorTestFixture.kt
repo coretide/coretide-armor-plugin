@@ -150,16 +150,25 @@ object ArmorTestFixture {
     /**
      * Runs with this process's environment, minus [unset], plus [set]. TestKit replaces the whole
      * environment when one is given, so the rest has to be passed through explicitly.
+     *
+     * Windows variable names ignore case, and Java reports PATH there as "Path". A variable is
+     * therefore replaced whatever its case, or the build would receive both spellings and either
+     * could win.
      */
     fun runWithEnvironment(
         dir: File,
         vararg args: String,
         set: Map<String, String> = emptyMap(),
         unset: Set<String> = emptySet(),
-    ): BuildResult =
-        runner(dir, *args)
-            .withEnvironment(System.getenv() - unset + set)
+    ): BuildResult {
+        val replaced = unset + set.keys
+        val inherited = System.getenv().filterKeys { name -> replaced.none { it.equals(name, ignoreCase = isWindows) } }
+        return runner(dir, *args)
+            .withEnvironment(inherited + set)
             .build()
+    }
+
+    private val isWindows = System.getProperty("os.name").startsWith("Windows")
 
     /**
      * Makes [dir] a git repository with one commit, tagged [tag] if given. Signing is switched off
@@ -183,17 +192,66 @@ object ArmorTestFixture {
         }
     }
 
-    private fun git(
+    /** An empty file standing in for the developer's global git configuration. */
+    private val emptyGitConfig: File by lazy {
+        File.createTempFile("armor-empty-gitconfig", "").apply { deleteOnExit() }
+    }
+
+    /**
+     * Environment that hides the machine's global and system git configuration. Without it, a
+     * developer's own global `core.hooksPath` or signing setup would change what these tests see.
+     * Pass it to [runWithEnvironment] for builds whose tasks call git.
+     */
+    val isolatedGitEnvironment: Map<String, String>
+        get() = mapOf("GIT_CONFIG_GLOBAL" to emptyGitConfig.absolutePath, "GIT_CONFIG_NOSYSTEM" to "1")
+
+    class GitResult(
+        val exitCode: Int,
+        val output: String,
+    )
+
+    /** Runs git in [dir] with [environment] added, returning its exit code and output. */
+    fun runGit(
         dir: File,
         vararg args: String,
-    ) {
-        val process =
+        environment: Map<String, String> = isolatedGitEnvironment,
+    ): GitResult {
+        val builder =
             ProcessBuilder(listOf("git") + args)
                 .directory(dir)
                 .redirectErrorStream(true)
-                .start()
+        builder.environment().putAll(environment)
+        val process = builder.start()
         val output = process.inputStream.bufferedReader().readText()
-        check(process.waitFor() == 0) { "git ${args.joinToString(" ")} failed:\n$output" }
+        return GitResult(process.waitFor(), output)
+    }
+
+    /** Runs git in [dir] and fails the test when git does. */
+    fun git(
+        dir: File,
+        vararg args: String,
+        environment: Map<String, String> = isolatedGitEnvironment,
+    ): String {
+        val result = runGit(dir, *args, environment = environment)
+        check(result.exitCode == 0) { "git ${args.joinToString(" ")} failed:\n${result.output}" }
+        return result.output
+    }
+
+    /**
+     * Writes a stand-in `gradlew` into [dir] that records its arguments in `gradlew-calls.txt` and
+     * exits with [exitCode]. It lets tests drive a git hook without running a nested Gradle build.
+     */
+    fun writeFakeGradlew(
+        dir: File,
+        exitCode: Int,
+    ) {
+        dir.resolve("gradlew").writeText(
+            """
+            #!/bin/sh
+            printf '%s\n' "${'$'}*" >> gradlew-calls.txt
+            exit $exitCode
+            """.trimIndent() + "\n",
+        )
     }
 
     fun runAndFail(

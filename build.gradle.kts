@@ -323,6 +323,12 @@ tasks.named("jreleaserDeploy") {
 
 tasks.test {
     useJUnitPlatform()
+    // Print a failing test's full assertion message, which for TestKit tests includes the build's
+    // output, so a CI failure can be diagnosed from the log alone.
+    testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
 }
 
 kotlin {
