@@ -2,7 +2,7 @@
 
 [![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)]()
 [![Latest Release](https://img.shields.io/github/v/release/coretide/coretide-armor-plugin?include_prereleases&style=flat-square&logo=github)](https://github.com/coretide/coretide-armor-plugin/releases)
-[![Version](https://img.shields.io/badge/version-0.1.4--alpha-blue?style=flat-square)](https://github.com/coretide/coretide-armor-plugin)
+[![Version](https://img.shields.io/badge/version-0.2.0--alpha-blue?style=flat-square)](https://github.com/coretide/coretide-armor-plugin)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/dev.coretide.plugin.armor?style=flat-square&logo=gradle)](https://plugins.gradle.org/plugin/dev.coretide.plugin.armor)
 [![Maven Central](https://img.shields.io/maven-central/v/dev.coretide.plugin/code-armor-plugin?style=flat-square&logo=apache-maven)](https://central.sonatype.com/artifact/dev.coretide.plugin/code-armor-plugin)
@@ -10,7 +10,7 @@
 
 > **Comprehensive code quality and security plugin for Java/Kotlin projects**
 
-> ⚠️ **Status:** Alpha — This plugin is under active development (version: 0.1.4-alpha). Expect breaking changes and frequent updates until 1.0.0.
+> ⚠️ **Status:** Alpha — This plugin is under active development (version: 0.2.0-alpha). Expect breaking changes and frequent updates until 1.0.0.
 
 CodeArmor is a powerful Gradle plugin that integrates multiple code quality and security tools into a unified, easy-to-use solution. It provides automated project detection, intelligent configuration, and optimized development workflows for both single-module and multi-module projects.
 
@@ -67,20 +67,18 @@ Starting with version 0.1.4-alpha, CodeArmor no longer includes Spotless or Chec
 
 ---
 
-## 🆕 What's New in 0.1.4-alpha
+## 🆕 What's New in 0.2.0-alpha
 
-### 🎯 **Streamlined Focus**
-- **Removed unstable integrations**: Spotless and Checkstyle removed for better reliability
-- **Enhanced core tools**: Improved JaCoCo, SpotBugs, SonarQube, and OWASP integration
-- **Simplified workflows**: Focus on tools that provide consistent value
+- 🧱 **Check tiers**: basic checks in the pre-push hook, local checks in every `build`, network checks
+  (OWASP, SonarQube) in `fullAnalysis` on CI. Each tier is configurable.
+- 🪝 **Git hooks on request**: `armorInstallGitHooks` installs a blocking pre-push hook; builds never
+  write hooks any more.
+- 📈 **Code stats**: optional [Code::Stats](https://codestats.net) reporting, per repository or
+  machine-wide.
+- ☕ **Gradle 9**: requires Gradle 9.0+ and JDK 17+, with current versions of every tool.
 
-### 📁 **Improved Code Organization**
-- **Package Restructuring**: Reorganized internal packages for better maintainability
-  - `utils` → `util`
-  - `tasks` → `task` 
-  - `configurators` → `configurator`
-- **Enhanced Configuration Classes**: Streamlined configuration for remaining tools
-- **Better Type Safety**: Improved enumerations and validation
+This release changes when checks and hooks run. See the [changelog](CHANGELOG.md) for everything,
+including [upgrading from 0.1.x](CHANGELOG.md#upgrading-from-01x).
 
 ---
 
@@ -96,7 +94,7 @@ Starting with version 0.1.4-alpha, CodeArmor no longer includes Spotless or Chec
 Add the plugin to your `build.gradle.kts`:
 ```kotlin
 plugins {
-  id("dev.coretide.plugin.armor") version "0.1.4-alpha"
+  id("dev.coretide.plugin.armor") version "0.2.0-alpha"
 }
 ```
 
