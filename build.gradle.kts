@@ -3,8 +3,10 @@ import org.gradle.api.provider.ValueSource
 import org.gradle.api.provider.ValueSourceParameters
 import org.gradle.process.ExecOperations
 import org.gradle.process.ExecResult
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.util.concurrent.Callable
 import javax.inject.Inject
 
 plugins {
@@ -32,12 +34,12 @@ abstract class BuildscriptGitValueSource : ValueSource<String, BuildscriptGitVal
 
         val tagRef = System.getenv("CI_COMMIT_TAG")
         if (tagRef?.startsWith("v") == true) {
-            return tagRef.replace("v", "")
+            return tagRef.removePrefix("v")
         }
 
         val githubRef = System.getenv("GITHUB_REF")
         if (githubRef?.startsWith("refs/tags/v") == true) {
-            return githubRef.replace("refs/tags/v", "")
+            return githubRef.removePrefix("refs/tags/v")
         }
 
         val gitDir = File(projectDir, ".git")
@@ -56,7 +58,7 @@ abstract class BuildscriptGitValueSource : ValueSource<String, BuildscriptGitVal
                 }
             if (exactTagResult.exitValue == 0) {
                 val tag = exactTagOutput.toString().trim()
-                return if (tag.startsWith("v")) tag.replace("v", "") else tag
+                return tag.removePrefix("v")
             }
             val latestOutput = ByteArrayOutputStream()
             val latestTagResult: ExecResult =
@@ -68,7 +70,7 @@ abstract class BuildscriptGitValueSource : ValueSource<String, BuildscriptGitVal
                 }
             if (latestTagResult.exitValue == 0) {
                 val tag = latestOutput.toString().trim()
-                val version = if (tag.startsWith("v")) tag.replace("v", "") else tag
+                val version = tag.removePrefix("v")
                 "$version-SNAPSHOT"
             } else {
                 "0.1.0-SNAPSHOT"
@@ -93,6 +95,12 @@ java {
     }
     withSourcesJar()
     withJavadocJar()
+}
+
+// Built with JDK 21 but compiled for Java 17, so Gradle 9 can load the plugin whether it runs on
+// JDK 17 or 21. `release` also sets the Java version the published metadata advertises.
+tasks.withType<JavaCompile>().configureEach {
+    options.release = 17
 }
 
 repositories {
@@ -121,7 +129,7 @@ gradlePlugin {
             implementationClass = "dev.coretide.plugin.armor.CodeArmorPlugin"
             displayName = "CodeArmor Plugin"
             description = "Comprehensive code quality and security plugin for Java/Kotlin projects"
-            tags = listOf("code-quality", "security", "formatting", "kotlin", "java")
+            tags = listOf("code-quality", "security", "kotlin", "java")
         }
     }
 }
@@ -199,10 +207,16 @@ publishing {
 }
 
 signing {
-    isRequired =
-        gradle.taskGraph.hasTask("jreleaserDeploy") ||
-        gradle.taskGraph.hasTask("publishToSonatype") ||
-        gradle.taskGraph.hasTask("publishPlugins")
+    // Only releases need signatures: publishing to a remote or staging repository, the Plugin
+    // Portal, or through JReleaser. Decided lazily, once the task graph is known -- reading the
+    // graph while configuring always saw it empty -- so `publishToMavenLocal` works without a GPG key.
+    setRequired(
+        Callable {
+            gradle.taskGraph.allTasks.any { task ->
+                task is PublishToMavenRepository || task.name == "publishPlugins" || task.name.startsWith("jreleaser")
+            }
+        },
+    )
     if (System.getenv("CI") == "true") {
         val signingKey = System.getenv("GPG_PRIVATE_KEY") ?: System.getenv("JRELEASER_GPG_SECRET_KEY")
         val signingPassword = System.getenv("GPG_PASSPHRASE") ?: System.getenv("JRELEASER_GPG_PASSPHRASE")
@@ -215,6 +229,10 @@ signing {
         useGpgCmd()
     }
     sign(publishing.publications)
+}
+
+tasks.withType<Sign>().configureEach {
+    onlyIf("signatures are only needed when publishing a release") { signing.isRequired }
 }
 
 tasks.withType<AbstractPublishToMaven>().configureEach {
@@ -305,10 +323,21 @@ tasks.named("jreleaserDeploy") {
 
 tasks.test {
     useJUnitPlatform()
+    // Print a failing test's full assertion message, which for TestKit tests includes the build's
+    // output, so a CI failure can be diagnosed from the log alone.
+    testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
 }
 
 kotlin {
     jvmToolchain(21)
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+        // Like javac's --release: fail the build on any JDK API newer than 17.
+        freeCompilerArgs.add("-Xjdk-release=17")
+    }
 }
 
 tasks.configureEach {

@@ -111,8 +111,8 @@ jobs:
           if [ "${{ steps.maven_central.outcome }}" = "success" ]; then
             echo "✅ **Status**: Successfully published" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ steps.maven_central.outcome }}" = "failure" ]; then
-            echo "⚠️ **Status**: Deployment initiated (timeout is normal)" >> $GITHUB_STEP_SUMMARY
-            echo "🔄 **Background**: Maven Central is processing your deployment" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Status**: Failed or timed out" >> $GITHUB_STEP_SUMMARY
+            echo "🔄 **Check**: a timed-out upload may still be processing; confirm on https://central.sonatype.com/publishing/deployments" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ **Status**: Failed to publish" >> $GITHUB_STEP_SUMMARY
           fi
@@ -135,7 +135,7 @@ jobs:
           echo "**Plugin Portal (Recommended - Clean Syntax):**" >> $GITHUB_STEP_SUMMARY
           echo '```kotlin' >> $GITHUB_STEP_SUMMARY
           echo 'plugins {' >> $GITHUB_STEP_SUMMARY
-          echo "    id(\"dev.coretide.armor\") version \"$VERSION\"" >> $GITHUB_STEP_SUMMARY
+          echo "    id(\"dev.coretide.plugin.armor\") version \"$VERSION\"" >> $GITHUB_STEP_SUMMARY
           echo '}' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -147,23 +147,29 @@ jobs:
           echo "        classpath(\"dev.coretide.plugin:code-armor-plugin:$VERSION\")" >> $GITHUB_STEP_SUMMARY
           echo '    }' >> $GITHUB_STEP_SUMMARY
           echo '}' >> $GITHUB_STEP_SUMMARY
-          echo 'apply(plugin = "dev.coretide.armor")' >> $GITHUB_STEP_SUMMARY
+          echo 'apply(plugin = "dev.coretide.plugin.armor")' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Links
           echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
-          echo "- [🔌 Gradle Plugin Portal](https://plugins.gradle.org/plugin/dev.coretide.armor)" >> $GITHUB_STEP_SUMMARY
+          echo "- [🔌 Gradle Plugin Portal](https://plugins.gradle.org/plugin/dev.coretide.plugin.armor)" >> $GITHUB_STEP_SUMMARY
           echo "- [📦 Maven Central Search](https://central.sonatype.com/search?q=dev.coretide.plugin)" >> $GITHUB_STEP_SUMMARY
           echo "- [📄 GitHub Release](https://github.com/coretide/coretide-armor-plugin/releases/tag/${{ steps.release_type.outputs.tag_name }})" >> $GITHUB_STEP_SUMMARY
 
+      # Both publish steps use continue-on-error so a Maven Central failure does not
+      # stop the Plugin Portal attempt. This step turns either failure back into a
+      # failed run, so a broken release is visible instead of showing green.
       - name: Set final status
         if: always()
         run: |
-          echo "🎯 DEPLOYMENT COMPLETED"
-          echo "======================"
+          echo "🎯 DEPLOYMENT FINISHED"
+          echo "====================="
           echo "Maven Central: ${{ steps.maven_central.outcome }}"
           echo "Plugin Portal: ${{ steps.plugin_portal.outcome }}"
           echo ""
-          echo "✅ Deployment workflow completed successfully!"
-          exit 0
+          if [ "${{ steps.maven_central.outcome }}" != "success" ] || [ "${{ steps.plugin_portal.outcome }}" != "success" ]; then
+            echo "❌ At least one publish step did not succeed; see the deployment summary."
+            exit 1
+          fi
+          echo "✅ Published to Maven Central and the Gradle Plugin Portal."

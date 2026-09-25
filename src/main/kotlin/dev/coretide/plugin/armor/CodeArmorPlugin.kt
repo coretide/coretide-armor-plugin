@@ -10,6 +10,7 @@
 
 package dev.coretide.plugin.armor
 
+import dev.coretide.plugin.armor.codestats.CodeStatsManager
 import dev.coretide.plugin.armor.git.GitHooksManager
 import dev.coretide.plugin.armor.git.VersionManager
 import dev.coretide.plugin.armor.task.MultiModuleTaskCreator
@@ -25,6 +26,9 @@ import org.gradle.api.Project
 class CodeArmorPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val extension = project.extensions.create("codeArmor", CodeArmorExtension::class.java)
+        // Lazy, so the defaults follow the tool switches the build script sets after applying.
+        extension.checks.build.convention(project.provider { TaskCreator.defaultBuildTier(extension) })
+        extension.checks.ci.convention(project.provider { TaskCreator.defaultCiTier(extension) })
         project.afterEvaluate {
             LogUtil.initialize(project, extension)
             val projectType =
@@ -43,8 +47,9 @@ class CodeArmorPlugin : Plugin<Project> {
                 configureSingleModuleProject(project, extension, projectType)
             }
             if (extension.enableGitHooks) {
-                GitHooksManager.configureGitHooks(project, extension)
+                GitHooksManager.registerTasks(project, extension)
             }
+            CodeStatsManager.configure(project, extension)
             if (extension.enableVersionFromGit) {
                 VersionManager.configureVersionFromGit(project)
             }

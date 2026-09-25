@@ -5,17 +5,27 @@ This product includes software developed at Coretide (https://coretide.dev)
 
 ================================================================================
 
-This product includes software developed by third parties:
+This product integrates the following third-party software. None of it is
+bundled in the CodeArmor jar: the Gradle plugins are dependencies, and the tools
+are downloaded by those plugins when a build uses them. Each is distributed
+under its own license.
 
 JaCoCo - Java Code Coverage Library
 Copyright (c) 2009, 2024 Mountainminds GmbH & Co. KG and Contributors
 License: Eclipse Public License v2.0
 Website: https://www.jacoco.org/
 
-Spotless - Keep your code spotless
-Copyright 2016-2024 DiffPlug
+SpotBugs Gradle Plugin
 License: Apache License 2.0
-Website: https://github.com/diffplug/spotless
+Website: https://github.com/spotbugs/spotbugs-gradle-plugin
+
+SpotBugs
+License: GNU Lesser General Public License v2.1
+Website: https://spotbugs.github.io/
+
+SonarScanner for Gradle
+License: GNU Lesser General Public License v3.0
+Website: https://github.com/SonarSource/sonar-scanner-gradle
 
 OWASP Dependency Check
 Copyright (c) 2012-2024 OWASP Foundation
@@ -24,8 +34,10 @@ Website: https://owasp.org/www-project-dependency-check/
 
 ================================================================================
 
-The complete text of licenses can be found in the licenses directory or at:
+The complete license texts are available at:
 - Apache License 2.0: http://www.apache.org/licenses/LICENSE-2.0
 - Eclipse Public License v2.0: https://www.eclipse.org/legal/epl-2.0/
+- GNU LGPL v2.1: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+- GNU LGPL v3.0: https://www.gnu.org/licenses/lgpl-3.0.html
 
 This NOTICE file is part of the CodeArmor distribution.
