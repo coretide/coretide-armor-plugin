@@ -130,14 +130,27 @@ codeArmor {
     coverageClassMinimum = 0.75
     
     // Git integration
-    enableGitHooks = true
+    enableGitHooks = true                     // registers armorInstallGitHooks / armorUninstallGitHooks
+    prePushEnabled = true                     // armorInstallGitHooks includes the pre-push hook
     enableVersionFromGit = true
+    
+    // Check tiers: what the pre-push hook, build and fullAnalysis run
+    checks {
+        prePush = listOf("quickBuild")
+    }
+    
+    // Code::Stats reporting, off by default
+    codeStats {
+        enabled = true
+    }
     
     // Resource processing
     enableResourceProcessing = true
-    prePushEnabled = true
 }
 ```
+
+[Check Tiers](#check-tiers) lists the defaults for each tier. [Code Stats](#-code-stats) covers installing
+it, machine-wide reporting and each developer's own opt-in or opt-out.
 
 
 ## 📋 Supported Project Types
@@ -396,6 +409,17 @@ codeArmor {
     prePushEnabled = true                     // armorInstallGitHooks includes the pre-push hook
 }
 ```
+
+#### Code Stats
+```kotlin
+codeArmor {
+    codeStats {
+        enabled = true                        // off by default; reports this repository only
+    }
+}
+```
+A developer's `~/.gradle/gradle.properties` can override this, and only it can choose machine-wide
+reporting. See [Code Stats](#-code-stats).
 
 #### Version Management
 ```kotlin
