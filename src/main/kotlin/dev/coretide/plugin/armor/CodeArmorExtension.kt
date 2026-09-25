@@ -11,8 +11,10 @@
 package dev.coretide.plugin.armor
 
 import dev.coretide.plugin.armor.config.ChecksConfig
+import dev.coretide.plugin.armor.config.CodeStatsConfig
 import dev.coretide.plugin.armor.config.SpotBugsConfig
 import dev.coretide.plugin.armor.enumeration.ArmorLogLevel
+import dev.coretide.plugin.armor.enumeration.CodeStatsScope
 import org.gradle.api.Action
 import org.gradle.api.model.ObjectFactory
 import javax.inject.Inject
@@ -61,6 +63,13 @@ open class CodeArmorExtension
                 prePush.convention(listOf("quickBuild"))
             }
 
+        /** Reporting commit activity to Code::Stats. Off by default; see [CodeStatsConfig]. */
+        val codeStats: CodeStatsConfig =
+            objects.newInstance(CodeStatsConfig::class.java).apply {
+                enabled.convention(false)
+                scope.convention(CodeStatsScope.REPO)
+            }
+
         @Suppress("unused")
         fun spotbugs(configure: SpotBugsConfig.() -> Unit) {
             spotbugsConfig.configure()
@@ -69,5 +78,10 @@ open class CodeArmorExtension
         @Suppress("unused")
         fun checks(action: Action<ChecksConfig>) {
             action.execute(checks)
+        }
+
+        @Suppress("unused")
+        fun codeStats(action: Action<CodeStatsConfig>) {
+            action.execute(codeStats)
         }
     }

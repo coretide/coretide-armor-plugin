@@ -52,6 +52,77 @@ jobs:
           path: build/reports/tests/
           retention-days: 7
 
+  # The git hooks and code stats run through the shell Git ships, so run the
+  # tests where that differs most: macOS (bash 3.2, a BSD userland) and
+  # Windows (Git for Windows' bash). The build job covers Linux.
+  test-other-os:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run the tests
+        shell: bash
+        run: ./gradlew test --stacktrace
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ matrix.os }}
+          path: build/reports/tests/
+          retention-days: 7
+
+  # The code stats scripts: ShellCheck, and the POSIX router parsed by shells
+  # that are not bash pretending, since a bashism there only shows up on
+  # someone else's machine.
+  scripts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: src/main/resources/dev/coretide/plugin/armor/codestats
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dash and busybox
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq dash busybox
+
+      # Pinned: the version a distribution ships changes which checks fire.
+      - name: Install ShellCheck
+        run: |
+          version=v0.11.0
+          curl -fsSL "https://github.com/koalaman/shellcheck/releases/download/${version}/shellcheck-${version}.linux.x86_64.tar.xz" \
+            | tar -xJ -C /tmp
+          sudo install -m 755 "/tmp/shellcheck-${version}/shellcheck" /usr/local/bin/shellcheck
+
+      - name: Lint
+        run: |
+          shellcheck -s sh _router
+          shellcheck -s bash codestats.sh
+
+      - name: Parse the router under dash and busybox
+        run: |
+          dash -n _router
+          busybox sh -n _router
+
   # The plugin is built with JDK 21 but compiled for Java 17. Prove that the
   # oldest supported setup, Gradle 9.0 running on JDK 17, can resolve it from a
   # repository and apply it. That also checks the Java version the published

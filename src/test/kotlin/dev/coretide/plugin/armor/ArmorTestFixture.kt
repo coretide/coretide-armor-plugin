@@ -150,16 +150,25 @@ object ArmorTestFixture {
     /**
      * Runs with this process's environment, minus [unset], plus [set]. TestKit replaces the whole
      * environment when one is given, so the rest has to be passed through explicitly.
+     *
+     * Windows variable names ignore case, and Java reports PATH there as "Path". A variable is
+     * therefore replaced whatever its case, or the build would receive both spellings and either
+     * could win.
      */
     fun runWithEnvironment(
         dir: File,
         vararg args: String,
         set: Map<String, String> = emptyMap(),
         unset: Set<String> = emptySet(),
-    ): BuildResult =
-        runner(dir, *args)
-            .withEnvironment(System.getenv() - unset + set)
+    ): BuildResult {
+        val replaced = unset + set.keys
+        val inherited = System.getenv().filterKeys { name -> replaced.none { it.equals(name, ignoreCase = isWindows) } }
+        return runner(dir, *args)
+            .withEnvironment(inherited + set)
             .build()
+    }
+
+    private val isWindows = System.getProperty("os.name").startsWith("Windows")
 
     /**
      * Makes [dir] a git repository with one commit, tagged [tag] if given. Signing is switched off
@@ -201,16 +210,17 @@ object ArmorTestFixture {
         val output: String,
     )
 
-    /** Runs git in [dir] with [isolatedGitEnvironment], returning its exit code and output. */
+    /** Runs git in [dir] with [environment] added, returning its exit code and output. */
     fun runGit(
         dir: File,
         vararg args: String,
+        environment: Map<String, String> = isolatedGitEnvironment,
     ): GitResult {
         val builder =
             ProcessBuilder(listOf("git") + args)
                 .directory(dir)
                 .redirectErrorStream(true)
-        builder.environment().putAll(isolatedGitEnvironment)
+        builder.environment().putAll(environment)
         val process = builder.start()
         val output = process.inputStream.bufferedReader().readText()
         return GitResult(process.waitFor(), output)
@@ -220,8 +230,9 @@ object ArmorTestFixture {
     fun git(
         dir: File,
         vararg args: String,
+        environment: Map<String, String> = isolatedGitEnvironment,
     ): String {
-        val result = runGit(dir, *args)
+        val result = runGit(dir, *args, environment = environment)
         check(result.exitCode == 0) { "git ${args.joinToString(" ")} failed:\n${result.output}" }
         return result.output
     }

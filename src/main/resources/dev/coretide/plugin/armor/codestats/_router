@@ -1,0 +1,151 @@
+#!/bin/sh
+# CODE-STATS-HOOKS-MANAGED-ROUTER
+#
+# Copyright 2025 Kushal Patel
+# Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
+#
+# Installed by CodeArmor's armorCodeStatsInstall task.
+#
+# Every hook name in this directory is a symlink to (or, where symlinks are
+# unavailable, a copy of) this one file. The directory is installed as a
+# core.hooksPath, and Git uses a configured hooksPath INSTEAD OF each
+# repository's own hooks -- never in addition to them. So this router exists
+# mainly to hand control back to whatever hook would have run before it was
+# installed. Without it, setting core.hooksPath would silently disable every
+# hook already on the machine.
+#
+# Only post-commit does any Code::Stats work; every other hook is a
+# pass-through and costs one exec at most.
+
+set -u
+unset CDPATH
+
+hook_name="${0##*/}"
+
+# Resolve this script through its symlink without readlink -f, which BSD and
+# older macOS do not have. Plain readlink is portable; -f is not.
+resolve_dir() {
+  rd_dir="$(dirname "$1")"
+  rd_file="$(basename "$1")"
+  rd_guard=0
+  while [ -L "$rd_dir/$rd_file" ] && [ "$rd_guard" -lt 40 ]; do
+    rd_link="$(readlink "$rd_dir/$rd_file")" || break
+    case "$rd_link" in
+      /*) rd_dir="$(dirname "$rd_link")" ;;
+      *)  rd_dir="$(cd -- "$rd_dir" && cd -- "$(dirname "$rd_link")" && pwd -P)" ;;
+    esac
+    rd_file="$(basename "$rd_link")"
+    rd_guard=$((rd_guard + 1))
+  done
+  (cd -- "$rd_dir" && pwd -P)
+}
+
+# Prints the first line of a file. A file written without a trailing newline
+# makes `read` fail even though it read the line, so keep what it read.
+first_line() {
+  fl_line=""
+  IFS= read -r fl_line < "$1" || [ -n "$fl_line" ] || return 1
+  printf '%s' "$fl_line"
+}
+
+pkg_dir="$(resolve_dir "$0")/.." || exit 0
+pkg_dir="$(cd -- "$pkg_dir" && pwd -P)" || exit 0
+
+# The repository's common git directory, which holds its own hooks: a linked
+# worktree's private git dir has none. Git runs client-side hooks from the
+# worktree root, so a plain checkout needs no subprocess at all.
+if [ -d .git ]; then
+  common_dir="$PWD/.git"
+else
+  # Linked worktree, submodule, bare repository, or an unusual cwd.
+  #
+  # Do NOT ask Git for the hooks path itself. With core.hooksPath set, both
+  # `git rev-parse --git-path hooks` and `--hooks-path` return THIS directory,
+  # so dispatching to the result re-enters the router and forks without bound.
+  common_dir="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+fi
+
+# Where Git looked for hooks before code stats took over core.hooksPath:
+#  - a repository-scope install records it in the repository's git directory;
+#    an empty record means the repository's own hooks directory;
+#  - a global install records it in the user's configuration directory.
+# With neither, it is the repository's own hooks directory.
+config_dir="${XDG_CONFIG_HOME:-${HOME:-}/.config}/code-stats-hooks"
+previous=""
+if [ -n "$common_dir" ] && [ -f "$common_dir/code-stats-hooks/previous-hooks-path" ]; then
+  previous="$(first_line "$common_dir/code-stats-hooks/previous-hooks-path" || true)"
+elif [ -f "$config_dir/previous-hooks-path" ]; then
+  previous="$(first_line "$config_dir/previous-hooks-path" || true)"
+fi
+
+own_hook=""
+if [ -n "$previous" ]; then
+  # A path recorded on Windows may be in C:/... form, which MSYS test
+  # operators handle unreliably.
+  if [ "${OS:-}" = "Windows_NT" ] && command -v cygpath >/dev/null 2>&1; then
+    previous="$(cygpath -u "$previous" 2>/dev/null || printf '%s' "$previous")"
+  fi
+  case "$previous" in
+    /*) ;;
+    # A relative hooksPath resolves against the repository, and Git runs
+    # client-side hooks with the worktree root as the cwd.
+    *) previous="$PWD/$previous" ;;
+  esac
+  [ -x "$previous/$hook_name" ] && own_hook="$previous/$hook_name"
+elif [ -n "$common_dir" ] && [ -x "$common_dir/hooks/$hook_name" ]; then
+  own_hook="$common_dir/hooks/$hook_name"
+fi
+
+# Never dispatch to a copy of this package: it would count a commit twice or
+# re-enter this router.
+if [ -n "$own_hook" ] && grep -q 'CODE-STATS-HOOKS-MANAGED' "$own_hook" 2>/dev/null; then
+  own_hook=""
+fi
+
+# A chained hook that itself runs git must not start this work a second time.
+if [ -n "${CODE_STATS_HOOKS_ACTIVE:-}" ]; then
+  [ -n "$own_hook" ] && exec "$own_hook" "$@"
+  exit 0
+fi
+
+if [ "$hook_name" != "post-commit" ]; then
+  # Nothing to measure here. Hand over completely so the chained hook keeps
+  # its own stdin, arguments and exit status.
+  [ -n "$own_hook" ] && exec "$own_hook" "$@"
+  exit 0
+fi
+
+CODE_STATS_HOOKS_ACTIVE=1
+export CODE_STATS_HOOKS_ACTIVE
+
+previous_status=0
+if [ -n "$own_hook" ]; then
+  "$own_hook" "$@" || previous_status=$?
+fi
+
+# A repository can opt out of a global install with
+# `git config codestats.enabled false`.
+opted_out=0
+if [ "$(git config --bool --get codestats.enabled 2>/dev/null || true)" = "false" ]; then
+  opted_out=1
+fi
+
+# Reporting is detached and must never delay, block or fail a commit.
+if [ "${CODESTATS_DISABLE:-}" != "1" ] && [ "$opted_out" -eq 0 ] && [ -x "$pkg_dir/lib/codestats.sh" ]; then
+  repo="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+  commit="$(git rev-parse --verify HEAD 2>/dev/null || true)"
+  if [ -n "$repo" ] && [ -n "$commit" ]; then
+    if command -v setsid >/dev/null 2>&1; then
+      setsid "$pkg_dir/lib/codestats.sh" pulse "$repo" "$commit" \
+        </dev/null >/dev/null 2>&1 &
+    elif command -v nohup >/dev/null 2>&1; then
+      nohup "$pkg_dir/lib/codestats.sh" pulse "$repo" "$commit" \
+        </dev/null >/dev/null 2>&1 &
+    else
+      "$pkg_dir/lib/codestats.sh" pulse "$repo" "$commit" \
+        </dev/null >/dev/null 2>&1 &
+    fi
+  fi
+fi
+
+exit "$previous_status"

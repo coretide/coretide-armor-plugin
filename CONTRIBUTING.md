@@ -12,6 +12,7 @@ Thank you for your interest in contributing to CodeArmor! 🛡️ We welcome con
 - [Testing](#testing)
 - [Documentation](#documentation)
 - [Submitting Changes](#submitting-changes)
+- [Releasing](#releasing)
 - [License](#license)
 
 ## 🤝 Code of Conduct 
@@ -170,12 +171,13 @@ src/
 │   ├── CodeArmorPlugin.kt           # Main plugin class
 │   ├── CodeArmorExtension.kt        # Configuration DSL
 │   ├── ProjectType.kt               # Project type enum
-│   ├── config/                      # Nested configuration (SpotBugsConfig)
+│   ├── codestats/                   # Code stats: settings, installs, file locations
+│   ├── config/                      # Nested configuration (SpotBugsConfig, ChecksConfig, CodeStatsConfig)
 │   ├── configurator/                # Tool configuration
 │   │   ├── JacocoConfigurator.kt
 │   │   ├── SpotbugsConfigurator.kt
 │   │   └── ...
-│   ├── enumeration/                 # ArmorLogLevel
+│   ├── enumeration/                 # ArmorLogLevel, CodeStatsScope
 │   ├── git/                         # Git hooks and git-derived versioning
 │   │   ├── GitHooksManager.kt
 │   │   ├── GitValueSource.kt
@@ -188,6 +190,7 @@ src/
 │       ├── ProjectDetector.kt
 │       ├── ConfigurationCacheUtil.kt
 │       └── ...
+├── main/resources/dev/coretide/plugin/armor/codestats/   # The code stats hook scripts (POSIX sh, bash)
 └── test/kotlin/dev/coretide/plugin/armor/   # Gradle TestKit tests
 compat/jdk17-consumer/               # Consumer build CI runs on Gradle 9.0 + JDK 17
 ```
@@ -233,7 +236,12 @@ the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
 - **Functional tests** (`CodeArmorPluginFunctionalTest`): tasks, detection, tool wiring
 - **Configuration cache tests** (`ConfigurationCacheTest`): a second run must reuse the cache
 - **Check tiers and git hooks** (`CheckTiersTest`, `GitHooksTest`): what each tier runs; hooks installed, upgraded and removed only by their tasks, and a real `git push` through the hook
+- **Code stats** (`CodeStatsTest`, `CodeStatsSettingsTest`): installs and real commits through the hooks,
+  each in a throwaway home directory and git configuration, and who may choose which setting
 - **Focused tests** (`GitVersionTest`, `BytecodeTargetTest`): a single behaviour each
+
+The code stats scripts are linted in CI with ShellCheck, and the POSIX router is parsed with dash and
+busybox. Run the same locally with `shellcheck -s sh _router` and `shellcheck -s bash codestats.sh`.
 
 ### Writing Tests
 
@@ -312,6 +320,25 @@ fun detectProjectType(project: Project): ProjectType
 - ✅ Documentation is updated
 - ✅ No breaking changes (unless approved)
 - ✅ Reviewer approval
+
+## 🚢 Releasing
+
+For maintainers. Versions come from git tags, so there is no version to bump in the build files.
+
+1. **Prepare the release:** in `CHANGELOG.md`, replace the version's `Unreleased` with the release date,
+   and check the versions in the README. Merge that.
+2. **Create the release in GitHub's web UI** (Releases → Draft a new release) with a **new tag** named
+   exactly the version, without a `v`: for example `0.2.0-alpha`. `tag-validation.yml` accepts
+   `{major}.{minor}.{patch}` with an optional `-alpha`, `-beta`, `-gamma`, `-dev` or `-rc.{N}` suffix.
+3. **Fill in the details:** tick **Set as a pre-release** for alpha, beta and rc versions, and paste the
+   version's section of `CHANGELOG.md` as the release notes.
+4. **Publish the release.** `publish.yml` then publishes to Maven Central and the Gradle Plugin Portal.
+   The run fails if either one fails.
+
+Create the release in the web UI rather than pushing the tag. A pushed tag makes `tag-validation.yml`
+create the release with the workflow's own token, and GitHub does not start other workflows for events
+made with that token, so `publish.yml` would never run. Created in the UI, the release starts
+`publish.yml`, and `tag-validation.yml` attaches the jar to it.
 
 ## 📄 License
 

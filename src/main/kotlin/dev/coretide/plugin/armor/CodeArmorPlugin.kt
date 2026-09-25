@@ -10,6 +10,7 @@
 
 package dev.coretide.plugin.armor
 
+import dev.coretide.plugin.armor.codestats.CodeStatsManager
 import dev.coretide.plugin.armor.git.GitHooksManager
 import dev.coretide.plugin.armor.git.VersionManager
 import dev.coretide.plugin.armor.task.MultiModuleTaskCreator
@@ -48,6 +49,7 @@ class CodeArmorPlugin : Plugin<Project> {
             if (extension.enableGitHooks) {
                 GitHooksManager.registerTasks(project, extension)
             }
+            CodeStatsManager.configure(project, extension)
             if (extension.enableVersionFromGit) {
                 VersionManager.configureVersionFromGit(project)
             }
