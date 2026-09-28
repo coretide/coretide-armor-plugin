@@ -1,6 +1,7 @@
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.ValueSource
 import org.gradle.api.provider.ValueSourceParameters
+import org.gradle.plugin.compatibility.compatibility
 import org.gradle.process.ExecOperations
 import org.gradle.process.ExecResult
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -16,6 +17,7 @@ plugins {
     signing
     id("org.jreleaser") version "1.25.0"
     id("com.gradle.plugin-publish") version "2.1.1"
+    id("org.gradle.plugin-compatibility") version "1.1.0"
 }
 
 group = "dev.coretide.plugin"
@@ -130,6 +132,12 @@ gradlePlugin {
             displayName = "CodeArmor Plugin"
             description = "Comprehensive code quality and security plugin for Java/Kotlin projects"
             tags = listOf("code-quality", "security", "kotlin", "java")
+            // Shown on the Plugin Portal; ConfigurationCacheTest checks that the cache is reused.
+            compatibility {
+                features {
+                    configurationCache = true
+                }
+            }
         }
     }
 }

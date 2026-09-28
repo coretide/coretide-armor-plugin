@@ -25,20 +25,24 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # The build derives its version from git tags.
           fetch-depth: 0
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
 
-      # Also validates the checksum of the committed gradle-wrapper.jar.
+      # Also validates the checksum of the committed gradle-wrapper.jar. The basic
+      # cache provider is the open-source one built on actions/cache; v6 otherwise
+      # defaults to Gradle's proprietary enhanced caching.
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
 
       # `build` runs `check`, which covers the tests and `validatePlugins`.
       - name: Build, test and validate the plugin
@@ -46,7 +50,7 @@ jobs:
 
       - name: Upload test reports
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports
           path: build/reports/tests/
@@ -64,18 +68,20 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
 
       - name: Run the tests
         shell: bash
@@ -83,7 +89,7 @@ jobs:
 
       - name: Upload test reports
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports-${{ matrix.os }}
           path: build/reports/tests/
@@ -100,7 +106,7 @@ jobs:
         working-directory: src/main/resources/dev/coretide/plugin/armor/codestats
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install dash and busybox
         run: sudo apt-get update -qq && sudo apt-get install -y -qq dash busybox
@@ -132,14 +138,14 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       # The last version listed becomes the default JAVA_HOME; both are exported
       # as JAVA_HOME_<version>_X64.
       - name: Set up JDK 17 and 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: |
@@ -149,8 +155,9 @@ jobs:
       # The wrapper still builds and publishes the plugin; `gradle` on the PATH is
       # the oldest supported version, used for the consumer build.
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
+          cache-provider: basic
           gradle-version: '9.0.0'
 
       - name: Publish the plugin to Maven local
