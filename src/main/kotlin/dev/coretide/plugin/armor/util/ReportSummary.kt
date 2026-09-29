@@ -38,6 +38,7 @@ object ReportSummary {
     fun rows(buildDir: File): List<Row> =
         listOfNotNull(
             tests(buildDir),
+            tests(buildDir, "integrationTest", "Integration tests"),
             coverage(buildDir),
             diffCoverage(buildDir),
             spotbugs(buildDir),
@@ -49,8 +50,13 @@ object ReportSummary {
             api(buildDir),
         )
 
-    fun tests(buildDir: File): Row? {
-        val executions = TestResults.read(File(buildDir, "test-results/test"))
+    /** A test task's results; `test`, the unit tests, by default. */
+    fun tests(
+        buildDir: File,
+        task: String = "test",
+        tool: String = "Tests",
+    ): Row? {
+        val executions = TestResults.read(File(buildDir, "test-results/$task"))
         if (executions.isEmpty()) return null
         val byTest = executions.groupBy { it.id }
         val failed = byTest.count { (_, runs) -> runs.none { !it.failed } }
@@ -62,7 +68,7 @@ object ReportSummary {
                 if (flaky > 0) add("$flaky flaky")
             }.joinToString(", ")
         val status = if (failed > 0) Status.FAILED else if (flaky > 0) Status.WARNING else Status.OK
-        return Row("Tests", status, result, File(buildDir, "reports/tests/test/index.html").takeIf { it.isFile })
+        return Row(tool, status, result, File(buildDir, "reports/tests/$task/index.html").takeIf { it.isFile })
     }
 
     /** JaCoCo's report, the combined one of a multi-module root, or Kover's, which uses the same XML format. */

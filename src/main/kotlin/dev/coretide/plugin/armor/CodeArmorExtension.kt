@@ -46,6 +46,12 @@ open class CodeArmorExtension
         var coverageIncludeDefaultExclusions: Boolean = true
 
         /**
+         * An `integrationTest` suite in `src/integrationTest/java` or `src/integrationTest/kotlin`, with the unit
+         * tests' dependencies. It runs after the unit tests, in the build tier, and counts towards coverage. Opt-in.
+         */
+        var integrationTests: Boolean = false
+
+        /**
          * `armorDiffCoverage`, in the build tier: the coverage of the lines changed since the base branch, as a pull
          * request would show it. It reports; [diffCoverageMinimum] also makes it fail.
          */

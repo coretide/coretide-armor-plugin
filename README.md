@@ -407,6 +407,19 @@ pull request's target on GitHub Actions, GitLab, Jenkins, Azure Pipelines or Bit
 `origin/main`, `origin/master`, `main` or `master`. Without one, or without the history back to it, it says so and
 passes: on GitHub Actions, check out with `fetch-depth: 0`, as the workflow `armorScaffoldProject` writes does.
 
+#### Integration Tests
+```kotlin
+codeArmor {
+    integrationTests = true                   // Opt-in
+}
+```
+
+Adds an `integrationTest` source set, in `src/integrationTest/java` or `src/integrationTest/kotlin`, and a task
+that runs it after the unit tests. The tests see the production code and every library the unit tests have, and
+run on the same runner. `build` runs them, their coverage counts in the JaCoCo or Kover report, coverage
+verification and diff coverage, and the summary has a line for them. Add libraries only they need with
+`integrationTestImplementation(...)`.
+
 #### Flaky and Slow Tests
 ```kotlin
 codeArmor {
@@ -894,7 +907,7 @@ time. In a multi-module build the root's page has a section per module. The tool
 ```
 build/reports/
 ├── codearmor/index.html                  # The summary, licenses.txt and diff-coverage.json
-├── tests/test/index.html                 # Test results
+├── tests/test/index.html                 # Test results (tests/integrationTest with integrationTests)
 ├── jacoco/test/html/index.html           # Coverage (kover/html with Kover)
 ├── spotbugs/spotbugsMain.html            # SpotBugs (also XML and SARIF)
 ├── detekt/detekt.html                    # detekt, in Kotlin projects (also checkstyle XML and SARIF)

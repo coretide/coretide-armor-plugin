@@ -19,6 +19,7 @@ import dev.coretide.plugin.armor.configurator.DependencyHealthConfigurator
 import dev.coretide.plugin.armor.configurator.DetektConfigurator
 import dev.coretide.plugin.armor.configurator.DiffCoverageConfigurator
 import dev.coretide.plugin.armor.configurator.ErrorProneConfigurator
+import dev.coretide.plugin.armor.configurator.IntegrationTestsConfigurator
 import dev.coretide.plugin.armor.configurator.JacocoConfigurator
 import dev.coretide.plugin.armor.configurator.KoverConfigurator
 import dev.coretide.plugin.armor.configurator.MutationTestingConfigurator
@@ -43,6 +44,7 @@ object ConfiguratorUtil {
         ResourceConfigurator.configure(project, extension, projectType)
         CompilerConfigurator.configure(project, extension, projectType)
         ErrorProneConfigurator.configure(project, extension)
+        IntegrationTestsConfigurator.configure(project, extension)
         if (extension.jacoco || extension.kover) TestConventions.configure(project, extension)
         if (KoverConfigurator.usesKover(project, extension)) {
             KoverConfigurator.configure(project, extension)

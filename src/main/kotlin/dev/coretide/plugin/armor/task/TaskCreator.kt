@@ -16,6 +16,7 @@ import dev.coretide.plugin.armor.configurator.ApiCompatibilityConfigurator
 import dev.coretide.plugin.armor.configurator.DependencyHealthConfigurator
 import dev.coretide.plugin.armor.configurator.DetektConfigurator
 import dev.coretide.plugin.armor.configurator.DiffCoverageConfigurator
+import dev.coretide.plugin.armor.configurator.IntegrationTestsConfigurator
 import dev.coretide.plugin.armor.configurator.KoverConfigurator
 import dev.coretide.plugin.armor.configurator.SonarqubeConfigurator
 import dev.coretide.plugin.armor.util.LogUtil
@@ -60,6 +61,7 @@ object TaskCreator {
     /** The local checks `codeQuality`, and so `build`, runs by default: those of the tools switched on. */
     fun defaultBuildTier(extension: CodeArmorExtension): List<String> =
         buildList {
+            if (extension.integrationTests) add(IntegrationTestsConfigurator.TASK_NAME)
             if (extension.spotbugs) add("spotbugsMain")
             if (extension.detekt) add(DetektConfigurator.TASK_NAME)
             // With kover = true, Kotlin projects run Kover's tasks and Java-only projects JaCoCo's; each project
@@ -74,10 +76,16 @@ object TaskCreator {
 
     /**
      * Default tier tasks that only some projects have: detekt exists in Kotlin projects only, with
-     * kover = true a project has either Kover's or JaCoCo's tasks, and those and diff coverage need the Java plugin.
+     * kover = true a project has either Kover's or JaCoCo's tasks, and those, diff coverage and integration tests
+     * need the Java plugin.
      */
     private val OPTIONAL_DEFAULT_TASKS =
-        setOf(DetektConfigurator.TASK_NAME, ApiCompatibilityConfigurator.KOTLIN_ABI_CHECK_TASK, DiffCoverageTask.TASK_NAME) +
+        setOf(
+            DetektConfigurator.TASK_NAME,
+            ApiCompatibilityConfigurator.KOTLIN_ABI_CHECK_TASK,
+            DiffCoverageTask.TASK_NAME,
+            IntegrationTestsConfigurator.TASK_NAME,
+        ) +
             KoverConfigurator.BUILD_TIER_TASKS + JACOCO_TASKS
 
     /**
