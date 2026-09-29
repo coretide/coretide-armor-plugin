@@ -16,11 +16,13 @@ import dev.coretide.plugin.armor.util.LogUtil
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 import org.sonarqube.gradle.SonarExtension
+import java.io.File
 
 object SonarqubeConfigurator {
     fun configureSonarqube(
         project: Project,
         extension: CodeArmorExtension,
+        aggregatedCoverage: File? = null,
     ) {
         project.pluginManager.apply("org.sonarqube")
         project.configure<SonarExtension> {
@@ -48,7 +50,11 @@ object SonarqubeConfigurator {
                     sonarProperties.property("sonar.java.target", javaVersion)
                 }
                 sonarProperties.property("sonar.java.coveragePlugin", "jacoco")
-                sonarProperties.property("sonar.coverage.jacoco.xmlReportPaths", "build/reports/jacoco/test/jacocoTestReport.xml")
+                // In a multi-module build, the combined report also counts tests in other modules.
+                sonarProperties.property(
+                    "sonar.coverage.jacoco.xmlReportPaths",
+                    listOfNotNull("build/reports/jacoco/test/jacocoTestReport.xml", aggregatedCoverage?.absolutePath).joinToString(","),
+                )
                 sonarProperties.property("sonar.coverage.minimum", "${(extension.coverageMinimum * 100).toInt()}")
                 val sonarCoverageExclusions = ExclusionUtil.generateSonarCoverageExclusions(extension)
                 sonarProperties.property("sonar.coverage.exclusions", sonarCoverageExclusions.joinToString(","))
@@ -95,6 +101,9 @@ object SonarqubeConfigurator {
                 task.dependsOn("build")
                 if (extension.jacoco) {
                     task.dependsOn("jacocoTestCoverageVerification")
+                    if (aggregatedCoverage != null) {
+                        task.dependsOn(":${AggregatedReportsConfigurator.COVERAGE_REPORT}")
+                    }
                 }
                 if (extension.spotbugs) {
                     task.dependsOn("spotbugsMain")

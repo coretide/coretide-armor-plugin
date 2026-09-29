@@ -12,10 +12,12 @@ package dev.coretide.plugin.armor.task
 
 import dev.coretide.plugin.armor.CodeArmorExtension
 import dev.coretide.plugin.armor.ProjectType
+import dev.coretide.plugin.armor.configurator.AggregatedReportsConfigurator
 import dev.coretide.plugin.armor.util.ConfiguratorUtil
 import dev.coretide.plugin.armor.util.LogUtil
 import dev.coretide.plugin.armor.util.ProjectDetector
 import org.gradle.api.Project
+import java.io.File
 
 object MultiModuleTaskCreator {
     fun configureMultiModuleProject(
@@ -29,37 +31,44 @@ object MultiModuleTaskCreator {
                     subproject.buildFile.exists()
             }
 
+        val aggregatedReports = AggregatedReportsConfigurator.configure(project, extension)
+        val aggregatedCoverage = if (extension.jacoco) AggregatedReportsConfigurator.coverageXml(project) else null
+
         actualProjects.forEach { subproject ->
             subproject.afterEvaluate {
                 val subProjectType = ProjectDetector.detectProjectType(subproject)
-                configureSingleModuleProject(subproject, extension, subProjectType)
+                configureSingleModuleProject(subproject, extension, subProjectType, aggregatedCoverage)
+                AggregatedReportsConfigurator.addModule(project, subproject, extension)
             }
         }
 
-        createMultiModuleTasks(project, actualProjects)
+        createMultiModuleTasks(project, actualProjects, aggregatedReports)
     }
 
     private fun configureSingleModuleProject(
         project: Project,
         extension: CodeArmorExtension,
         projectType: ProjectType,
+        aggregatedCoverage: File?,
     ) {
-        ConfiguratorUtil.registerConfigurators(project, extension, projectType)
+        ConfiguratorUtil.registerConfigurators(project, extension, projectType, aggregatedCoverage)
         TaskCreator.createCustomTasks(project, extension)
     }
 
     fun createMultiModuleTasks(
         project: Project,
         actualProjects: List<Project>,
+        aggregatedReports: List<String> = emptyList(),
     ) {
         project.tasks.register("allCodeQuality") { task ->
             task.group = "verification"
-            task.description = "Runs code quality checks on all modules"
+            task.description = "Runs code quality checks on all modules, then the combined test and coverage reports"
             actualProjects.forEach { subproject ->
                 subproject.tasks.findByName("codeQuality")?.let { subTask ->
                     task.dependsOn(subTask)
                 }
             }
+            task.dependsOn(aggregatedReports)
             task.doLast {
                 LogUtil.essential("🎯 All modules code quality checks completed!")
             }

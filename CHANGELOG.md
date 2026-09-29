@@ -19,6 +19,10 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   override.
 
 ### Added
+- **Combined reports for multi-module builds:** `allCodeQuality` also writes one coverage report
+  (`testCodeCoverageReport`) and one test report (`testAggregateTestReport`) for the whole build on the root
+  project. Coverage counts tests in one module that exercise another's code, and each module's SonarQube
+  analysis reads it.
 - **detekt for Kotlin projects:** detekt 2.0.0-alpha.6 joins the local tier in projects that apply the Kotlin
   JVM plugin, with HTML, SARIF and checkstyle reports, a baseline (`detektBaseline`), and its findings
   imported into SonarQube. It is left off, with a message, when the project's Kotlin release is newer than

@@ -500,6 +500,22 @@ codeArmor {
 }
 ```
 
+Apply CodeArmor to the root project; it configures every module. `./gradlew allCodeQuality` runs each module's
+`codeQuality`, then two reports for the whole build on the root:
+
+| Report | Task | Where |
+|---|---|---|
+| Coverage | `testCodeCoverageReport` | `build/reports/jacoco/testCodeCoverageReport/` (HTML and XML) |
+| Tests | `testAggregateTestReport` | `build/reports/tests/test/aggregated-results/` |
+
+- **Cross-module coverage:** the combined coverage report counts a test in one module that exercises another
+  module's code. It uses the same exclusions as each module's own report.
+- **SonarQube:** each module's analysis reads the combined report as well as its own.
+- **Which modules:** only modules with the Java plugin are included, so a docs or aggregator module is fine.
+- **Repositories:** the root needs none of its own. It takes JaCoCo's reporting library from a module that
+  already resolves it.
+- **Switching it off:** `jacoco = false` leaves out the coverage report; the test report stays.
+
 ## 🪝 Git Hooks
 
 CodeArmor installs hooks only when you ask it to; a build never writes them:
