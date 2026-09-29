@@ -29,7 +29,9 @@ import javax.inject.Inject
  *
  * - The pre-push hook runs the `checks.prePush` tasks and blocks the push when they fail. With
  *   `prePushEnabled = false`, a pre-push hook CodeArmor installed earlier is removed instead.
- * - A hook CodeArmor did not write is never overwritten.
+ * - With `conventionalCommits`, a commit-msg hook rejects messages that are not Conventional Commits.
+ * - With `secretScan`, a pre-commit hook scans the staged changes with gitleaks.
+ * - A hook CodeArmor did not write is never overwritten. One it wrote and that is now switched off is removed.
  * - Hooks CodeArmor 0.1.x wrote during configuration are replaced, or removed when obsolete.
  */
 @UntrackedTask(because = "Writes into the repository's .git/hooks, which Gradle does not track")
@@ -42,6 +44,15 @@ abstract class InstallGitHooksTask : DefaultTask() {
 
     @get:Input
     abstract val prePushTasks: ListProperty<String>
+
+    @get:Input
+    abstract val conventionalCommits: Property<Boolean>
+
+    @get:Input
+    abstract val conventionalCommitTypes: ListProperty<String>
+
+    @get:Input
+    abstract val secretScan: Property<Boolean>
 
     @get:Inject
     abstract val execOperations: ExecOperations
@@ -63,19 +74,13 @@ abstract class InstallGitHooksTask : DefaultTask() {
 
         // 0.1.3's pre-commit hook calls tasks that no longer exist.
         val legacyPreCommit = File(repository.hooksDir, "pre-commit")
-        if (GitHooksManager.isManagedByCodeArmor(legacyPreCommit) && legacyPreCommit.delete()) {
+        if (GitHooksManager.isLegacy(legacyPreCommit) && legacyPreCommit.delete()) {
             logger.lifecycle("🧹 Removed the obsolete pre-commit hook an earlier CodeArmor version installed")
         }
 
         val prePush = File(repository.hooksDir, "pre-push")
         when {
-            !prePushEnabled.get() -> {
-                if (GitHooksManager.isManagedByCodeArmor(prePush) && prePush.delete()) {
-                    logger.lifecycle("🧹 prePushEnabled = false: removed CodeArmor's pre-push hook")
-                } else {
-                    logger.lifecycle("ℹ️ prePushEnabled = false: no pre-push hook installed")
-                }
-            }
+            !prePushEnabled.get() -> remove(prePush, "prePushEnabled = false")
             prePush.exists() && !GitHooksManager.isManagedByCodeArmor(prePush) -> {
                 logger.warn(
                     "⚠️ Left the existing pre-push hook alone because CodeArmor did not write it: $prePush. " +
@@ -88,12 +93,69 @@ abstract class InstallGitHooksTask : DefaultTask() {
             else -> {
                 val gradleRootFromTopLevel =
                     gradleRoot.canonicalFile.relativeTo(repository.topLevel).invariantSeparatorsPath
-                prePush.writeText(GitHooksManager.prePushScript(gradleRootFromTopLevel, prePushTasks.get()))
-                prePush.setExecutable(true, false)
+                write(prePush, GitHooksManager.prePushScript(gradleRootFromTopLevel, prePushTasks.get()))
                 logger.lifecycle("🪝 Installed the pre-push hook ($prePush): runs ${prePushTasks.get().joinToString(" ")}")
             }
         }
 
+        val types = conventionalCommitTypes.get()
+        val invalidTypes = types.filterNot { GitHooksManager.COMMIT_TYPE.matches(it) }
+        if (conventionalCommits.get() && invalidTypes.isNotEmpty()) {
+            logger.warn("⚠️ Left out conventionalCommitTypes that are not plain words: ${invalidTypes.joinToString(", ")}")
+        }
+        installIfEnabled(
+            File(repository.hooksDir, "commit-msg"),
+            conventionalCommits.get(),
+            "conventionalCommits",
+            "rejects messages that are not Conventional Commits",
+        ) { GitHooksManager.commitMsgScript(types - invalidTypes.toSet()) }
+        installIfEnabled(
+            File(repository.hooksDir, "pre-commit"),
+            secretScan.get(),
+            "secretScan",
+            "scans the staged changes with gitleaks",
+        ) { GitHooksManager.secretScanScript() }
+
         GitHooksManager.reportHooksPath(repository, logger)
+    }
+
+    /** Writes [hook] when [enabled]; otherwise removes the one CodeArmor wrote earlier, if any. */
+    private fun installIfEnabled(
+        hook: File,
+        enabled: Boolean,
+        setting: String,
+        purpose: String,
+        script: () -> String,
+    ) {
+        when {
+            !enabled -> remove(hook, "$setting = false", quiet = true)
+            hook.exists() && !GitHooksManager.isManagedByCodeArmor(hook) -> {
+                logger.warn("⚠️ Left the existing ${hook.name} hook alone because CodeArmor did not write it: $hook")
+            }
+            else -> {
+                write(hook, script())
+                logger.lifecycle("🪝 Installed the ${hook.name} hook ($hook): $purpose")
+            }
+        }
+    }
+
+    private fun remove(
+        hook: File,
+        reason: String,
+        quiet: Boolean = false,
+    ) {
+        if (GitHooksManager.isManagedByCodeArmor(hook) && hook.delete()) {
+            logger.lifecycle("🧹 $reason: removed CodeArmor's ${hook.name} hook")
+        } else if (!quiet) {
+            logger.lifecycle("ℹ️ $reason: no ${hook.name} hook installed")
+        }
+    }
+
+    private fun write(
+        hook: File,
+        script: String,
+    ) {
+        hook.writeText(script)
+        hook.setExecutable(true, false)
     }
 }

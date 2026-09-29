@@ -44,18 +44,98 @@ object GitHooksManager {
             task.gradleRootDirectory.set(project.rootDir)
             task.prePushEnabled.set(project.provider { extension.prePushEnabled })
             task.prePushTasks.set(extension.checks.prePush)
+            task.conventionalCommits.set(project.provider { extension.conventionalCommits })
+            task.conventionalCommitTypes.set(project.provider { extension.conventionalCommitTypes })
+            task.secretScan.set(project.provider { extension.secretScan })
         }
         project.tasks.register("armorUninstallGitHooks", UninstallGitHooksTask::class.java) { task ->
             task.gradleRootDirectory.set(project.rootDir)
         }
     }
 
+    /** The hooks CodeArmor may install, and so remove. */
+    val HOOKS = listOf("pre-push", "commit-msg", "pre-commit")
+
+    /** A Conventional Commit type: a plain word, which the commit-msg hook's pattern can hold as it is. */
+    val COMMIT_TYPE = Regex("[A-Za-z0-9_-]+")
+
     /** True for a hook CodeArmor wrote, in this version or in 0.1.x. */
     fun isManagedByCodeArmor(hook: File): Boolean {
         if (!hook.isFile) return false
-        val text = hook.readText()
-        return MARKER in text || LEGACY_SIGNATURES.any { it in text }
+        return MARKER in hook.readText() || isLegacy(hook)
     }
+
+    /** True for a hook CodeArmor 0.1.x wrote during configuration. */
+    fun isLegacy(hook: File): Boolean {
+        if (!hook.isFile) return false
+        val text = hook.readText()
+        return MARKER !in text && LEGACY_SIGNATURES.any { it in text }
+    }
+
+    /**
+     * The commit-msg hook. The message's first line must read `type(scope)!: description`, with a type from
+     * [types]; the scope and `!` are optional. Merge, revert, fixup!, squash! and amend! commits pass: git writes
+     * those subjects itself.
+     */
+    fun commitMsgScript(types: List<String>): String {
+        val pattern = "^(${types.joinToString("|")})(\\([^)]+\\))?!?: [^ ]"
+        return """
+            |#!/bin/sh
+            |# $MARKER
+            |# Installed by `./gradlew armorInstallGitHooks`; `./gradlew armorUninstallGitHooks` removes it.
+            |# Rejects a commit message that is not a Conventional Commit.
+            |# Skip it once with `git commit --no-verify`.
+            |
+            |subject=${'$'}(grep -v '^#' "${'$'}1" | sed -n '/[^[:space:]]/{p;q;}')
+            |case "${'$'}subject" in
+            |  "Merge "* | "Revert "* | "fixup! "* | "squash! "* | "amend! "*) exit 0 ;;
+            |esac
+            |if printf '%s\n' "${'$'}subject" | grep -Eq ${shellQuote(pattern)}; then
+            |  exit 0
+            |fi
+            |echo "❌ CodeArmor: the commit message is not a Conventional Commit:"
+            |printf '   %s\n' "${'$'}subject"
+            |echo "   Start it with a type, an optional scope, and a colon, for example:"
+            |echo "   feat(parser): accept dates without a year"
+            |echo ${shellQuote("   Types: ${types.joinToString(", ")}")}
+            |echo "   Skip this check once with: git commit --no-verify"
+            |exit 1
+            |
+        """.trimMargin()
+    }
+
+    /**
+     * The pre-commit hook. It scans the staged changes with gitleaks (or `CODEARMOR_GITLEAKS`) and blocks a commit
+     * that adds a secret. Without gitleaks it warns and lets the commit through.
+     */
+    fun secretScanScript(): String =
+        """
+        |#!/bin/sh
+        |# $MARKER
+        |# Installed by `./gradlew armorInstallGitHooks`; `./gradlew armorUninstallGitHooks` removes it.
+        |# Scans the staged changes for secrets with gitleaks, and blocks a commit that adds one.
+        |# Skip it once with `git commit --no-verify`.
+        |
+        |gitleaks="${'$'}{CODEARMOR_GITLEAKS:-gitleaks}"
+        |if ! command -v "${'$'}gitleaks" >/dev/null 2>&1; then
+        |  echo "⚠️ CodeArmor: gitleaks is not installed, so the staged changes were not scanned for secrets."
+        |  echo "   Install it: https://github.com/gitleaks/gitleaks#installing"
+        |  exit 0
+        |fi
+        |# gitleaks 8.19 replaced `protect --staged` with `git --pre-commit --staged`.
+        |if "${'$'}gitleaks" git --help >/dev/null 2>&1; then
+        |  "${'$'}gitleaks" git --pre-commit --staged --redact --no-banner
+        |else
+        |  "${'$'}gitleaks" protect --staged --redact --no-banner
+        |fi
+        |if [ "${'$'}?" -ne 0 ]; then
+        |  echo "❌ CodeArmor: gitleaks found a secret in the staged changes, or could not scan them, so the commit was blocked."
+        |  echo "   Remove the secret, or mark a false positive with a gitleaks:allow comment or in .gitleaksignore."
+        |  echo "   Skip the scan once with: git commit --no-verify"
+        |  exit 1
+        |fi
+        |
+        """.trimMargin()
 
     /**
      * The pre-push hook. It runs [tasks] from the Gradle root, which may be a subdirectory of the

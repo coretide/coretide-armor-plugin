@@ -23,7 +23,7 @@ CodeArmor is a powerful Gradle plugin that integrates multiple code quality and 
 - 🔌 **Library API Checks on Request**: binary compatibility with your last release, and Kotlin ABI dumps
 - 📦 **Dependency Health**: newer versions, a CycloneDX SBOM and a licence report on CI; unused dependencies on request
 - 🚀 **Optimized Workflows**: Custom tasks for different development stages
-- 🪝 **Git Hooks on Request**: A blocking pre-push hook for the basic checks, installed only when you run `armorInstallGitHooks`
+- 🪝 **Git Hooks on Request**: A blocking pre-push hook for the basic checks, and optional Conventional Commits and secret-scanning hooks, installed only when you run `armorInstallGitHooks`
 - 🧱 **Check Tiers**: Basic checks before a push, local checks in every build, network checks on CI
 - 📈 **Code Stats**: Optional [Code::Stats](https://codestats.net) reporting of your commit activity, per repository or machine-wide
 - 📋 **Version Management**: Automatic versioning from Git tags + resource token replacement
@@ -575,6 +575,9 @@ codeArmor {
 codeArmor {
     enableGitHooks = true                     // Register armorInstallGitHooks / armorUninstallGitHooks
     prePushEnabled = true                     // armorInstallGitHooks includes the pre-push hook
+    conventionalCommits = false               // Opt-in: a commit-msg hook for Conventional Commits
+    conventionalCommitTypes = mutableListOf("feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore", "revert")
+    secretScan = false                        // Opt-in: a pre-commit hook that runs gitleaks
 }
 ```
 
@@ -638,6 +641,20 @@ CodeArmor installs hooks only when you ask it to; a build never writes them:
 - 📁 **Monorepo-aware**: runs from the Gradle root, even when that is a subdirectory of the repository
 
 The heavier checks run in `build` and in `fullAnalysis` on CI, not on every push.
+
+### Commit Message Hook
+With `conventionalCommits = true`, a commit-msg hook rejects a commit whose first line is not a
+[Conventional Commit](https://www.conventionalcommits.org): `type(scope)!: description`, where the scope and `!`
+are optional and the type is one of `conventionalCommitTypes`. Merge, revert, `fixup!`, `squash!` and `amend!`
+commits pass, since git writes their subjects itself. `git commit --no-verify` skips the check once.
+
+### Secret Scanning Hook
+With `secretScan = true`, a pre-commit hook scans the staged changes with [gitleaks](https://github.com/gitleaks/gitleaks)
+and blocks a commit that adds a secret. Mark a false positive with a `gitleaks:allow` comment or in `.gitleaksignore`.
+- gitleaks is not bundled; install it from its releases or your package manager. Without it, the hook warns and
+  lets the commit through.
+- Works with gitleaks 8.19 and later (`gitleaks git --pre-commit --staged`) and older 8.x (`gitleaks protect --staged`).
+- `git commit --no-verify` skips the scan once.
 
 ### Existing Hooks
 - A hook CodeArmor did not write is never overwritten. `armorInstallGitHooks` tells you what to add to it
