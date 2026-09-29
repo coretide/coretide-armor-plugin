@@ -15,6 +15,11 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   default, SonarQube Cloud. A local server needs `sonarHostUrl = "http://localhost:9000"`.
 
 ### Added
+- **Diff coverage.** `armorDiffCoverage`, in the build tier, measures the share of the lines changed since the base
+  branch that tests run, from the JaCoCo or Kover report, and names the untested ones. It also appears in the
+  summary. It only reports until `diffCoverageMinimum` is set. The base branch is the pull request's target on
+  common CI services, or `origin/HEAD`, `main` or `master`; `diffCoverageBase` overrides it. `diffCoverage = false`
+  turns it off.
 - **`armorInfo`** prints what CodeArmor checks in a project: its version, what `build`, `fullAnalysis` and the
   pre-push hook run, and each tool, switched on or off, with its version and settings. It ends with what needs
   attention: SonarQube with no server, OWASP without an NVD API key, git hooks not installed, `secretScan` without

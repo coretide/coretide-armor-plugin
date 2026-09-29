@@ -13,6 +13,7 @@ package dev.coretide.plugin.armor.task
 import dev.coretide.plugin.armor.CodeArmorExtension
 import dev.coretide.plugin.armor.configurator.ArchitectureTestsConfigurator
 import dev.coretide.plugin.armor.configurator.DetektConfigurator
+import dev.coretide.plugin.armor.configurator.DiffCoverageConfigurator
 import dev.coretide.plugin.armor.configurator.ErrorProneConfigurator
 import dev.coretide.plugin.armor.configurator.JacocoConfigurator
 import dev.coretide.plugin.armor.configurator.KoverConfigurator
@@ -242,6 +243,12 @@ abstract class ArmorInfoTask : DefaultTask() {
                 extension.kover -> on += "$jacoco (kover = true, but no Kotlin here)"
                 extension.jacoco -> on += jacoco
                 else -> plainOff += "coverage"
+            }
+            if (DiffCoverageConfigurator.enabled(extension)) {
+                on += "Diff coverage: " +
+                    (extension.diffCoverageMinimum?.let { "at least ${percent(it)} of changed lines" } ?: "reports only")
+            } else {
+                plainOff += "diff coverage"
             }
             when {
                 !extension.detekt -> plainOff += "detekt"

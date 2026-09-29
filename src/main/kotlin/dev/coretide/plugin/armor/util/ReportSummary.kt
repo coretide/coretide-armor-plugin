@@ -11,11 +11,9 @@
 package dev.coretide.plugin.armor.util
 
 import groovy.json.JsonSlurper
-import org.w3c.dom.Document
 import org.w3c.dom.Element
 import java.io.File
 import java.util.Locale
-import javax.xml.parsers.DocumentBuilderFactory
 
 /**
  * One line per tool, read from the reports the tools left in a project's build directory. A tool that has not
@@ -41,6 +39,7 @@ object ReportSummary {
         listOfNotNull(
             tests(buildDir),
             coverage(buildDir),
+            diffCoverage(buildDir),
             spotbugs(buildDir),
             detekt(buildDir),
             mutations(buildDir),
@@ -78,8 +77,8 @@ object ReportSummary {
                 ),
                 Triple("Coverage (Kover)", "reports/kover/report.xml", "reports/kover/html/index.html"),
             ).firstOrNull { File(buildDir, it.second).isFile } ?: return null
-        val report = parse(File(buildDir, xml)).documentElement
-        val counters = children(report, "counter").associateBy { it.getAttribute("type") }
+        val report = XmlReports.parse(File(buildDir, xml)).documentElement
+        val counters = XmlReports.children(report, "counter").associateBy { it.getAttribute("type") }
         fun percent(type: String): String? {
             val counter = counters[type] ?: return null
             val covered = counter.getAttribute("covered").toLong()
@@ -90,21 +89,35 @@ object ReportSummary {
         return Row(tool, Status.OK, result.joinToString(", ").ifEmpty { "nothing to measure" }, File(buildDir, html).takeIf { it.isFile })
     }
 
+    /** What `armorDiffCoverage` measured, when it found a base branch. */
+    fun diffCoverage(buildDir: File): Row? {
+        val json = File(buildDir, "reports/codearmor/diff-coverage.json").takeIf { it.isFile } ?: return null
+        val result = JsonSlurper().parse(json) as? Map<*, *> ?: return null
+        val base = result["base"]
+        val lines = (result["lines"] as? Number)?.toInt() ?: 0
+        if (lines == 0) return Row("Diff coverage", Status.OK, "no changed lines with code since $base", null)
+        val share = ((result["covered"] as? Number)?.toInt() ?: 0).toDouble() / lines
+        val minimum = (result["minimum"] as? Number)?.toDouble()
+        val status = if (minimum != null && share < minimum) Status.FAILED else Status.OK
+        val percent = String.format(Locale.ROOT, "%.1f%%", share * 100)
+        return Row("Diff coverage", status, "$percent of $lines changed lines since $base", null)
+    }
+
     fun spotbugs(buildDir: File): Row? {
         val xml = File(buildDir, "reports/spotbugs/spotbugsMain.xml").takeIf { it.isFile } ?: return null
-        val findings = parse(xml).getElementsByTagName("BugInstance").length
+        val findings = XmlReports.parse(xml).getElementsByTagName("BugInstance").length
         return findings("SpotBugs", findings, File(buildDir, "reports/spotbugs/spotbugsMain.html"))
     }
 
     fun detekt(buildDir: File): Row? {
         val xml = File(buildDir, "reports/detekt/detekt.xml").takeIf { it.isFile } ?: return null
-        val findings = parse(xml).getElementsByTagName("error").length
+        val findings = XmlReports.parse(xml).getElementsByTagName("error").length
         return findings("detekt", findings, File(buildDir, "reports/detekt/detekt.html"))
     }
 
     fun mutations(buildDir: File): Row? {
         val xml = File(buildDir, "reports/pitest/mutations.xml").takeIf { it.isFile } ?: return null
-        val mutations = parse(xml).getElementsByTagName("mutation")
+        val mutations = XmlReports.parse(xml).getElementsByTagName("mutation")
         val total = mutations.length
         val detected = (0 until total).count { (mutations.item(it) as Element).getAttribute("detected") == "true" }
         val result = if (total == 0) "no mutations" else String.format(Locale.ROOT, "%.1f%% of %d mutations killed", detected * 100.0 / total, total)
@@ -154,25 +167,4 @@ object ReportSummary {
         count: Int,
         html: File,
     ) = Row(tool, if (count == 0) Status.OK else Status.WARNING, if (count == 0) "no findings" else "$count findings", html.takeIf { it.isFile })
-
-    /** JaCoCo's report declares a DTD, so a doctype is allowed; nothing external is ever loaded. */
-    private fun parse(xml: File): Document {
-        val factory =
-            DocumentBuilderFactory.newInstance().apply {
-                setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
-                setFeature("http://xml.org/sax/features/external-general-entities", false)
-                setFeature("http://xml.org/sax/features/external-parameter-entities", false)
-                isExpandEntityReferences = false
-                isXIncludeAware = false
-            }
-        return factory.newDocumentBuilder().parse(xml)
-    }
-
-    private fun children(
-        element: Element,
-        tag: String,
-    ): List<Element> {
-        val nodes = element.childNodes
-        return (0 until nodes.length).mapNotNull { nodes.item(it) as? Element }.filter { it.tagName == tag }
-    }
 }

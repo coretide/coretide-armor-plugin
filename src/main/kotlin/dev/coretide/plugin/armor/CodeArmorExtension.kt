@@ -46,6 +46,21 @@ open class CodeArmorExtension
         var coverageIncludeDefaultExclusions: Boolean = true
 
         /**
+         * `armorDiffCoverage`, in the build tier: the coverage of the lines changed since the base branch, as a pull
+         * request would show it. It reports; [diffCoverageMinimum] also makes it fail.
+         */
+        var diffCoverage: Boolean = true
+
+        /** The share of changed lines tests must cover, from 0 to 1, or the build fails. Unset, diff coverage only reports. */
+        var diffCoverageMinimum: Double? = null
+
+        /**
+         * The branch diff coverage compares with. Unset, the pull request's target branch on GitHub Actions, GitLab,
+         * Jenkins, Azure Pipelines or Bitbucket, then `origin/HEAD`, `origin/main`, `origin/master`, `main` or `master`.
+         */
+        var diffCoverageBase: String? = null
+
+        /**
          * Runs test tasks that are still on Gradle's default JUnit 4 runner on the JUnit Platform. A test
          * task that chose TestNG, or configured the JUnit Platform itself, keeps its choice. Set to false to
          * keep JUnit 4.
