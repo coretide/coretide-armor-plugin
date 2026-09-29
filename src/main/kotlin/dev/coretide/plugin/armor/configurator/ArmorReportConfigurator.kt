@@ -12,6 +12,7 @@ package dev.coretide.plugin.armor.configurator
 
 import com.github.spotbugs.snom.SpotBugsTask
 import dev.coretide.plugin.armor.task.ArmorReportTask
+import dev.coretide.plugin.armor.task.DiffCoverageTask
 import org.gradle.api.Project
 import org.gradle.api.tasks.testing.Test
 
@@ -26,6 +27,7 @@ object ArmorReportConfigurator {
             "koverXmlReport",
             "koverHtmlReport",
             "testCodeCoverageReport",
+            DiffCoverageTask.TASK_NAME,
             DetektConfigurator.TASK_NAME,
             MutationTestingConfigurator.TASK_NAME,
             "dependencyCheckAnalyze",

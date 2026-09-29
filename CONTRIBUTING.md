@@ -242,6 +242,8 @@ the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
   Kotlin version guard, whose constants must match the bundled detekt plugin
 - **OWASP settings and the Groovy DSL** (`OwaspTest`, `GroovyDslTest`): what OWASP scans and how it is configured,
   and the `codeArmor` block in a Groovy build script
+- **Diff coverage** (`DiffCoverageTest`): a feature branch against its base with JaCoCo and Kover, the minimum,
+  the diff parser (renames, deletions, quoted names) and matching report entries to changed files
 - **Coverage exclusions** (`CoverageExclusionsTest`): the narrow defaults, a build's own exclusions, and the
   changelog's snippet that brings back the pre-0.3.0 list
 - **Summary page and architecture tests** (`ArmorReportTest`): the page and console summary, each report parser,

@@ -42,10 +42,11 @@ class ArmorInfoTest {
 
         assertContains(output, "🛡️ CodeArmor ")
         assertFalse(output.contains("(unknown version)"), output)
-        assertContains(output, "  build, through codeQuality: spotbugsMain, jacocoTestReport, jacocoTestCoverageVerification")
+        assertContains(output, "  build, through codeQuality: spotbugsMain, jacocoTestReport, jacocoTestCoverageVerification, armorDiffCoverage")
         assertContains(output, "  CI, through fullAnalysis: dependencyCheckAnalyze, dependencyUpdates, armorLicenseReport")
         assertContains(output, "  ✅ SpotBugs 4.10.3")
         assertContains(output, "  ✅ JaCoCo 0.8.15: at least 30% of instructions, 25% of lines per class")
+        assertContains(output, "  ✅ Diff coverage: reports only")
         assertContains(output, "  ➖ detekt: no Kotlin here")
         assertContains(output, "  ➖ SonarQube: no server configured")
         assertContains(output, "⚠️  SonarQube is on, but no server or token is configured, so fullAnalysis leaves it out")

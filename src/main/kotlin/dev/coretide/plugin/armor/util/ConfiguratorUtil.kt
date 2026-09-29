@@ -17,6 +17,7 @@ import dev.coretide.plugin.armor.configurator.ArchitectureTestsConfigurator
 import dev.coretide.plugin.armor.configurator.CompilerConfigurator
 import dev.coretide.plugin.armor.configurator.DependencyHealthConfigurator
 import dev.coretide.plugin.armor.configurator.DetektConfigurator
+import dev.coretide.plugin.armor.configurator.DiffCoverageConfigurator
 import dev.coretide.plugin.armor.configurator.ErrorProneConfigurator
 import dev.coretide.plugin.armor.configurator.JacocoConfigurator
 import dev.coretide.plugin.armor.configurator.KoverConfigurator
@@ -49,6 +50,7 @@ object ConfiguratorUtil {
             if (extension.kover) LogUtil.verbose("📊 Kover measures Kotlin projects only; ${project.path} keeps JaCoCo")
             JacocoConfigurator.configureJacoco(project, extension)
         }
+        DiffCoverageConfigurator.configure(project, extension)
         TestReportingConfigurator.configure(project, extension)
         MutationTestingConfigurator.configure(project, extension)
         if (extension.spotbugs) SpotbugsConfigurator.configureSpotbugs(project, extension)

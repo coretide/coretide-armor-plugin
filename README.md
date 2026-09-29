@@ -205,7 +205,7 @@ CodeArmor organizes its checks in three tiers, from fastest to most thorough:
 | Tier | Runs in | Default checks | Needs |
 |---|---|---|---|
 | Basic | the pre-push hook (`quickBuild`) | compile + unit tests | nothing |
-| Local | `./gradlew build` (through `codeQuality`) | SpotBugs, detekt (Kotlin projects), JaCoCo (or Kover) report + coverage verification | nothing |
+| Local | `./gradlew build` (through `codeQuality`) | SpotBugs, detekt (Kotlin projects), JaCoCo (or Kover) report + coverage verification, diff coverage | nothing |
 | CI | `fullAnalysis` | the local tier + OWASP Dependency Check + dependency updates + SBOM and licence report + SonarQube, once a server or token is configured | network, a SonarQube server |
 
 Each tier's task list is configurable; see [Check Tiers](#check-tiers).
@@ -376,6 +376,30 @@ With JaCoCo on, CodeArmor also sets up the test tasks:
   chose TestNG, or configured the JUnit Platform itself, keeps its choice. Set `junitPlatform = false` to
   keep JUnit 4.
 - **Logging:** failed tests are shown with their full stack trace. Passing tests and test output stay quiet.
+
+#### Diff Coverage
+```kotlin
+codeArmor {
+    diffCoverage = true                       // armorDiffCoverage, in build
+    diffCoverageMinimum = 0.80                // Optional: fail when tests cover less of the changed lines
+    diffCoverageBase = "origin/develop"       // Optional: the branch to compare with
+}
+```
+
+`armorDiffCoverage` measures what a pull request adds: the share of the lines changed since the base branch that
+tests run, from the JaCoCo or Kover report the build already writes. Only lines with code count, in files the
+report covers, so comments, tests and excluded classes are left out. It compares the working tree, so uncommitted
+changes count too:
+
+```
+📐 Diff coverage: 75.0% of 12 changed lines since origin/main
+   src/main/java/com/example/OrderService.java: untested lines 41, 42, 57
+```
+
+It reports and never fails, until `diffCoverageMinimum` is set. The base branch is `diffCoverageBase`, else the
+pull request's target on GitHub Actions, GitLab, Jenkins, Azure Pipelines or Bitbucket, else `origin/HEAD`,
+`origin/main`, `origin/master`, `main` or `master`. Without one, or without the history back to it, it says so and
+passes: on GitHub Actions, check out with `fetch-depth: 0`, as the workflow `armorScaffoldProject` writes does.
 
 #### Flaky and Slow Tests
 ```kotlin
@@ -837,6 +861,7 @@ at `build/reports/codearmor/index.html` with one line per tool and a link to its
 📋 CodeArmor summary: build/reports/codearmor/index.html
    ✅ Tests: 214 tests
    ✅ Coverage (JaCoCo): 83.4% of lines, 71.2% of branches
+   ✅ Diff coverage: 75.0% of 12 changed lines since origin/main
    ⚠️ SpotBugs: 2 findings
    ✅ Dependency updates: all dependencies up to date
 ```
@@ -846,7 +871,7 @@ time. In a multi-module build the root's page has a section per module. The tool
 
 ```
 build/reports/
-├── codearmor/index.html                  # The summary, and licenses.txt
+├── codearmor/index.html                  # The summary, licenses.txt and diff-coverage.json
 ├── tests/test/index.html                 # Test results
 ├── jacoco/test/html/index.html           # Coverage (kover/html with Kover)
 ├── spotbugs/spotbugsMain.html            # SpotBugs (also XML and SARIF)

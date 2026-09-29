@@ -15,6 +15,7 @@ import dev.coretide.plugin.armor.ProjectType
 import dev.coretide.plugin.armor.configurator.ApiCompatibilityConfigurator
 import dev.coretide.plugin.armor.configurator.DependencyHealthConfigurator
 import dev.coretide.plugin.armor.configurator.DetektConfigurator
+import dev.coretide.plugin.armor.configurator.DiffCoverageConfigurator
 import dev.coretide.plugin.armor.configurator.KoverConfigurator
 import dev.coretide.plugin.armor.configurator.SonarqubeConfigurator
 import dev.coretide.plugin.armor.util.LogUtil
@@ -63,18 +64,19 @@ object TaskCreator {
             // leaves out the ones it does not have.
             if (extension.kover) addAll(KoverConfigurator.BUILD_TIER_TASKS)
             if (extension.jacoco || extension.kover) addAll(JACOCO_TASKS)
+            if (DiffCoverageConfigurator.enabled(extension)) add(DiffCoverageTask.TASK_NAME)
             if (extension.kotlinAbiValidation) add(ApiCompatibilityConfigurator.KOTLIN_ABI_CHECK_TASK)
         }
 
     private val JACOCO_TASKS = listOf("jacocoTestReport", "jacocoTestCoverageVerification")
 
     /**
-     * Default tier tasks that only some projects have: detekt exists in Kotlin projects only, and with
-     * kover = true a project has either Kover's or JaCoCo's tasks.
+     * Default tier tasks that only some projects have: detekt exists in Kotlin projects only, with
+     * kover = true a project has either Kover's or JaCoCo's tasks, and those and diff coverage need the Java plugin.
      */
     private val OPTIONAL_DEFAULT_TASKS =
-        setOf(DetektConfigurator.TASK_NAME, ApiCompatibilityConfigurator.KOTLIN_ABI_CHECK_TASK) + KoverConfigurator.BUILD_TIER_TASKS +
-            JACOCO_TASKS
+        setOf(DetektConfigurator.TASK_NAME, ApiCompatibilityConfigurator.KOTLIN_ABI_CHECK_TASK, DiffCoverageTask.TASK_NAME) +
+            KoverConfigurator.BUILD_TIER_TASKS + JACOCO_TASKS
 
     /**
      * The tier's tasks that exist in this project. A default task that only some projects have is left out
