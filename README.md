@@ -17,6 +17,7 @@ CodeArmor is a powerful Gradle plugin that integrates multiple code quality and 
 ## ✨ Features
 
 - 🔍 **Comprehensive Code Quality**: JaCoCo, SpotBugs, detekt (Kotlin), SonarQube integration
+- 🧾 **Code Scanning Ready**: SARIF from SpotBugs, detekt and OWASP, gathered for GitHub code scanning, and a workflow to start from
 - 🐞 **Bug and Null Checks on Request**: Error Prone and NullAway on Java sources as they compile
 - 🧪 **Test Insights**: flaky tests retried on CI and named, slowest tests listed; Kover and PIT mutation testing on request
 - 🔒 **Security Analysis**: OWASP Dependency Check (**Veracode integration in development**)
@@ -247,6 +248,23 @@ Each tier's task list is configurable; see [Check Tiers](#check-tiers).
 | `armorCodeStatsStatus` | Shows the settings in effect, the token, queued pulses and what this repository reports through |
 | `armorCodeStatsFlush` | Retries delivering queued pulses now |
 
+### Code Scanning
+SpotBugs, detekt and OWASP Dependency Check write SARIF reports. `armorSarifReport` gathers them from every
+project into `build/reports/sarif/`, ready for GitHub code scanning or another SARIF viewer:
+```shell script
+./gradlew build --continue
+./gradlew armorSarifReport
+```
+Each run gets a category from where its report lies, such as `codearmor/module-a/spotbugs/spotbugsMain`: code
+scanning rejects two runs of one tool in the same category, as with the SpotBugs runs of two modules.
+
+`./gradlew armorScaffoldProject` writes a starting point, never overwriting what exists:
+- `.editorconfig` in the Gradle root: UTF-8, LF, 4-space indents, 120 columns for Java and Kotlin, trailing
+  commas for Kotlin.
+- `.github/workflows/codearmor.yml` at the top of the repository. It runs `build --continue` and uploads the
+  gathered SARIF with `github/codeql-action/upload-sarif`, so findings show in the Security tab and on pull
+  requests. It runs from the Gradle root when that is a subdirectory, and has `fullAnalysis` ready to switch on.
+
 ### Debug and Information Tasks
 
 #### `logExclusionInfo`
@@ -373,6 +391,9 @@ Without `excludeFile`, CodeArmor generates a default filter under `build/codearm
 that default and customize it, run `./gradlew armorScaffoldConfigs`: it writes
 `config/spotbugs/spotbugs-exclude.xml` and `config/owasp/suppressions.xml` (never overwriting existing
 files), which you then point `excludeFile` and `owaspSuppressionFile` at.
+
+SpotBugs also writes a SARIF report (`sarifReports = true`, the default), for GitHub code scanning; see
+[Code Scanning](#code-scanning).
 
 
 #### detekt (Kotlin)

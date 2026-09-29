@@ -30,7 +30,7 @@ object OwaspConfigurator {
             // set() explicitly (the `=` form is a Kotlin DSL script-only convenience).
             skipProjects.set(listOf("*"))
             failBuildOnCVSS.set(extension.owaspFailBuildOnCVSS.toFloat())
-            formats.set(listOf("HTML", "XML", "JSON"))
+            formats.set(listOf("HTML", "XML", "JSON", "SARIF"))
             outputDirectory.set(project.layout.buildDirectory.dir("reports/dependency-check"))
             autoUpdate.set(extension.owaspAutoUpdate)
             configureNvdApiSettings(project, extension)
@@ -42,7 +42,7 @@ object OwaspConfigurator {
             // would silently run without the NVD API key and with the disabled analyzers re-enabled.
             System.setProperty("dependencycheck.autoUpdate", extension.owaspAutoUpdate.toString())
             System.setProperty("dependencycheck.failBuildOnCVSS", extension.owaspFailBuildOnCVSS.toString())
-            System.setProperty("dependencycheck.formats", "HTML,XML,JSON")
+            System.setProperty("dependencycheck.formats", "HTML,XML,JSON,SARIF")
             System.setProperty("dependencycheck.outputDirectory", project.file("build/reports/dependency-check").absolutePath)
             System.setProperty("dependencycheck.writeReports", "true")
             System.setProperty("dependencycheck.reportFormat", "ALL")
