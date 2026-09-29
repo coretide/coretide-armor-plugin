@@ -15,6 +15,9 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   default, SonarQube Cloud. A local server needs `sonarHostUrl = "http://localhost:9000"`.
 
 ### Added
+- **Integration tests.** `integrationTests = true` adds an `integrationTest` source set and task, run by `build`
+  after the unit tests, with the unit tests' libraries and runner. Their coverage counts, and the summary has a line
+  for them.
 - **Secret scanning in CI.** With `secretScan = true`, `fullAnalysis` also runs `armorSecretScan`: gitleaks over
   the whole history, failing on a secret, with a SARIF report that `armorSarifReport` gathers for code scanning. A
   multi-module build scans once, from the root.

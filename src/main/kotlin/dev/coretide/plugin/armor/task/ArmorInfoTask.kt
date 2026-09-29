@@ -268,6 +268,7 @@ abstract class ArmorInfoTask : DefaultTask() {
             } else {
                 plainOff += "Error Prone"
             }
+            if (extension.integrationTests) on += "Integration tests: src/integrationTest, in build" else plainOff += "integration tests"
             if (extension.strictCompilation) on += "Strict compilation: warnings fail the build" else plainOff += "strict compilation"
             if (extension.mutationTesting) {
                 on += "Mutation testing with PIT ${MutationTestingConfigurator.PITEST_VERSION}" +

@@ -242,6 +242,8 @@ the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
   Kotlin version guard, whose constants must match the bundled detekt plugin
 - **OWASP settings and the Groovy DSL** (`OwaspTest`, `GroovyDslTest`): what OWASP scans and how it is configured,
   and the `codeArmor` block in a Groovy build script
+- **Integration tests** (`IntegrationTestsTest`): the suite in `build`, its coverage alone passing coverage
+  verification, a failure failing the build, and no suite when it is off
 - **Secret scanning in CI** (`SecretScanTest`): a stand-in gitleaks, a clean history with its SARIF gathered, a
   secret, a missing gitleaks, and the scan in `fullAnalysis`, once for a multi-module build
 - **SpotBugs baseline** (`SpotbugsBaselineTest`): accepting the findings there, moved lines, a new finding failing,

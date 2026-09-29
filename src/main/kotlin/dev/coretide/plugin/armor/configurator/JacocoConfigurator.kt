@@ -22,9 +22,24 @@ import org.gradle.kotlin.dsl.withType
 import org.gradle.testing.jacoco.plugins.JacocoPluginExtension
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
+import org.gradle.testing.jacoco.tasks.JacocoReportBase
 
 object JacocoConfigurator {
     const val TOOL_VERSION = "0.8.15"
+
+    /**
+     * The integration tests' coverage too, when they run in the same build; a report or check run on its own
+     * reads whatever execution data exists.
+     */
+    private fun includeIntegrationTests(
+        project: Project,
+        extension: CodeArmorExtension,
+        task: JacocoReportBase,
+    ) {
+        if (!extension.integrationTests) return
+        task.executionData.from(project.layout.buildDirectory.file("jacoco/${IntegrationTestsConfigurator.TASK_NAME}.exec"))
+        task.mustRunAfter(project.tasks.named { it == IntegrationTestsConfigurator.TASK_NAME })
+    }
 
     fun configureJacoco(
         project: Project,
@@ -43,6 +58,7 @@ object JacocoConfigurator {
             }
             project.tasks.named("jacocoTestReport", JacocoReport::class.java) { report ->
                 report.dependsOn("test")
+                includeIntegrationTests(project, extension, report)
                 report.reports { reports ->
                     reports.xml.required.set(true)
                     reports.html.required.set(true)
@@ -62,6 +78,7 @@ object JacocoConfigurator {
             }
             project.tasks.named("jacocoTestCoverageVerification", JacocoCoverageVerification::class.java) { verification ->
                 verification.dependsOn("jacocoTestReport")
+                includeIntegrationTests(project, extension, verification)
                 verification.violationRules { rules ->
                     rules.rule { rule ->
                         rule.limit { limit ->
