@@ -11,6 +11,7 @@
 package dev.coretide.plugin.armor.configurator
 
 import dev.coretide.plugin.armor.CodeArmorExtension
+import dev.coretide.plugin.armor.task.ListJacocoAntTask
 import dev.coretide.plugin.armor.util.ExclusionUtil
 import dev.coretide.plugin.armor.util.LogUtil
 import org.gradle.api.Project
@@ -18,7 +19,6 @@ import org.gradle.api.attributes.Usage
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.reporting.ReportSpec
 import org.gradle.api.reporting.ReportingExtension
-import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.testing.AggregateTestReport
 import org.gradle.testing.jacoco.plugins.JacocoCoverageReport
 import org.gradle.testing.jacoco.tasks.JacocoReport
@@ -66,7 +66,12 @@ object AggregatedReportsConfigurator {
                     reports.xml.required.set(true)
                     reports.html.required.set(true)
                 }
-                report.jacocoClasspath = jacocoAnt.incoming.files.asFileTree
+                // The module hands over a list of the jars' paths in Gradle's cache; see ListJacocoAntTask.
+                val listings = jacocoAnt.incoming.files
+                report.jacocoClasspath =
+                    root
+                        .files(listings.elements.map { lists -> lists.flatMap { jars(it.asFile) } })
+                        .builtBy(listings)
                 // The same exclusions as each module's own report, applied without resolving anything yet.
                 val classes = root.files(*report.classDirectories.from.toTypedArray())
                 report.classDirectories.setFrom(classes.asFileTree.matching { it.exclude(exclusions) })
@@ -104,20 +109,22 @@ object AggregatedReportsConfigurator {
             .get()
             .asFile
 
-    /** The module's own, resolved JaCoCo reporting library, as a variant the root can depend on. */
+    /** The module's own, resolved JaCoCo reporting library, listed in a variant the root can depend on. */
     private fun publishJacocoAnt(module: Project) {
-        val copy =
-            module.tasks.register("codeArmorJacocoAnt", Sync::class.java) { task ->
-                task.description = "Copies JaCoCo's reporting library for the combined coverage report"
-                task.from(module.configurations.named("jacocoAnt"))
-                task.into(module.layout.buildDirectory.dir("codearmor/jacoco-ant"))
+        val listing =
+            module.tasks.register("codeArmorJacocoAnt", ListJacocoAntTask::class.java) { task ->
+                task.description = "Lists JaCoCo's reporting library for the combined coverage report"
+                task.library.from(module.configurations.named("jacocoAnt"))
+                task.listing.set(module.layout.buildDirectory.file("codearmor/jacoco-ant.txt"))
             }
         module.configurations.create(JACOCO_ANT_ELEMENTS) { configuration ->
             configuration.isCanBeResolved = false
             configuration.attributes.attribute(Usage.USAGE_ATTRIBUTE, module.objects.named(Usage::class.java, JACOCO_ANT_USAGE))
-            configuration.outgoing.artifact(copy)
+            configuration.outgoing.artifact(listing)
         }
     }
+
+    private fun jars(listing: File): List<File> = listing.readLines().filter { it.isNotBlank() }.map(::File)
 
     private fun <T : ReportSpec> registerIfAbsent(
         root: Project,
