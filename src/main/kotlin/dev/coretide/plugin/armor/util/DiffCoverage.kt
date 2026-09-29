@@ -109,6 +109,16 @@ object DiffCoverage {
     }
 
     /**
+     * [file] with symbolic links resolved, on every platform: `canonicalFile` leaves them on Windows. A path that does
+     * not exist resolves through its nearest parent that does.
+     */
+    private fun realPath(file: File): File {
+        val absolute = file.absoluteFile.normalize()
+        val existing = generateSequence(absolute) { it.parentFile }.firstOrNull { it.exists() } ?: return absolute
+        return existing.toPath().toRealPath().toFile().resolve(absolute.relativeTo(existing).path)
+    }
+
+    /**
      * The changed lines of each source file that [coverage] measures. [changed] is keyed by path from [topLevel];
      * a file counts when it lies in one of [sourceDirectories]. A Kotlin file whose directory does not match its
      * package is found by name, when only one file in the report has that name.
@@ -120,11 +130,11 @@ object DiffCoverage {
         coverage: Map<String, Map<Int, Boolean>>,
     ): List<FileCoverage> {
         val byName = coverage.keys.groupBy { it.substringAfterLast('/') }
-        // Canonical: git names the repository by its real path, and a build directory may sit behind a symbolic
+        // Real paths: git names the repository by its real path, and a build directory may sit behind a symbolic
         // link, as macOS's temporary directories do.
-        val directories = sourceDirectories.map { it.canonicalFile }
+        val directories = sourceDirectories.map(::realPath)
         return changed.mapNotNull { (path, lines) ->
-            val file = File(topLevel, path).canonicalFile
+            val file = realPath(File(topLevel, path))
             val sourceDirectory = directories.firstOrNull { file.startsWith(it) } ?: return@mapNotNull null
             val relative = file.relativeTo(sourceDirectory).invariantSeparatorsPath
             val key = relative.takeIf { it in coverage } ?: byName[file.name]?.singleOrNull() ?: return@mapNotNull null
