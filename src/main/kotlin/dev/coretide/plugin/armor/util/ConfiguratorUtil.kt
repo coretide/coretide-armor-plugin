@@ -21,12 +21,15 @@ import dev.coretide.plugin.armor.configurator.SonarqubeConfigurator
 import dev.coretide.plugin.armor.configurator.SpotbugsConfigurator
 import dev.coretide.plugin.armor.configurator.VeracodeConfigurator
 import org.gradle.api.Project
+import java.io.File
 
 object ConfiguratorUtil {
+    /** [aggregatedCoverage]: in a multi-module build, the root's combined coverage report. */
     fun registerConfigurators(
         project: Project,
         extension: CodeArmorExtension,
         projectType: ProjectType,
+        aggregatedCoverage: File? = null,
     ) {
         ResourceConfigurator.configure(project, extension, projectType)
         CompilerConfigurator.configure(project, extension, projectType)
@@ -35,6 +38,6 @@ object ConfiguratorUtil {
         DetektConfigurator.configure(project, extension)
         if (extension.owasp) OwaspConfigurator.configureOwasp(project, extension)
         if (extension.veracode) VeracodeConfigurator.configureVeracode(project)
-        if (extension.sonarqube) SonarqubeConfigurator.configureSonarqube(project, extension)
+        if (extension.sonarqube) SonarqubeConfigurator.configureSonarqube(project, extension, aggregatedCoverage)
     }
 }

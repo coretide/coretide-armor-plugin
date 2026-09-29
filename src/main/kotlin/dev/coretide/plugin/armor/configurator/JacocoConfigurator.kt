@@ -27,13 +27,15 @@ import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
 
 object JacocoConfigurator {
+    const val TOOL_VERSION = "0.8.15"
+
     fun configureJacoco(
         project: Project,
         extension: CodeArmorExtension,
     ) {
         project.pluginManager.apply("jacoco")
         project.configure<JacocoPluginExtension> {
-            toolVersion = "0.8.15"
+            toolVersion = TOOL_VERSION
         }
         project.afterEvaluate {
             // The JaCoCo plugin only creates its report tasks alongside the Java plugin; looking them
