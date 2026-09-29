@@ -21,11 +21,17 @@ import org.gradle.testkit.runner.GradleRunner
  * are not git repositories, and leaving those on makes assertions depend on the host's git state.
  */
 object ArmorTestFixture {
-    /** Marker so tests can assert on which language plugin a fixture applied. */
-    enum class Language(val pluginId: String) {
+    /** The language plugin a fixture applies; the Kotlin plugin is resolved from the Plugin Portal. */
+    enum class Language(
+        val pluginId: String,
+        val version: String? = null,
+    ) {
         JAVA("java"),
-        KOTLIN("org.jetbrains.kotlin.jvm"),
+        KOTLIN("org.jetbrains.kotlin.jvm", KOTLIN_VERSION),
     }
+
+    /** The Kotlin Gradle plugin version Kotlin fixtures use: the one this build compiles with. */
+    const val KOTLIN_VERSION = "2.2.21"
 
     fun writeProject(
         dir: File,
@@ -40,7 +46,7 @@ object ArmorTestFixture {
 
         val pluginLines =
             buildList {
-                add("""    id("${language.pluginId}")""")
+                add("""    id("${language.pluginId}")""" + (language.version?.let { """ version "$it"""" } ?: ""))
                 extraPlugins.forEach { add("""    id("$it")""") }
                 add("""    id("dev.coretide.plugin.armor")""")
             }.joinToString("\n")
@@ -67,7 +73,10 @@ object ArmorTestFixture {
         )
 
         if (withSource) {
-            writeJavaSource(dir)
+            when (language) {
+                Language.JAVA -> writeJavaSource(dir)
+                Language.KOTLIN -> writeKotlinSource(dir)
+            }
         }
     }
 
@@ -280,6 +289,23 @@ object ArmorTestFixture {
             """
             rootProject.name = "$name"
             $includes
+            """.trimIndent(),
+        )
+    }
+
+    private fun writeKotlinSource(dir: File) {
+        val src = dir.resolve("src/main/kotlin/com/example")
+        src.mkdirs()
+        src.resolve("Sample.kt").writeText(
+            """
+            package com.example
+
+            public class Sample {
+                public fun add(
+                    a: Int,
+                    b: Int,
+                ): Int = a + b
+            }
             """.trimIndent(),
         )
     }

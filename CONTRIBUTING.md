@@ -234,6 +234,8 @@ Most tests are Gradle TestKit tests: they write a throwaway project to a tempora
 the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
 
 - **Functional tests** (`CodeArmorPluginFunctionalTest`): tasks, detection, tool wiring
+- **Strict compilation** (`StrictCompilationTest`): Java and Kotlin warnings failing the build, with
+  Kotlin projects using the Kotlin Gradle plugin from the Plugin Portal
 - **Project conventions** (`ProjectConventionsTest`): the SonarQube properties, test task setup, resource
   processing and how a project is classified
 - **Configuration cache tests** (`ConfigurationCacheTest`): a second run must reuse the cache

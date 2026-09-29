@@ -372,6 +372,23 @@ codeArmor {
 }
 ```
 
+### Strict Compilation
+```kotlin
+codeArmor {
+    strictCompilation = true                  // Off by default
+}
+```
+Compiler warnings in production code (the `main` source set) fail the build. Test code is left alone,
+since tests often use deprecated APIs on purpose.
+- **Java:** `-Xlint:all -Werror`, without the lint categories that flag the build setup rather than the code
+  (`processing`, `serial`, `path`, `options`).
+- **Kotlin:** `allWarningsAsErrors`, and `-Xjsr305=strict`, so nullability annotations on Java APIs become
+  Kotlin types.
+- **Kotlin libraries:** explicit API mode (`-Xexplicit-api=strict`), so every public declaration states its
+  visibility and return type.
+
+Arguments the build already passes, such as `kotlin { explicitApi() }`, are not repeated.
+
 ### Logging Configuration
 
 CodeArmor provides configurable logging levels to control the verbosity of plugin output:
