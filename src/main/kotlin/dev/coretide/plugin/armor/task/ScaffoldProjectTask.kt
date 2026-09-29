@@ -22,9 +22,9 @@ import java.io.File
 import javax.inject.Inject
 
 /**
- * Writes a starting point for the project's setup: an `.editorconfig` in the Gradle root, and a GitHub Actions
- * workflow at the top of the repository that runs the checks and uploads their findings to code scanning.
- * Existing files are never overwritten.
+ * Writes a starting point for the project's setup: an `.editorconfig` in the Gradle root; and at the top of the
+ * repository, a GitHub Actions workflow that runs the checks, uploads their findings to code scanning and submits
+ * the dependency graph, and a Dependabot configuration. Existing files are never overwritten.
  */
 @UntrackedTask(because = "Scaffolds into the project tree on demand; the files are the project's once written")
 abstract class ScaffoldProjectTask : DefaultTask() {
@@ -36,7 +36,7 @@ abstract class ScaffoldProjectTask : DefaultTask() {
 
     init {
         group = "build setup"
-        description = "📝 Writes an .editorconfig and a GitHub Actions workflow that uploads findings to code scanning"
+        description = "📝 Writes an .editorconfig, a GitHub Actions workflow and a Dependabot configuration"
     }
 
     @TaskAction
@@ -48,6 +48,7 @@ abstract class ScaffoldProjectTask : DefaultTask() {
         listOf(
             File(gradleRoot, ".editorconfig") to EDITORCONFIG,
             File(repositoryRoot, ".github/workflows/codearmor.yml") to workflow(gradleRootFromTop),
+            File(repositoryRoot, ".github/dependabot.yml") to dependabot(gradleRootFromTop),
         ).forEach { (file, content) ->
             if (FileUtil.scaffoldIfAbsent(file, content)) {
                 logger.lifecycle("📝 Created ${file.absolutePath}")
@@ -99,6 +100,7 @@ abstract class ScaffoldProjectTask : DefaultTask() {
                     "    defaults:\n      run:\n        working-directory: $gradleRoot\n"
                 }
             val sarif = if (gradleRoot.isEmpty()) "build/reports/sarif" else "$gradleRoot/build/reports/sarif"
+            val buildRoot = if (gradleRoot.isEmpty()) "" else "        with:\n          build-root-directory: $gradleRoot\n"
             return """
                 |# Written by `./gradlew armorScaffoldProject`; CodeArmor never overwrites it.
                 |# Runs CodeArmor's checks, and uploads SpotBugs and detekt findings to GitHub code scanning:
@@ -138,7 +140,8 @@ abstract class ScaffoldProjectTask : DefaultTask() {
                 |
                 |      # fullAnalysis adds the CI tier: OWASP Dependency Check (whose findings are uploaded too),
                 |      # dependency updates, the SBOM and licence report, and SonarQube once SONAR_TOKEN (and, for
-                |      # your own server, SONAR_HOST_URL) is set. OWASP is much faster with an NVD API key.
+                |      # your own server, SONAR_HOST_URL) is set. OWASP is much faster with an NVD API key. With
+                |      # secretScan = true it also scans the history with gitleaks, which must be installed first.
                 |      # - name: Full analysis
                 |      #   run: ./gradlew fullAnalysis --continue
                 |      #   env:
@@ -156,7 +159,42 @@ abstract class ScaffoldProjectTask : DefaultTask() {
                 |        with:
                 |          sarif_file: $sarif
                 |
+                |  # Sends the resolved dependencies, transitive ones too, to GitHub's dependency graph, so Dependabot
+                |  # alerts cover everything the build uses.
+                |  dependencies:
+                |    if: github.event_name == 'push'
+                |    runs-on: ubuntu-latest
+                |    permissions:
+                |      contents: write
+                |    steps:
+                |      - uses: actions/checkout@v7
+                |
+                |      - uses: actions/setup-java@v6
+                |        with:
+                |          distribution: temurin
+                |          java-version: '21'
+                |
+                |      - uses: gradle/actions/dependency-submission@v6
+                |$buildRoot
             """.trimMargin()
         }
+
+        /** Weekly update pull requests for the build's dependencies and the workflows' actions. */
+        fun dependabot(gradleRoot: String): String =
+            """
+            # Written by `./gradlew armorScaffoldProject`; CodeArmor never overwrites it.
+            # Weekly pull requests for newer dependencies, and for the actions the workflows use.
+            version: 2
+            updates:
+              - package-ecosystem: gradle
+                directory: /$gradleRoot
+                schedule:
+                  interval: weekly
+              - package-ecosystem: github-actions
+                directory: /
+                schedule:
+                  interval: weekly
+
+            """.trimIndent()
     }
 }

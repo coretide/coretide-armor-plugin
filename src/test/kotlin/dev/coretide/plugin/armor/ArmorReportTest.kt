@@ -64,6 +64,30 @@ class ArmorReportTest {
     }
 
     @Test
+    fun `on GitHub Actions the summary also goes to the job summary`(
+        @TempDir dir: File,
+    ) {
+        ArmorTestFixture.writeProject(dir, extraScript = junit)
+        writeJavaTest(dir)
+        val summary = dir.resolve("step-summary.md")
+
+        ArmorTestFixture.runWithEnvironment(dir, "build", set = mapOf("GITHUB_STEP_SUMMARY" to summary.absolutePath))
+
+        val text = summary.readText()
+        assertContains(text, "### 🛡️ CodeArmor summary")
+        assertContains(text, "| ✅ | Tests | 1 tests |")
+        assertContains(text, "| ✅ | SpotBugs | no findings |")
+    }
+
+    @Test
+    fun `the job summary keeps a table cell in its cell`() {
+        val markdown = ArmorReportTask.markdown(listOf(":a" to listOf(Row("x|y", Status.OK, "<b>\nnext", null))), headings = true)
+
+        assertContains(markdown, "**:a**")
+        assertContains(markdown, "| ✅ | x\\|y | &lt;b> next |")
+    }
+
+    @Test
     fun `a multi-module summary has a section per module`(
         @TempDir dir: File,
     ) {

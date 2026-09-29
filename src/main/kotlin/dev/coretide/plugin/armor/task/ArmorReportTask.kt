@@ -57,9 +57,37 @@ abstract class ArmorReportTask : DefaultTask() {
             if (sections.size > 1) LogUtil.essential(this, "   $path")
             rows.forEach { LogUtil.essential(this, "   ${it.status.icon} ${it.tool}: ${it.result}") }
         }
+        // On GitHub Actions, the same on the run's page.
+        System.getenv("GITHUB_STEP_SUMMARY")?.takeIf { it.isNotBlank() }?.let { summary ->
+            File(summary).appendText(markdown(withRows, headings = sections.size > 1))
+        }
     }
 
     companion object {
+        /** The summary as GitHub-flavoured Markdown, for a GitHub Actions job summary. */
+        fun markdown(
+            sections: List<Pair<String, List<Row>>>,
+            headings: Boolean,
+        ): String =
+            buildString {
+                appendLine("### 🛡️ CodeArmor summary")
+                appendLine()
+                sections.forEach { (path, rows) ->
+                    if (headings) {
+                        appendLine("**${cell(path)}**")
+                        appendLine()
+                    }
+                    appendLine("| | Tool | Result |")
+                    appendLine("|---|---|---|")
+                    rows.forEach { appendLine("| ${it.status.icon} | ${cell(it.tool)} | ${cell(it.result)} |") }
+                    appendLine()
+                }
+            }
+
+        /** Text in a Markdown table cell: no column breaks, line breaks or HTML. */
+        private fun cell(text: String): String =
+            text.replace("\\", "\\\\").replace("|", "\\|").replace("<", "&lt;").replace("\n", " ")
+
         fun render(
             sections: List<Pair<String, List<Row>>>,
             directory: File,

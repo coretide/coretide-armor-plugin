@@ -206,7 +206,7 @@ CodeArmor organizes its checks in three tiers, from fastest to most thorough:
 |---|---|---|---|
 | Basic | the pre-push hook (`quickBuild`) | compile + unit tests | nothing |
 | Local | `./gradlew build` (through `codeQuality`) | SpotBugs, detekt (Kotlin projects), JaCoCo (or Kover) report + coverage verification, diff coverage | nothing |
-| CI | `fullAnalysis` | the local tier + OWASP Dependency Check + dependency updates + SBOM and licence report + SonarQube, once a server or token is configured | network, a SonarQube server |
+| CI | `fullAnalysis` | the local tier + OWASP Dependency Check + dependency updates + SBOM and licence report + SonarQube, once a server or token is configured + the gitleaks history scan, with `secretScan` | network, a SonarQube server |
 
 Each tier's task list is configurable; see [Check Tiers](#check-tiers).
 
@@ -273,7 +273,7 @@ Each tier's task list is configurable; see [Check Tiers](#check-tiers).
 | `armorCodeStatsFlush` | Retries delivering queued pulses now |
 
 ### Code Scanning
-SpotBugs, detekt and OWASP Dependency Check write SARIF reports. `armorSarifReport` gathers them from every
+SpotBugs, detekt, OWASP Dependency Check and the gitleaks scan write SARIF reports. `armorSarifReport` gathers them from every
 project into `build/reports/sarif/`, ready for GitHub code scanning or another SARIF viewer:
 ```shell script
 ./gradlew build --continue
@@ -288,6 +288,12 @@ scanning rejects two runs of one tool in the same category, as with the SpotBugs
 - `.github/workflows/codearmor.yml` at the top of the repository. It runs `build --continue` and uploads the
   gathered SARIF with `github/codeql-action/upload-sarif`, so findings show in the Security tab and on pull
   requests. It runs from the Gradle root when that is a subdirectory, and has `fullAnalysis` ready to switch on.
+  On pushes, a second job submits the resolved dependencies, transitive ones included, to GitHub's dependency
+  graph with `gradle/actions/dependency-submission`, so Dependabot alerts cover everything the build uses.
+- `.github/dependabot.yml`: weekly update pull requests for the Gradle dependencies and the workflows' actions.
+
+On GitHub Actions, `armorReport` also writes its summary to the job summary (`GITHUB_STEP_SUMMARY`), so it shows
+on the run's page.
 
 ### Debug and Information Tasks
 
@@ -781,6 +787,11 @@ and blocks a commit that adds a secret. Mark a false positive with a `gitleaks:a
   lets the commit through.
 - Works with gitleaks 8.19 and later (`gitleaks git --pre-commit --staged`) and older 8.x (`gitleaks protect --staged`).
 - `git commit --no-verify` skips the scan once.
+
+The hook only sees new commits, on machines that have gitleaks. For CI, `secretScan = true` also adds
+`armorSecretScan` to `fullAnalysis`: gitleaks scans the whole history and fails on a secret, and its SARIF report
+goes to code scanning with the other tools'. There it fails when gitleaks is missing, so install it in the
+workflow first. A multi-module build scans once, from the root.
 
 ### Existing Hooks
 - A hook CodeArmor did not write is never overwritten. `armorInstallGitHooks` tells you what to add to it

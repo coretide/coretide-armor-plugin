@@ -15,6 +15,13 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   default, SonarQube Cloud. A local server needs `sonarHostUrl = "http://localhost:9000"`.
 
 ### Added
+- **Secret scanning in CI.** With `secretScan = true`, `fullAnalysis` also runs `armorSecretScan`: gitleaks over
+  the whole history, failing on a secret, with a SARIF report that `armorSarifReport` gathers for code scanning. A
+  multi-module build scans once, from the root.
+- **GitHub Actions job summary.** On GitHub Actions, `armorReport` writes its summary to the job summary too.
+- **Dependency graph and Dependabot scaffolding.** The workflow `armorScaffoldProject` writes gains a job that
+  submits the resolved dependencies to GitHub's dependency graph, and it also writes `.github/dependabot.yml`, for
+  weekly Gradle and GitHub Actions updates.
 - **SpotBugs baseline.** `./gradlew armorSpotbugsBaseline` writes the findings already in the code to
   `config/spotbugs/baseline.xml`, and from then on `spotbugsMain` fails on new findings only. SpotBugs matches a
   finding by a hash that ignores line numbers, so edits around it keep it accepted. `spotbugs { baselineFile }`

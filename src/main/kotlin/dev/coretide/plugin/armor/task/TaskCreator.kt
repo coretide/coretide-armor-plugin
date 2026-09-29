@@ -37,6 +37,8 @@ object TaskCreator {
         // The check tiers need a JVM project: compile, test and the SpotBugs and JaCoCo tasks only
         // exist once a Java plugin is applied. Without this, `build` would fail in, say, a docs or
         // aggregator project that applies CodeArmor.
+        // Before the tiers, which leave out the default tasks a project does not have.
+        if (repository && extension.secretScan) SecretScanTask.register(project)
         var tiers: ArmorInfoTask.Tiers? = null
         if (project.plugins.hasPlugin(JavaBasePlugin::class.java)) {
             createQuickBuildTask(project)
@@ -104,12 +106,17 @@ object TaskCreator {
             if (extension.dependencyAnalysis) add(DependencyHealthConfigurator.ANALYSIS_TASK)
             if (!extension.apiBaseline.isNullOrBlank()) add(ApiCompatibilityConfigurator.API_CHECK_TASK)
             if (extension.sonarqube && SonarqubeConfigurator.isConfigured(project, extension)) add(SONAR_TASK)
+            if (extension.secretScan) add(SecretScanTask.TASK_NAME)
         }
 
     private const val SONAR_TASK = "sonar"
 
-    /** The dependency analysis only covers Java and Kotlin projects, and the API check only libraries. */
-    private val OPTIONAL_CI_TASKS = setOf(DependencyHealthConfigurator.ANALYSIS_TASK, ApiCompatibilityConfigurator.API_CHECK_TASK)
+    /**
+     * The dependency analysis only covers Java and Kotlin projects, and the API check only libraries. The secret scan
+     * covers the repository, so a multi-module build runs it once, from the root.
+     */
+    private val OPTIONAL_CI_TASKS =
+        setOf(DependencyHealthConfigurator.ANALYSIS_TASK, ApiCompatibilityConfigurator.API_CHECK_TASK, SecretScanTask.TASK_NAME)
 
     private fun createScaffoldConfigsTask(project: Project) {
         project.tasks.register("armorScaffoldConfigs", ScaffoldConfigsTask::class.java) { task ->

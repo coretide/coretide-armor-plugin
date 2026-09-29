@@ -93,6 +93,11 @@ class SarifAndScaffoldTest {
         assertContains(text, "working-directory: app")
         assertContains(text, "sarif_file: app/build/reports/sarif")
         assertContains(text, "security-events: write")
+        assertContains(text, "uses: gradle/actions/dependency-submission@v6")
+        assertContains(text, "          build-root-directory: app\n")
+        val dependabot = repository.resolve(".github/dependabot.yml").readText()
+        assertContains(dependabot, "  - package-ecosystem: gradle\n    directory: /app\n")
+        assertContains(dependabot, "  - package-ecosystem: github-actions\n    directory: /\n")
         assertTrue(text.endsWith("# edited\n"), "an existing workflow was overwritten")
         assertContains(second.output, "Kept existing")
     }
@@ -100,8 +105,11 @@ class SarifAndScaffoldTest {
     @Test
     fun `the workflow runs from the repository's top when the build lives there`() {
         val workflow = dev.coretide.plugin.armor.task.ScaffoldProjectTask.workflow("")
+        val dependabot = dev.coretide.plugin.armor.task.ScaffoldProjectTask.dependabot("")
 
         assertFalse(workflow.contains("working-directory"))
+        assertFalse(workflow.contains("build-root-directory"))
+        assertContains(dependabot, "  - package-ecosystem: gradle\n    directory: /\n")
         assertContains(workflow, "sarif_file: build/reports/sarif")
     }
 }
