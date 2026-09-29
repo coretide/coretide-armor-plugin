@@ -15,10 +15,14 @@ import dev.coretide.plugin.armor.ProjectType
 import dev.coretide.plugin.armor.configurator.CompilerConfigurator
 import dev.coretide.plugin.armor.configurator.DetektConfigurator
 import dev.coretide.plugin.armor.configurator.JacocoConfigurator
+import dev.coretide.plugin.armor.configurator.KoverConfigurator
+import dev.coretide.plugin.armor.configurator.MutationTestingConfigurator
 import dev.coretide.plugin.armor.configurator.OwaspConfigurator
 import dev.coretide.plugin.armor.configurator.ResourceConfigurator
 import dev.coretide.plugin.armor.configurator.SonarqubeConfigurator
 import dev.coretide.plugin.armor.configurator.SpotbugsConfigurator
+import dev.coretide.plugin.armor.configurator.TestConventions
+import dev.coretide.plugin.armor.configurator.TestReportingConfigurator
 import dev.coretide.plugin.armor.configurator.VeracodeConfigurator
 import org.gradle.api.Project
 import java.io.File
@@ -33,7 +37,15 @@ object ConfiguratorUtil {
     ) {
         ResourceConfigurator.configure(project, extension, projectType)
         CompilerConfigurator.configure(project, extension, projectType)
-        if (extension.jacoco) JacocoConfigurator.configureJacoco(project, extension)
+        if (extension.jacoco || extension.kover) TestConventions.configure(project, extension)
+        if (KoverConfigurator.usesKover(project, extension)) {
+            KoverConfigurator.configure(project, extension)
+        } else if (extension.jacoco || extension.kover) {
+            if (extension.kover) LogUtil.verbose("📊 Kover measures Kotlin projects only; ${project.path} keeps JaCoCo")
+            JacocoConfigurator.configureJacoco(project, extension)
+        }
+        TestReportingConfigurator.configure(project, extension)
+        MutationTestingConfigurator.configure(project, extension)
         if (extension.spotbugs) SpotbugsConfigurator.configureSpotbugs(project, extension)
         DetektConfigurator.configure(project, extension)
         if (extension.owasp) OwaspConfigurator.configureOwasp(project, extension)

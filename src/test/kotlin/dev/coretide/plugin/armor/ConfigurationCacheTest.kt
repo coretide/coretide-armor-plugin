@@ -94,6 +94,43 @@ class ConfigurationCacheTest {
     }
 
     @Test
+    fun `a test run with flaky and slow test reporting reuses the configuration cache`(
+        @TempDir dir: File,
+    ) {
+        ArmorTestFixture.writeProject(
+            dir,
+            extraScript =
+                """
+                dependencies {
+                    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+                    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+                }
+                """.trimIndent(),
+        )
+        dir.resolve("src/test/java/com/example").mkdirs()
+        dir.resolve("src/test/java/com/example/SampleTest.java").writeText(
+            "package com.example;\n\nclass SampleTest {\n    @org.junit.jupiter.api.Test\n    void runs() {\n    }\n}\n",
+        )
+
+        ArmorTestFixture.run(dir, "test", "--configuration-cache")
+        val second = ArmorTestFixture.run(dir, "test", "--configuration-cache", "--rerun-tasks")
+
+        assertContains(second.output, "Configuration cache entry reused")
+    }
+
+    @Test
+    fun `a Kotlin project measured by Kover reuses the configuration cache on a second run`(
+        @TempDir dir: File,
+    ) {
+        ArmorTestFixture.writeProject(dir, language = ArmorTestFixture.Language.KOTLIN, armorConfig = "    kover = true")
+
+        ArmorTestFixture.run(dir, "koverXmlReport", "--configuration-cache")
+        val second = ArmorTestFixture.run(dir, "koverXmlReport", "--configuration-cache")
+
+        assertContains(second.output, "Configuration cache entry reused")
+    }
+
+    @Test
     fun `multi-module build reuses the configuration cache on a second run`(
         @TempDir dir: File,
     ) {

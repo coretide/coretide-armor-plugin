@@ -27,6 +27,18 @@ detekt and its Gradle plugin
 License: Apache License 2.0
 Website: https://detekt.dev/
 
+Kover and its Gradle plugin
+License: Apache License 2.0
+Website: https://github.com/Kotlin/kotlinx-kover
+
+Gradle Test Retry plugin
+License: Apache License 2.0
+Website: https://github.com/gradle/test-retry-gradle-plugin
+
+PIT (pitest) and gradle-pitest-plugin
+License: Apache License 2.0
+Website: https://pitest.org/
+
 SonarScanner for Gradle
 License: GNU Lesser General Public License v3.0
 Website: https://github.com/SonarSource/sonar-scanner-gradle

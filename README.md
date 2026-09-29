@@ -17,6 +17,7 @@ CodeArmor is a powerful Gradle plugin that integrates multiple code quality and 
 ## ✨ Features
 
 - 🔍 **Comprehensive Code Quality**: JaCoCo, SpotBugs, detekt (Kotlin), SonarQube integration
+- 🧪 **Test Insights**: flaky tests retried on CI and named, slowest tests listed; Kover and PIT mutation testing on request
 - 🔒 **Security Analysis**: OWASP Dependency Check (**Veracode integration in development**)
 - 🚀 **Optimized Workflows**: Custom tasks for different development stages
 - 🪝 **Git Hooks on Request**: A blocking pre-push hook for the basic checks, installed only when you run `armorInstallGitHooks`
@@ -176,7 +177,7 @@ CodeArmor organizes its checks in three tiers, from fastest to most thorough:
 | Tier | Runs in | Default checks | Needs |
 |---|---|---|---|
 | Basic | the pre-push hook (`quickBuild`) | compile + unit tests | nothing |
-| Local | `./gradlew build` (through `codeQuality`) | SpotBugs, detekt (Kotlin projects), JaCoCo report + coverage verification | nothing |
+| Local | `./gradlew build` (through `codeQuality`) | SpotBugs, detekt (Kotlin projects), JaCoCo (or Kover) report + coverage verification | nothing |
 | CI | `fullAnalysis` | the local tier + OWASP Dependency Check + SonarQube | network, a SonarQube server |
 
 Each tier's task list is configurable; see [Check Tiers](#check-tiers).
@@ -311,6 +312,44 @@ With JaCoCo on, CodeArmor also sets up the test tasks:
   chose TestNG, or configured the JUnit Platform itself, keeps its choice. Set `junitPlatform = false` to
   keep JUnit 4.
 - **Logging:** failed tests are shown with their full stack trace. Passing tests and test output stay quiet.
+
+#### Flaky and Slow Tests
+```kotlin
+codeArmor {
+    flakyTestRetries = 2                      // On CI; 0 turns retries off
+    slowTestThresholdMillis = 2000            // 0 turns the list off
+}
+```
+- **Flaky tests:** on CI (`CI=true`), a failed test is re-run up to `flakyTestRetries` times. If it then passes, the
+  build passes, but CodeArmor names it as flaky instead of letting it disappear. More than ten failures in one
+  test task is treated as a broken build, and nothing is retried. Locally, nothing is retried.
+- **Slow tests:** after each test run, the five slowest tests over the threshold are listed.
+
+#### Kover (Kotlin Coverage)
+```kotlin
+codeArmor {
+    kover = true                              // Opt-in
+}
+```
+[Kover](https://github.com/Kotlin/kotlinx-kover) measures coverage instead of JaCoCo in projects that apply the
+Kotlin JVM plugin. It understands Kotlin's inline functions and coroutines better. The same `coverageMinimum`,
+`coverageClassMinimum` and exclusions apply.
+- **Tasks:** `koverXmlReport`, `koverHtmlReport` and `koverVerify` join the local tier.
+- **SonarQube:** reads `build/reports/kover/report.xml`.
+- **Java-only projects:** they keep JaCoCo, since Kover only measures Kotlin projects.
+- **Multi-module builds:** no combined coverage report while Kover is on.
+
+#### Mutation Testing (PIT)
+```kotlin
+codeArmor {
+    mutationTesting = true                    // Opt-in
+    mutationThreshold = 60                    // Percent; 0 (the default) only reports
+}
+```
+[PIT](https://pitest.org) makes small changes to the production code and reports which of them no test notices.
+Run it with `./gradlew pitest`. It is slow, so it is in no check tier. It mutates the project's own packages, taken
+from the sources, and writes `build/reports/pitest/index.html`. Tests on the JUnit Platform get PIT's JUnit 5
+plugin.
 
 
 #### SpotBugs

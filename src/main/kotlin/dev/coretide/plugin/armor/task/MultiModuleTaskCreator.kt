@@ -32,7 +32,7 @@ object MultiModuleTaskCreator {
             }
 
         val aggregatedReports = AggregatedReportsConfigurator.configure(project, extension)
-        val aggregatedCoverage = if (extension.jacoco) AggregatedReportsConfigurator.coverageXml(project) else null
+        val aggregatedCoverage = if (extension.jacoco && !extension.kover) AggregatedReportsConfigurator.coverageXml(project) else null
 
         actualProjects.forEach { subproject ->
             subproject.afterEvaluate {
