@@ -206,7 +206,7 @@ CodeArmor organizes its checks in three tiers, from fastest to most thorough:
 |---|---|---|---|
 | Basic | the pre-push hook (`quickBuild`) | compile + unit tests | nothing |
 | Local | `./gradlew build` (through `codeQuality`) | SpotBugs, detekt (Kotlin projects), JaCoCo (or Kover) report + coverage verification | nothing |
-| CI | `fullAnalysis` | the local tier + OWASP Dependency Check + dependency updates + SBOM and licence report + SonarQube | network, a SonarQube server |
+| CI | `fullAnalysis` | the local tier + OWASP Dependency Check + dependency updates + SBOM and licence report + SonarQube, once a server or token is configured | network, a SonarQube server |
 
 Each tier's task list is configurable; see [Check Tiers](#check-tiers).
 
@@ -248,7 +248,7 @@ Each tier's task list is configurable; see [Check Tiers](#check-tiers).
 
 
 - **Purpose**: Comprehensive analysis including security scans
-- **Dependencies**: `codeQuality`, then the CI tier, by default `dependencyCheckAnalyze`, `dependencyUpdates`, `armorLicenseReport` and `sonar`, plus `veracodeUpload` (if configured)
+- **Dependencies**: `codeQuality`, then the CI tier, by default `dependencyCheckAnalyze`, `dependencyUpdates`, `armorLicenseReport` and, once a SonarQube server or token is configured, `sonar`; plus `veracodeUpload` (if configured)
 - **Use Case**: CI/CD pipelines, release preparation
 - **Reports Generated**:
     - All quality reports from `codeQuality`
@@ -290,6 +290,18 @@ scanning rejects two runs of one tool in the same category, as with the SpotBugs
   requests. It runs from the Gradle root when that is a subdirectory, and has `fullAnalysis` ready to switch on.
 
 ### Debug and Information Tasks
+
+#### `armorInfo`
+🛡️ What CodeArmor checks in this project, and what needs attention
+```shell script
+./gradlew armorInfo
+```
+
+- **Shows**: the CodeArmor version, what `build`, `fullAnalysis` and the pre-push hook run, each tool with its
+  version and settings, switched on or off
+- **Needs attention**: SonarQube switched on with no server configured, OWASP without an NVD API key, git hooks
+  not installed, `secretScan` without gitleaks, Veracode without its plugin or credentials
+- **Multi-module builds**: the root shows the git hooks, and each module its own tiers and tools
 
 #### `logExclusionInfo`
 📋 Log coverage exclusion information for debugging
@@ -533,7 +545,7 @@ Both are for libraries; applications have no API to keep, and are left alone.
 ```kotlin
 codeArmor {
     sonarqube = true
-    sonarHostUrl = "http://localhost:9000"
+    sonarHostUrl = "https://sonar.example.com"   // Or leave unset and set SONAR_HOST_URL
     sonarProjectKey = "my-project"
     sonarProjectName = "My Project"
     sonarToken = "your-sonar-token"          // Or leave unset and set SONAR_TOKEN
@@ -547,6 +559,12 @@ generated and custom ones. CodeArmor adds the JaCoCo coverage, SpotBugs and OWAS
 
 On CI, keep the token out of the build script: leave `sonarToken` unset and set the `SONAR_TOKEN` environment
 variable, and `SONAR_HOST_URL` for the server.
+
+`sonar` joins `fullAnalysis` only once a server or a token is configured: `sonarHostUrl` or `sonarToken`, the
+`SONAR_HOST_URL` or `SONAR_TOKEN` environment variables, or the `sonar.host.url` or `sonar.token` system
+properties. Without one, `fullAnalysis` leaves it out and says so. With a token and no server, the SonarScanner
+uses its default, SonarQube Cloud; a local server needs `sonarHostUrl = "http://localhost:9000"`. Listing
+`sonar` in `checks.ci` runs it regardless.
 
 
 #### Veracode (Bring Your Own Plugin)
@@ -625,7 +643,8 @@ codeArmor {
             "spotbugsMain", "detekt", "jacocoTestReport", "jacocoTestCoverageVerification",
         )
         ci = listOf(                                       // network/server: added by fullAnalysis
-            "dependencyCheckAnalyze", "dependencyUpdates", "armorLicenseReport", "sonar",
+            "dependencyCheckAnalyze", "dependencyUpdates", "armorLicenseReport",
+            "sonar",                                       // by default only once a SonarQube server or token is configured
         )
     }
 }

@@ -30,7 +30,7 @@ class CodeArmorPlugin : Plugin<Project> {
         val extension = project.extensions.create("codeArmor", CodeArmorExtension::class.java)
         // Lazy, so the defaults follow the tool switches the build script sets after applying.
         extension.checks.build.convention(project.provider { TaskCreator.defaultBuildTier(extension) })
-        extension.checks.ci.convention(project.provider { TaskCreator.defaultCiTier(extension) })
+        extension.checks.ci.convention(project.provider { TaskCreator.defaultCiTier(project, extension) })
         project.afterEvaluate {
             LogUtil.initialize(project, extension)
             val projectType =
@@ -65,7 +65,7 @@ class CodeArmorPlugin : Plugin<Project> {
         projectType: ProjectType,
     ) {
         ConfiguratorUtil.registerConfigurators(project, extension, projectType)
-        TaskCreator.createCustomTasks(project, extension)
+        TaskCreator.createCustomTasks(project, extension, projectType, repository = true)
         SarifConfigurator.register(project, listOf(project))
         ArmorReportConfigurator.register(project, listOf(project))
     }

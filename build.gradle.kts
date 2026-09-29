@@ -91,6 +91,17 @@ val gitVersionProvider: Provider<String> =
 
 version = gitVersionProvider.get()
 
+// The plugin's own version, which armorInfo prints.
+val pluginVersionResource =
+    tasks.register<WriteProperties>("pluginVersionResource") {
+        destinationFile = layout.buildDirectory.file("generated/resources/version/dev/coretide/plugin/armor/codearmor.properties")
+        property("version", gitVersionProvider)
+    }
+
+sourceSets.main {
+    resources.srcDir(files(layout.buildDirectory.dir("generated/resources/version")).builtBy(pluginVersionResource))
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)

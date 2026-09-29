@@ -11,6 +11,7 @@
 package dev.coretide.plugin.armor
 
 import java.io.File
+import kotlin.test.assertContains
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.gradle.testkit.runner.BuildResult
@@ -30,13 +31,17 @@ class CheckTiersTest {
             .map { it.removeSuffix(" SKIPPED").removePrefix(":") }
             .toSet()
 
+    /** Planned with no SonarQube server in the environment, unless [environment] names one. */
     private fun plan(
         dir: File,
         task: String,
         armorConfig: String = "",
+        environment: Map<String, String> = emptyMap(),
     ): Set<String> {
         ArmorTestFixture.writeProject(dir, armorConfig = armorConfig)
-        return ArmorTestFixture.run(dir, task, "--dry-run").plannedTasks()
+        return ArmorTestFixture
+            .runWithEnvironment(dir, task, "--dry-run", set = environment, unset = SONAR_ENVIRONMENT)
+            .plannedTasks()
     }
 
     @Test
@@ -61,7 +66,7 @@ class CheckTiersTest {
     }
 
     @Test
-    fun `fullAnalysis adds OWASP, dependency health and SonarQube to the local checks`(
+    fun `fullAnalysis adds OWASP and dependency health to the local checks`(
         @TempDir dir: File,
     ) {
         val planned = plan(dir, "fullAnalysis")
@@ -75,12 +80,39 @@ class CheckTiersTest {
                     "dependencyUpdates",
                     "cyclonedxBom",
                     "armorLicenseReport",
-                    "sonar",
                 ),
             ),
             "$planned",
         )
         assertFalse("projectHealth" in planned, "the dependency analysis is opt-in")
+        assertFalse("sonar" in planned, "no SonarQube server is configured")
+    }
+
+    @Test
+    fun `fullAnalysis runs SonarQube once a server or token is configured, or checks ci lists it`(
+        @TempDir inTheBuild: File,
+        @TempDir fromTheEnvironment: File,
+        @TempDir listed: File,
+    ) {
+        val host = plan(inTheBuild, "fullAnalysis", armorConfig = "    sonarHostUrl = \"https://sonar.example.com\"")
+        // A token alone means SonarQube Cloud, the SonarScanner's default server.
+        val token = plan(fromTheEnvironment, "fullAnalysis", environment = mapOf("SONAR_TOKEN" to "from-ci"))
+        val explicit = plan(listed, "fullAnalysis", armorConfig = "    checks {\n        ci = listOf(\"sonar\")\n    }")
+
+        assertTrue("sonar" in host, "$host")
+        assertTrue("sonar" in token, "$token")
+        assertTrue("sonar" in explicit, "$explicit")
+    }
+
+    @Test
+    fun `fullAnalysis says why it left SonarQube out`(
+        @TempDir dir: File,
+    ) {
+        ArmorTestFixture.writeProject(dir, armorConfig = "    owasp = false\n    dependencyUpdates = false\n    sbom = false")
+
+        val result = ArmorTestFixture.runWithEnvironment(dir, "fullAnalysis", unset = SONAR_ENVIRONMENT)
+
+        assertContains(result.output, "SonarQube skipped: no server configured")
     }
 
     @Test
@@ -175,5 +207,9 @@ class CheckTiersTest {
 
         assertTrue("dependencyCheckAnalyze" in planned, "$planned")
         assertFalse("sonar" in planned, "$planned")
+    }
+
+    private companion object {
+        val SONAR_ENVIRONMENT = setOf("SONAR_HOST_URL", "SONAR_TOKEN")
     }
 }

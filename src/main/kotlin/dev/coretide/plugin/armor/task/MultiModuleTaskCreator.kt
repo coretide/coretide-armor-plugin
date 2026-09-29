@@ -47,6 +47,15 @@ object MultiModuleTaskCreator {
         }
 
         createMultiModuleTasks(project, actualProjects, aggregatedReports)
+        ArmorInfoTask.register(
+            project,
+            extension,
+            "multi-module",
+            tiers = null,
+            module = false,
+            repository = true,
+            modules = actualProjects,
+        )
         SarifConfigurator.register(project, listOf(project) + actualProjects)
         ArmorReportConfigurator.register(project, listOf(project) + actualProjects)
     }
@@ -58,7 +67,7 @@ object MultiModuleTaskCreator {
         aggregatedCoverage: File?,
     ) {
         ConfiguratorUtil.registerConfigurators(project, extension, projectType, aggregatedCoverage)
-        TaskCreator.createCustomTasks(project, extension)
+        TaskCreator.createCustomTasks(project, extension, projectType, repository = false)
     }
 
     fun createMultiModuleTasks(

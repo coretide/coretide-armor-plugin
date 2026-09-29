@@ -137,12 +137,14 @@ abstract class ScaffoldProjectTask : DefaultTask() {
                 |        run: ./gradlew build --continue
                 |
                 |      # fullAnalysis adds the CI tier: OWASP Dependency Check (whose findings are uploaded too),
-                |      # dependency updates, the SBOM and licence report, and SonarQube. SonarQube needs a server
-                |      # (sonarHostUrl and sonarToken, or sonarqube = false); OWASP is much faster with an NVD API key.
+                |      # dependency updates, the SBOM and licence report, and SonarQube once SONAR_TOKEN (and, for
+                |      # your own server, SONAR_HOST_URL) is set. OWASP is much faster with an NVD API key.
                 |      # - name: Full analysis
                 |      #   run: ./gradlew fullAnalysis --continue
                 |      #   env:
                 |      #     NVD_API_KEY: ${'$'}{{ secrets.NVD_API_KEY }}
+                |      #     SONAR_TOKEN: ${'$'}{{ secrets.SONAR_TOKEN }}
+                |      #     SONAR_HOST_URL: ${'$'}{{ vars.SONAR_HOST_URL }}
                 |
                 |      - name: Gather SARIF reports
                 |        if: always()

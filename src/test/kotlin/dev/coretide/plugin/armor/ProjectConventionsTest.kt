@@ -51,6 +51,33 @@ class ProjectConventionsTest {
     }
 
     @Test
+    fun `sonar_host_url is set only when configured, and SONAR_HOST_URL overrides the build`(
+        @TempDir unset: File,
+        @TempDir configured: File,
+    ) {
+        ArmorTestFixture.writeProject(unset, extraScript = PRINT_SONAR)
+        ArmorTestFixture.writeProject(configured, armorConfig = "    sonarHostUrl = \"https://sonar.example.com\"", extraScript = PRINT_SONAR)
+        val noServer = setOf("SONAR_HOST_URL", "SONAR_TOKEN")
+
+        val withoutHost = sonar(ArmorTestFixture.runWithEnvironment(unset, "printSonarProperties", unset = noServer))
+        val withHost = sonar(ArmorTestFixture.runWithEnvironment(configured, "printSonarProperties", unset = noServer))
+        val overridden =
+            sonar(
+                ArmorTestFixture.runWithEnvironment(
+                    configured,
+                    "printSonarProperties",
+                    set = mapOf("SONAR_HOST_URL" to "https://sonar.ci.example.com"),
+                    unset = noServer,
+                ),
+            )
+
+        // Left unset, the SonarScanner picks its own default server, SonarQube Cloud.
+        assertFalse("sonar.host.url" in withoutHost, "sonar.host.url is set: ${withoutHost["sonar.host.url"]}")
+        assertEquals("https://sonar.example.com", withHost["sonar.host.url"])
+        assertEquals("https://sonar.ci.example.com", overridden["sonar.host.url"])
+    }
+
+    @Test
     fun `sonar takes sources from the source sets and the Java version from the project`(
         @TempDir dir: File,
     ) {

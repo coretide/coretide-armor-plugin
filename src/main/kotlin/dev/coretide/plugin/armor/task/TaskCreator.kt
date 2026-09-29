@@ -11,36 +11,47 @@
 package dev.coretide.plugin.armor.task
 
 import dev.coretide.plugin.armor.CodeArmorExtension
+import dev.coretide.plugin.armor.ProjectType
 import dev.coretide.plugin.armor.configurator.ApiCompatibilityConfigurator
 import dev.coretide.plugin.armor.configurator.DependencyHealthConfigurator
 import dev.coretide.plugin.armor.configurator.DetektConfigurator
 import dev.coretide.plugin.armor.configurator.KoverConfigurator
+import dev.coretide.plugin.armor.configurator.SonarqubeConfigurator
 import dev.coretide.plugin.armor.util.LogUtil
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 object TaskCreator {
+    /**
+     * The check tiers and the tasks around them. [repository] marks the project CodeArmor is applied to, rather
+     * than a module of a multi-module build: its `armorInfo` also covers the git hooks.
+     */
     fun createCustomTasks(
         project: Project,
         extension: CodeArmorExtension,
+        projectType: ProjectType,
+        repository: Boolean,
     ) {
         // The check tiers need a JVM project: compile, test and the SpotBugs and JaCoCo tasks only
         // exist once a Java plugin is applied. Without this, `build` would fail in, say, a docs or
         // aggregator project that applies CodeArmor.
+        var tiers: ArmorInfoTask.Tiers? = null
         if (project.plugins.hasPlugin(JavaBasePlugin::class.java)) {
             createQuickBuildTask(project)
             val buildTier = tasksPresent(project, extension.checks.build.get(), defaultBuildTier(extension), OPTIONAL_DEFAULT_TASKS)
-            val ciTier = tasksPresent(project, extension.checks.ci.get(), defaultCiTier(extension), OPTIONAL_CI_TASKS)
+            val ciTier = tasksPresent(project, extension.checks.ci.get(), defaultCiTier(project, extension), OPTIONAL_CI_TASKS)
             if (buildTier.isNotEmpty()) {
                 createCodeQualityTask(project, extension, buildTier)
             }
             if (buildTier.isNotEmpty() || ciTier.isNotEmpty() || extension.veracode) {
                 createFullAnalysisTask(project, extension, ciTier)
             }
+            tiers = ArmorInfoTask.Tiers(buildTier, ciTier)
         }
         createLogExclusionInfoTask(project, extension)
         createScaffoldConfigsTask(project)
+        ArmorInfoTask.register(project, extension, projectType.displayName, tiers, module = true, repository = repository)
     }
 
     /** The local checks `codeQuality`, and so `build`, runs by default: those of the tools switched on. */
@@ -76,16 +87,24 @@ object TaskCreator {
         optional: Set<String>,
     ): List<String> = tier.filter { name -> name !in optional || name !in defaults || name in project.tasks.names }
 
-    /** The network and server checks `fullAnalysis` adds by default: those of the tools switched on. */
-    fun defaultCiTier(extension: CodeArmorExtension): List<String> =
+    /**
+     * The network and server checks `fullAnalysis` adds by default: those of the tools switched on, SonarQube
+     * only once a server or token is configured.
+     */
+    fun defaultCiTier(
+        project: Project,
+        extension: CodeArmorExtension,
+    ): List<String> =
         buildList {
             if (extension.owasp) add("dependencyCheckAnalyze")
             if (extension.dependencyUpdates) add(DependencyHealthConfigurator.UPDATES_TASK)
             if (extension.sbom) add(DependencyHealthConfigurator.LICENSE_TASK)
             if (extension.dependencyAnalysis) add(DependencyHealthConfigurator.ANALYSIS_TASK)
             if (!extension.apiBaseline.isNullOrBlank()) add(ApiCompatibilityConfigurator.API_CHECK_TASK)
-            if (extension.sonarqube) add("sonar")
+            if (extension.sonarqube && SonarqubeConfigurator.isConfigured(project, extension)) add(SONAR_TASK)
         }
+
+    private const val SONAR_TASK = "sonar"
 
     /** The dependency analysis only covers Java and Kotlin projects, and the API check only libraries. */
     private val OPTIONAL_CI_TASKS = setOf(DependencyHealthConfigurator.ANALYSIS_TASK, ApiCompatibilityConfigurator.API_CHECK_TASK)
@@ -175,13 +194,20 @@ object TaskCreator {
                 task.dependsOn(project.tasks.named { name -> name == "veracodeUpload" })
             }
             val veracodeUploadPresent = "veracodeUpload" in project.tasks.names
+            val sonarInTier = SONAR_TASK in ciTier
+            val sonarUnconfigured = extension.sonarqube && !SonarqubeConfigurator.isConfigured(project, extension)
             task.doLast {
                 LogUtil.verbose("✅ Full analysis completed for $projectName")
                 if (extension.owasp) {
                     LogUtil.verbose("📊 OWASP report: build/reports/dependency-check/dependency-check-report.html")
                 }
-                if (extension.sonarqube) {
+                if (sonarInTier) {
                     LogUtil.verbose("🔍 SonarQube analysis uploaded")
+                } else if (sonarUnconfigured) {
+                    LogUtil.essential(
+                        "⚠️  SonarQube skipped: no server configured. Set sonarHostUrl or SONAR_HOST_URL, " +
+                            "or SONAR_TOKEN for SonarQube Cloud.",
+                    )
                 }
                 if (extension.veracode) {
                     when {

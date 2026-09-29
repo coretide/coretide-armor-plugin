@@ -97,16 +97,22 @@ object OwaspConfigurator {
         return generator.flatMap { it.outputFile }.map { it.asFile.absolutePath }
     }
 
+    /** The NVD API key: the build's own, then the `nvd.api.key` property, `NVD_API_KEY`, and the system property. */
+    fun nvdApiKey(
+        project: Project,
+        extension: CodeArmorExtension,
+    ): String? =
+        extension.owaspNvdApiKey
+            ?: project.findProperty("nvd.api.key") as? String
+            ?: System.getenv("NVD_API_KEY")
+            ?: System.getProperty("nvd.api.key")
+
     private fun configureNvd(
         project: Project,
         extension: CodeArmorExtension,
         nvd: NvdExtension,
     ) {
-        val apiKey =
-            extension.owaspNvdApiKey
-                ?: project.findProperty("nvd.api.key") as? String
-                ?: System.getenv("NVD_API_KEY")
-                ?: System.getProperty("nvd.api.key")
+        val apiKey = nvdApiKey(project, extension)
         nvd.delay.set(extension.owaspNvdApiDelay)
         nvd.maxRetryCount.set(extension.owaspNvdMaxRetryCount)
         nvd.validForHours.set(extension.owaspNvdValidForHours)
