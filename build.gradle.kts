@@ -139,6 +139,7 @@ dependencies {
     implementation("org.gradle:test-retry-gradle-plugin:1.6.6")
     implementation("org.jetbrains.kotlinx:kover-gradle-plugin:0.9.10")
     implementation("info.solidsoft.gradle.pitest:gradle-pitest-plugin:1.19.0")
+    implementation("net.ltgt.gradle:gradle-errorprone-plugin:5.1.1")
     kotlinPluginForTests("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.21")
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")

@@ -14,6 +14,7 @@ import dev.coretide.plugin.armor.CodeArmorExtension
 import dev.coretide.plugin.armor.ProjectType
 import dev.coretide.plugin.armor.configurator.CompilerConfigurator
 import dev.coretide.plugin.armor.configurator.DetektConfigurator
+import dev.coretide.plugin.armor.configurator.ErrorProneConfigurator
 import dev.coretide.plugin.armor.configurator.JacocoConfigurator
 import dev.coretide.plugin.armor.configurator.KoverConfigurator
 import dev.coretide.plugin.armor.configurator.MutationTestingConfigurator
@@ -37,6 +38,7 @@ object ConfiguratorUtil {
     ) {
         ResourceConfigurator.configure(project, extension, projectType)
         CompilerConfigurator.configure(project, extension, projectType)
+        ErrorProneConfigurator.configure(project, extension)
         if (extension.jacoco || extension.kover) TestConventions.configure(project, extension)
         if (KoverConfigurator.usesKover(project, extension)) {
             KoverConfigurator.configure(project, extension)

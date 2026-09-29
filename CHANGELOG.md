@@ -24,6 +24,9 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   `slowTestThresholdMillis` (default 2s) are listed.
 - **Kover** (`kover = true`, opt-in): coverage for Kotlin projects with Kover instead of JaCoCo, with the same
   thresholds and exclusions; SonarQube reads its report.
+- **Error Prone and NullAway** (`errorProne = true`, `nullAway = true`, opt-in): Error Prone checks the Java
+  sources as they compile, and NullAway fails the build where production code may dereference null. Both need a
+  JDK 21 compiler and are skipped, with a warning, on an older one.
 - **Mutation testing** (`mutationTesting = true`, opt-in): `./gradlew pitest` runs PIT on the project's own
   packages, with an optional `mutationThreshold`.
 - **Combined reports for multi-module builds:** `allCodeQuality` also writes one coverage report

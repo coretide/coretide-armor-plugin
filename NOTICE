@@ -27,6 +27,18 @@ detekt and its Gradle plugin
 License: Apache License 2.0
 Website: https://detekt.dev/
 
+Error Prone
+License: Apache License 2.0
+Website: https://errorprone.info/
+
+NullAway
+License: MIT License
+Website: https://github.com/uber/NullAway
+
+gradle-errorprone-plugin
+License: Apache License 2.0
+Website: https://github.com/tbroyer/gradle-errorprone-plugin
+
 Kover and its Gradle plugin
 License: Apache License 2.0
 Website: https://github.com/Kotlin/kotlinx-kover

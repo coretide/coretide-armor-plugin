@@ -17,6 +17,7 @@ CodeArmor is a powerful Gradle plugin that integrates multiple code quality and 
 ## ✨ Features
 
 - 🔍 **Comprehensive Code Quality**: JaCoCo, SpotBugs, detekt (Kotlin), SonarQube integration
+- 🐞 **Bug and Null Checks on Request**: Error Prone and NullAway on Java sources as they compile
 - 🧪 **Test Insights**: flaky tests retried on CI and named, slowest tests listed; Kover and PIT mutation testing on request
 - 🔒 **Security Analysis**: OWASP Dependency Check (**Veracode integration in development**)
 - 🚀 **Optimized Workflows**: Custom tasks for different development stages
@@ -456,6 +457,25 @@ since tests often use deprecated APIs on purpose.
   visibility and return type.
 
 Arguments the build already passes, such as `kotlin { explicitApi() }`, are not repeated.
+
+### Error Prone and NullAway
+```kotlin
+codeArmor {
+    errorProne = true                         // Opt-in
+    nullAway = true                           // Opt-in; turns on Error Prone as well
+}
+```
+[Error Prone](https://errorprone.info) checks the Java sources as they compile, and its errors fail the build.
+Its warnings only fail the build together with `strictCompilation`. Kotlin sources are not checked.
+- **NullAway:** [NullAway](https://github.com/uber/NullAway) fails the build where production code may
+  dereference null, or return or pass null where no `@Nullable` says it may. Any annotation named `Nullable`
+  counts; [JSpecify](https://jspecify.dev)'s `org.jspecify:jspecify` is a good choice. It checks the packages
+  declared under `src/main`, or only `@NullMarked` code when the sources declare none. Test code is not checked.
+- **Generated code:** anything under `build/generated/` is skipped.
+- **JDK:** Error Prone needs a JDK 21 compiler. On an older toolchain, compilation goes ahead without it and says so.
+  `options.release` can still target an older Java.
+- **Versions:** Error Prone 2.50.0 and NullAway 0.14.2. A newer version in your own `errorprone` dependencies
+  takes precedence.
 
 ### Logging Configuration
 

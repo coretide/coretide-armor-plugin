@@ -240,6 +240,8 @@ the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
   root without repositories and a module without the Java plugin
 - **detekt** (`DetektTest`, `DetektVersionTest`): the build tier, baselines, detekt 1.x projects, and the
   Kotlin version guard, whose constants must match the bundled detekt plugin
+- **Error Prone and NullAway** (`ErrorProneTest`): Error Prone errors, its warnings under `strictCompilation`,
+  NullAway on production code only, and compiling without them below JDK 21
 - **Strict compilation** (`StrictCompilationTest`): Java and Kotlin warnings failing the build, with
   Kotlin projects applying the Kotlin Gradle plugin, which the build puts on TestKit's plugin classpath
 - **Project conventions** (`ProjectConventionsTest`): the SonarQube properties, test task setup, resource
