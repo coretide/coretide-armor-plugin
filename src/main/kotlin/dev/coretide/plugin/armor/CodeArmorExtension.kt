@@ -128,6 +128,13 @@ open class CodeArmorExtension
          * the dump committed under `api/`. Part of the build tier. Libraries only; opt-in.
          */
         var kotlinAbiValidation: Boolean = false
+
+        /**
+         * ArchUnit on the test classpath, and `armorScaffoldArchitectureTests`, which writes a first architecture
+         * test (package cycles, field injection, standard streams, generic exceptions). The tests run with the
+         * others, so a violated rule fails the build. Opt-in.
+         */
+        var architectureTests: Boolean = false
         var owaspFailBuildOnCVSS: Double = 9.0
         var owaspSuppressionFile: String? = null
         var owaspAutoUpdate: Boolean = false

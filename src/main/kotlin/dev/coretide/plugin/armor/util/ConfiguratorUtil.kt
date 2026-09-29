@@ -13,6 +13,7 @@ package dev.coretide.plugin.armor.util
 import dev.coretide.plugin.armor.CodeArmorExtension
 import dev.coretide.plugin.armor.ProjectType
 import dev.coretide.plugin.armor.configurator.ApiCompatibilityConfigurator
+import dev.coretide.plugin.armor.configurator.ArchitectureTestsConfigurator
 import dev.coretide.plugin.armor.configurator.CompilerConfigurator
 import dev.coretide.plugin.armor.configurator.DependencyHealthConfigurator
 import dev.coretide.plugin.armor.configurator.DetektConfigurator
@@ -55,6 +56,7 @@ object ConfiguratorUtil {
         if (extension.owasp) OwaspConfigurator.configureOwasp(project, extension)
         DependencyHealthConfigurator.configure(project, extension, projectType)
         ApiCompatibilityConfigurator.configure(project, extension, projectType)
+        ArchitectureTestsConfigurator.configure(project, extension)
         if (extension.veracode) VeracodeConfigurator.configureVeracode(project)
         if (extension.sonarqube) SonarqubeConfigurator.configureSonarqube(project, extension, aggregatedCoverage)
     }

@@ -11,6 +11,7 @@
 package dev.coretide.plugin.armor
 
 import dev.coretide.plugin.armor.codestats.CodeStatsManager
+import dev.coretide.plugin.armor.configurator.ArmorReportConfigurator
 import dev.coretide.plugin.armor.configurator.SarifConfigurator
 import dev.coretide.plugin.armor.git.GitHooksManager
 import dev.coretide.plugin.armor.git.VersionManager
@@ -66,5 +67,6 @@ class CodeArmorPlugin : Plugin<Project> {
         ConfiguratorUtil.registerConfigurators(project, extension, projectType)
         TaskCreator.createCustomTasks(project, extension)
         SarifConfigurator.register(project, listOf(project))
+        ArmorReportConfigurator.register(project, listOf(project))
     }
 }

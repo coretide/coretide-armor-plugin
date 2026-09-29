@@ -39,6 +39,10 @@ gradle-errorprone-plugin
 License: Apache License 2.0
 Website: https://github.com/tbroyer/gradle-errorprone-plugin
 
+ArchUnit (added to a project's tests with architectureTests = true)
+License: Apache License 2.0
+Website: https://www.archunit.org/
+
 japicmp and its Gradle plugin
 License: Apache License 2.0
 Website: https://github.com/siom79/japicmp
