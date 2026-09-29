@@ -11,6 +11,7 @@
 package dev.coretide.plugin.armor.task
 
 import dev.coretide.plugin.armor.CodeArmorExtension
+import dev.coretide.plugin.armor.configurator.DetektConfigurator
 import dev.coretide.plugin.armor.util.LogUtil
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaBasePlugin
@@ -26,7 +27,7 @@ object TaskCreator {
         // aggregator project that applies CodeArmor.
         if (project.plugins.hasPlugin(JavaBasePlugin::class.java)) {
             createQuickBuildTask(project)
-            val buildTier = extension.checks.build.get()
+            val buildTier = tasksPresent(project, extension, extension.checks.build.get())
             val ciTier = extension.checks.ci.get()
             if (buildTier.isNotEmpty()) {
                 createCodeQualityTask(project, extension, buildTier)
@@ -43,8 +44,25 @@ object TaskCreator {
     fun defaultBuildTier(extension: CodeArmorExtension): List<String> =
         buildList {
             if (extension.spotbugs) add("spotbugsMain")
+            if (extension.detekt) add(DetektConfigurator.TASK_NAME)
             if (extension.jacoco) addAll(listOf("jacocoTestReport", "jacocoTestCoverageVerification"))
         }
+
+    /** Default tier tasks that only some projects have: detekt exists in Kotlin projects only. */
+    private val OPTIONAL_DEFAULT_TASKS = setOf(DetektConfigurator.TASK_NAME)
+
+    /**
+     * The tier's tasks that exist in this project. A default task that only some projects have is left out
+     * where it is missing; a task the build listed itself is kept, so a typo still fails the build.
+     */
+    private fun tasksPresent(
+        project: Project,
+        extension: CodeArmorExtension,
+        tier: List<String>,
+    ): List<String> {
+        val defaults = defaultBuildTier(extension)
+        return tier.filter { name -> name !in OPTIONAL_DEFAULT_TASKS || name !in defaults || name in project.tasks.names }
+    }
 
     /** The network and server checks `fullAnalysis` adds by default: those of the tools switched on. */
     fun defaultCiTier(extension: CodeArmorExtension): List<String> =

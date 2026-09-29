@@ -82,6 +82,18 @@ class ConfigurationCacheTest {
     }
 
     @Test
+    fun `a Kotlin project running detekt reuses the configuration cache on a second run`(
+        @TempDir dir: File,
+    ) {
+        ArmorTestFixture.writeProject(dir, language = ArmorTestFixture.Language.KOTLIN)
+
+        ArmorTestFixture.run(dir, "detekt", "--configuration-cache")
+        val second = ArmorTestFixture.run(dir, "detekt", "--configuration-cache")
+
+        assertContains(second.output, "Configuration cache entry reused")
+    }
+
+    @Test
     fun `multi-module build reuses the configuration cache on a second run`(
         @TempDir dir: File,
     ) {

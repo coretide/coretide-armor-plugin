@@ -73,6 +73,9 @@ object SonarqubeConfigurator {
                         SpotbugsConfigurator.reportFile(project, "spotbugsMain", "xml").absolutePath,
                     )
                 }
+                DetektConfigurator.checkstyleReport(project)?.let { report ->
+                    sonarProperties.property("sonar.kotlin.detekt.reportPaths", report.absolutePath)
+                }
                 if (extension.owasp) {
                     sonarProperties.property(
                         "sonar.dependencyCheck.reportPath",

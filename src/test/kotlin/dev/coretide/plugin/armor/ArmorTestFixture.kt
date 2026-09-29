@@ -21,17 +21,16 @@ import org.gradle.testkit.runner.GradleRunner
  * are not git repositories, and leaving those on makes assertions depend on the host's git state.
  */
 object ArmorTestFixture {
-    /** The language plugin a fixture applies; the Kotlin plugin is resolved from the Plugin Portal. */
+    /**
+     * The language plugin a fixture applies. The Kotlin Gradle plugin is on the plugin-under-test classpath
+     * (see kotlinPluginForTests in the build), so fixtures request it without a version.
+     */
     enum class Language(
         val pluginId: String,
-        val version: String? = null,
     ) {
         JAVA("java"),
-        KOTLIN("org.jetbrains.kotlin.jvm", KOTLIN_VERSION),
+        KOTLIN("org.jetbrains.kotlin.jvm"),
     }
-
-    /** The Kotlin Gradle plugin version Kotlin fixtures use: the one this build compiles with. */
-    const val KOTLIN_VERSION = "2.2.21"
 
     fun writeProject(
         dir: File,
@@ -46,7 +45,7 @@ object ArmorTestFixture {
 
         val pluginLines =
             buildList {
-                add("""    id("${language.pluginId}")""" + (language.version?.let { """ version "$it"""" } ?: ""))
+                add("""    id("${language.pluginId}")""")
                 extraPlugins.forEach { add("""    id("$it")""") }
                 add("""    id("dev.coretide.plugin.armor")""")
             }.joinToString("\n")
@@ -306,7 +305,7 @@ object ArmorTestFixture {
                     b: Int,
                 ): Int = a + b
             }
-            """.trimIndent(),
+            """.trimIndent() + "\n",
         )
     }
 

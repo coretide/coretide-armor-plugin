@@ -6,6 +6,8 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
 ## [Unreleased]
 
 ### ⚠️ Behaviour changes
+- **Kotlin projects run detekt in `./gradlew build`.** Findings fail the build. Run `./gradlew detektBaseline`
+  once to accept the findings already in the code, or set `detekt = false`.
 - **Test tasks keep the framework they chose.** CodeArmor still moves test tasks on Gradle's default runner
   (JUnit 4) to the JUnit Platform, but no longer switches TestNG tasks, and no longer resets JUnit Platform
   settings. The new `junitPlatform = false` keeps JUnit 4.
@@ -17,6 +19,10 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   override.
 
 ### Added
+- **detekt for Kotlin projects:** detekt 2.0.0-alpha.6 joins the local tier in projects that apply the Kotlin
+  JVM plugin, with HTML, SARIF and checkstyle reports, a baseline (`detektBaseline`), and its findings
+  imported into SonarQube. It is left off, with a message, when the project's Kotlin release is newer than
+  detekt can read, and a project that applies detekt 1.x keeps it.
 - **`strictCompilation`** (off by default): compiler warnings in production code fail the build. Java gets
   `-Xlint:all -Werror`; Kotlin gets `allWarningsAsErrors` and `-Xjsr305=strict`, and Kotlin libraries get
   explicit API mode.
