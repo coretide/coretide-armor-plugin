@@ -22,7 +22,8 @@ open class SpotBugsConfig {
     var xmlReports: Boolean = true
     var htmlReports: Boolean = true
     var textReports: Boolean = false
-    var sarifReports: Boolean = false
+    /** For GitHub code scanning and other SARIF viewers; see `armorSarifReport`. */
+    var sarifReports: Boolean = true
     var maxHeap: String? = null
     var timeout: Int? = null
     var bugCategories: List<String> = emptyList()

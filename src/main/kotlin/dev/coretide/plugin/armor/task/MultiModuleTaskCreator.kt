@@ -14,6 +14,7 @@ import dev.coretide.plugin.armor.CodeArmorExtension
 import dev.coretide.plugin.armor.ProjectType
 import dev.coretide.plugin.armor.configurator.AggregatedReportsConfigurator
 import dev.coretide.plugin.armor.configurator.DependencyHealthConfigurator
+import dev.coretide.plugin.armor.configurator.SarifConfigurator
 import dev.coretide.plugin.armor.util.ConfiguratorUtil
 import dev.coretide.plugin.armor.util.LogUtil
 import dev.coretide.plugin.armor.util.ProjectDetector
@@ -45,6 +46,7 @@ object MultiModuleTaskCreator {
         }
 
         createMultiModuleTasks(project, actualProjects, aggregatedReports)
+        SarifConfigurator.register(project, listOf(project) + actualProjects)
     }
 
     private fun configureSingleModuleProject(

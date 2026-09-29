@@ -17,6 +17,8 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   no longer by a project name ending in `-app` or `-service`. Only applications get resource processing.
 - **`sonarJavaVersion` has no default.** The SonarScanner reads the Java version from the project; set it to
   override.
+- **SpotBugs and OWASP Dependency Check also write SARIF.** `spotbugs { sarifReports = false }` turns SpotBugs'
+  off.
 
 ### Added
 - **Flaky and slow tests:** on CI, a failed test is retried (`flakyTestRetries`, default 2) and, if it then passes,
@@ -24,6 +26,10 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   `slowTestThresholdMillis` (default 2s) are listed.
 - **Kover** (`kover = true`, opt-in): coverage for Kotlin projects with Kover instead of JaCoCo, with the same
   thresholds and exclusions; SonarQube reads its report.
+- **Code scanning:** `armorSarifReport` gathers the SpotBugs, detekt and OWASP SARIF reports of every project into
+  `build/reports/sarif/`. Each run gets its own category, as GitHub code scanning requires.
+- **`armorScaffoldProject`** writes an `.editorconfig` and a GitHub Actions workflow. The workflow runs the checks
+  and uploads the SARIF to code scanning. Existing files are never overwritten.
 - **Commit hooks** (opt-in, installed by `armorInstallGitHooks`):
   - `conventionalCommits = true` adds a commit-msg hook that rejects messages that are not Conventional Commits. The allowed types are set by `conventionalCommitTypes`.
   - `secretScan = true` adds a pre-commit hook that blocks a commit gitleaks finds a secret in. gitleaks is not bundled; without it, the hook warns and lets the commit through.
