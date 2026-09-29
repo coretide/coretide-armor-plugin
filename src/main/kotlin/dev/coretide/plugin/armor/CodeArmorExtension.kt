@@ -142,7 +142,13 @@ open class CodeArmorExtension
         var owaspNvdApiDelay: Int = 4000
         var owaspNvdMaxRetryCount: Int = 10
         var owaspNvdValidForHours: Int = 24
-        var sonarHostUrl: String = "http://localhost:9000"
+        /**
+         * The SonarQube server; `SONAR_HOST_URL` takes precedence. Left unset, the SonarScanner uses its own
+         * default, SonarQube Cloud. `sonar` is in the default CI tier only once a server or a token is
+         * configured: here, through `SONAR_HOST_URL` or `SONAR_TOKEN`, or through the `sonar.host.url` or
+         * `sonar.token` system properties. Listing it in `checks.ci` runs it regardless.
+         */
+        var sonarHostUrl: String? = null
         var sonarProjectKey: String? = ""
         var sonarProjectName: String? = ""
         var sonarToken: String? = ""

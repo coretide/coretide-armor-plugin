@@ -255,9 +255,11 @@ the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
   NullAway on production code only, and compiling without them below JDK 21
 - **Strict compilation** (`StrictCompilationTest`): Java and Kotlin warnings failing the build, with
   Kotlin projects applying the Kotlin Gradle plugin, which the build puts on TestKit's plugin classpath
-- **Project conventions** (`ProjectConventionsTest`): the SonarQube properties, test task setup, resource
+- **Project conventions** (`ProjectConventionsTest`): the SonarQube properties and server, test task setup, resource
   processing and how a project is classified
 - **Configuration cache tests** (`ConfigurationCacheTest`): a second run must reuse the cache
+- **`armorInfo`** (`ArmorInfoTest`): the tiers and tools it shows, and what needs attention, in single and
+  multi-module builds, with the git hooks and gitleaks looked up when it runs
 - **Check tiers and git hooks** (`CheckTiersTest`, `GitHooksTest`): what each tier runs; hooks installed, upgraded and removed only by their tasks, a real `git push` through the pre-push hook, and real commits through the commit-msg and secret-scanning hooks (with a stand-in gitleaks)
 - **Code stats** (`CodeStatsTest`, `CodeStatsSettingsTest`): installs and real commits through the hooks,
   each in a throwaway home directory and git configuration, and who may choose which setting

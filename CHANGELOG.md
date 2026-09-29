@@ -5,6 +5,21 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
 
 ## [Unreleased]
 
+### ⚠️ Behaviour changes
+- **SonarQube runs only once it is configured.** `fullAnalysis` includes `sonar` by default only when a server or
+  a token is set: `sonarHostUrl` or `sonarToken`, the `SONAR_HOST_URL` or `SONAR_TOKEN` environment variables, or
+  the `sonar.host.url` or `sonar.token` system properties. Without one, it leaves SonarQube out and says why,
+  instead of failing against a server that is not there. Listing `sonar` in `checks.ci` still runs it, as a
+  server set only in the build's own `sonar { }` block needs.
+- **`sonarHostUrl` no longer defaults to `http://localhost:9000`.** Left unset, the SonarScanner picks its own
+  default, SonarQube Cloud. A local server needs `sonarHostUrl = "http://localhost:9000"`.
+
+### Added
+- **`armorInfo`** prints what CodeArmor checks in a project: its version, what `build`, `fullAnalysis` and the
+  pre-push hook run, and each tool, switched on or off, with its version and settings. It ends with what needs
+  attention: SonarQube with no server, OWASP without an NVD API key, git hooks not installed, `secretScan` without
+  gitleaks, Veracode without its plugin or credentials. In a multi-module build, each module shows its own.
+
 ### Fixed
 - **SonarQube ignored `SONAR_TOKEN`.** CodeArmor always set `sonar.token`, to an empty value when `sonarToken` was
   unset, and the SonarScanner reads the environment variable only while the property is unset. The usual way to

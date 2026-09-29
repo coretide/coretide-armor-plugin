@@ -19,6 +19,31 @@ import org.sonarqube.gradle.SonarExtension
 import java.io.File
 
 object SonarqubeConfigurator {
+    /** What points the SonarScanner at a server, or authenticates it, from outside the build script. */
+    private val SERVER_ENVIRONMENT = listOf("SONAR_HOST_URL", "SONAR_TOKEN")
+    private val SERVER_SYSTEM_PROPERTIES = listOf("sonar.host.url", "sonar.token", "sonar.login")
+
+    /** The SonarScanner's server when none is configured. */
+    private const val DEFAULT_SERVER = "https://sonarcloud.io"
+
+    /**
+     * Whether the build names a SonarQube server, or a token for one; a token alone means SonarQube Cloud,
+     * the SonarScanner's default. Without either, `sonar` has nowhere to send the analysis, so it leaves
+     * the default CI tier.
+     */
+    fun isConfigured(
+        project: Project,
+        extension: CodeArmorExtension,
+    ): Boolean =
+        !extension.sonarHostUrl.isNullOrBlank() ||
+            !extension.sonarToken.isNullOrBlank() ||
+            SERVER_ENVIRONMENT.any { !project.providers.environmentVariable(it).orNull.isNullOrBlank() } ||
+            SERVER_SYSTEM_PROPERTIES.any { !project.providers.systemProperty(it).orNull.isNullOrBlank() }
+
+    /** `SONAR_HOST_URL`, else the build's own setting; null leaves the choice to the SonarScanner. */
+    fun hostUrl(extension: CodeArmorExtension): String? =
+        System.getenv("SONAR_HOST_URL")?.takeIf { it.isNotBlank() } ?: extension.sonarHostUrl?.takeIf { it.isNotBlank() }
+
     fun configureSonarqube(
         project: Project,
         extension: CodeArmorExtension,
@@ -29,11 +54,8 @@ object SonarqubeConfigurator {
         project.configure<SonarExtension> {
             properties { sonarProperties ->
                 sonarProperties.property("sonar.scm.provider", "git")
-                sonarProperties.property("sonar.host.url", System.getenv("SONAR_HOST_URL") ?: extension.sonarHostUrl)
-                sonarProperties.property(
-                    "sonar.projectKey",
-                    extension.sonarProjectKey?.takeIf { it.isNotEmpty() } ?: "${project.group}:${project.name}",
-                )
+                hostUrl(extension)?.let { sonarProperties.property("sonar.host.url", it) }
+                sonarProperties.property("sonar.projectKey", projectKey(project, extension))
                 sonarProperties.property(
                     "sonar.projectName",
                     extension.sonarProjectName?.takeIf { it.isNotEmpty() } ?: project.name,
@@ -116,17 +138,17 @@ object SonarqubeConfigurator {
                 if (extension.owasp) {
                     task.dependsOn("dependencyCheckAnalyze")
                 }
+                val dashboard = "${hostUrl(extension) ?: DEFAULT_SERVER}/dashboard?id=${projectKey(project, extension)}"
                 task.doLast {
                     LogUtil.verbose("✅ SonarQube analysis completed")
-                    LogUtil.verbose(
-                        "🔍 View results at: ${extension.sonarHostUrl}/dashboard?id=${
-                            extension.sonarProjectKey?.ifEmpty {
-                                "${project.group}:${project.name}"
-                            }
-                        }",
-                    )
+                    LogUtil.verbose("🔍 View results at: $dashboard")
                 }
             }
         }
     }
+
+    private fun projectKey(
+        project: Project,
+        extension: CodeArmorExtension,
+    ): String = extension.sonarProjectKey?.takeIf { it.isNotEmpty() } ?: "${project.group}:${project.name}"
 }

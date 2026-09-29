@@ -21,7 +21,8 @@ import org.gradle.api.provider.ListProperty
  *   depends on `codeQuality`. Defaults to the SpotBugs and JaCoCo tasks of the tools switched on.
  *   These must not depend on `build` themselves, or `build` would depend on itself.
  * - [ci]: checks that need a network or a server, for CI. `fullAnalysis` runs them after
- *   `codeQuality`. Defaults to OWASP Dependency Check and SonarQube, when switched on.
+ *   `codeQuality`. Defaults to the network checks switched on, and SonarQube once a server or token is
+ *   configured.
  *
  * The SpotBugs plugin itself also makes `check` run every SpotBugs task; `spotbugs = false` is what
  * keeps SpotBugs out of `build` entirely.
