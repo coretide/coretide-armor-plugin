@@ -86,7 +86,8 @@ Starting with version 0.1.4-alpha, CodeArmor no longer includes Spotless or Chec
   submits the dependency graph, with Dependabot.
 - 🔧 **Tool versions**: run a newer or older JaCoCo, PIT, Error Prone, NullAway or ArchUnit than the default.
 
-SonarQube now runs only once a server or token is configured, and `SONAR_TOKEN` finally works. See the
+SonarQube now runs only once a server or token is configured, and `SONAR_TOKEN` finally works. The default
+SpotBugs filter no longer skips classes that merely have `Test` or `Config` in their names. See the
 [changelog](CHANGELOG.md) for everything, including [upgrading from 0.3.x](CHANGELOG.md#upgrading-from-03x).
 
 ---
@@ -492,7 +493,10 @@ To adopt SpotBugs in existing code, accept the findings already there, and fail 
 SpotBugs matches them by a hash of the bug pattern, class, method and names, not by line, so edits around a
 finding keep it accepted. Run the task again to accept what is there now; delete the file to see every finding.
 
-Without `excludeFile`, CodeArmor generates a default filter under `build/codearmor/`. To start from
+Without `excludeFile`, CodeArmor generates a default filter under `build/codearmor/`. It leaves out generated
+code, test classes (names ending in `Test`, `Tests`, `IT` or `TestCase`) and configuration classes (names ending in
+`Config` or `Configuration`), with the classes nested in them, and a few framework false positives in `entity` and
+`dto` packages. `ConfigParser` or `TestimonialService` is analysed like any other class. To start from
 that default and customize it, run `./gradlew armorScaffoldConfigs`: it writes
 `config/spotbugs/spotbugs-exclude.xml` and `config/owasp/suppressions.xml` (never overwriting existing
 files), which you then point `excludeFile` and `owaspSuppressionFile` at.

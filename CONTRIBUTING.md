@@ -247,6 +247,8 @@ the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
   verification, a failure failing the build, and no suite when it is off
 - **Secret scanning in CI** (`SecretScanTest`): a stand-in gitleaks, a clean history with its SARIF gathered, a
   secret, a missing gitleaks, and the scan in `fullAnalysis`, once for a multi-module build
+- **SpotBugs filter** (`SpotbugsFilterTest`): the default filter leaves out test and configuration classes by name
+  suffix, with their nested classes, and analyses classes whose names only contain those words
 - **SpotBugs baseline** (`SpotbugsBaselineTest`): accepting the findings there, moved lines, a new finding failing,
   rewriting the baseline, all with the configuration cache
 - **Diff coverage** (`DiffCoverageTest`): a feature branch against its base with JaCoCo and Kover, the minimum,

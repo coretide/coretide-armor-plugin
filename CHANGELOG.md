@@ -8,8 +8,8 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
 A release about adopting CodeArmor in existing code and running it on CI: `armorInfo` shows what it checks and
 what needs attention, diff coverage measures what a pull request adds, a SpotBugs baseline accepts the findings
 already there, and gitleaks, the job summary and the dependency graph join the CI side. It also fixes SonarQube
-ignoring `SONAR_TOKEN`, and OWASP scanning CodeArmor's own tools. Read [Upgrading from 0.3.x](#upgrading-from-03x)
-first.
+ignoring `SONAR_TOKEN` and OWASP scanning CodeArmor's own tools, and stops the default SpotBugs filter from skipping
+classes that merely have `Test` or `Config` in their names. Read [Upgrading from 0.3.x](#upgrading-from-03x) first.
 
 ### ⚠️ Behaviour changes
 - **SonarQube runs only once it is configured.** `fullAnalysis` includes `sonar` by default only when a server or
@@ -23,6 +23,10 @@ first.
   `diffCoverageMinimum` is set; `diffCoverage = false` leaves it out.
 - **OWASP Dependency Check scans only `runtimeClasspath`.** See Fixed: a vulnerability in a test-only or
   compile-only dependency, or in a build tool, no longer fails the build.
+- **Narrower default SpotBugs filter.** It left out any class with `Test` or `Config` anywhere in its name, such as
+  `TestimonialService`, `AbTestRouter`, `ConfigParser` or `ConfigurationLoader`. It now leaves out only names ending
+  in `Test`, `Tests`, `IT` or `TestCase`, and in `Config` or `Configuration`, with the classes nested in them, as the
+  coverage exclusions have since 0.3.0. SpotBugs can report findings in classes it skipped before.
 
 ### Added
 **Setup and diagnostics**
@@ -91,7 +95,10 @@ first.
    and passes.
 3. **OWASP suppressions.** Findings in test-only and compile-only dependencies, and in those of SpotBugs, detekt,
    PIT, Error Prone or JaCoCo, no longer appear; suppressions you added for them can go.
-4. **Adopting the new checks.** `./gradlew armorSpotbugsBaseline` accepts the SpotBugs findings already in the code;
+4. **SpotBugs findings in classes it used to skip.** Classes whose names only contain `Test` or `Config` are now
+   analysed. Fix what it finds, or accept it with `./gradlew armorSpotbugsBaseline`. A filter scaffolded earlier with
+   `armorScaffoldConfigs` keeps the old patterns: narrow them there, or delete the file and scaffold it again.
+5. **Adopting the new checks.** `./gradlew armorSpotbugsBaseline` accepts the SpotBugs findings already in the code;
    with `detektTypeResolution = true`, `./gradlew detektBaselineMain` does the same for detekt. `./gradlew armorInfo`
    lists what else needs attention.
 

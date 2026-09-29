@@ -40,14 +40,14 @@ object FileUtil {
                         <Class name="~.*\.generated\..*"/>
                     </Match>
                     
-                    <!-- Exclude test classes -->
+                    <!-- Exclude test classes: names ending in Test, Tests, IT or TestCase, and the classes nested in them -->
                     <Match>
-                        <Class name="~.*Test.*"/>
+                        <Class name="~.*(Test|Tests|IT|TestCase)(\$.*)?"/>
                     </Match>
                     
-                    <!-- Exclude configuration classes -->
+                    <!-- Exclude configuration classes: names ending in Config or Configuration, and the classes nested in them -->
                     <Match>
-                        <Class name="~.*Config.*"/>
+                        <Class name="~.*(Config|Configuration)(\$.*)?"/>
                     </Match>
                     
                     <!-- Exclude DTOs/POJOs from serialization warnings -->
