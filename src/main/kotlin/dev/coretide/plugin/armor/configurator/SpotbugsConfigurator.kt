@@ -23,6 +23,7 @@ import org.gradle.api.Project
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.configure
+import java.io.File
 
 object SpotbugsConfigurator {
     fun configureSpotbugs(
@@ -107,6 +108,13 @@ object SpotbugsConfigurator {
         return generator.flatMap { it.outputFile }
     }
 
+    /** Where a SpotBugs task writes its report; SonarQube reads the main task's XML from here. */
+    fun reportFile(
+        project: Project,
+        taskName: String,
+        extension: String,
+    ): File = project.file("build/reports/spotbugs/$taskName.$extension")
+
     private fun configureSpotBugsTask(
         task: SpotBugsTask,
         project: Project,
@@ -116,21 +124,21 @@ object SpotbugsConfigurator {
             if (config.xmlReports) {
                 reports.create("xml") { report ->
                     report.required.set(true)
-                    report.outputLocation.set(project.file("build/reports/spotbugs/${task.name}.xml"))
+                    report.outputLocation.set(reportFile(project, task.name, "xml"))
                 }
             }
 
             if (config.htmlReports) {
                 reports.create("html") { report ->
                     report.required.set(true)
-                    report.outputLocation.set(project.file("build/reports/spotbugs/${task.name}.html"))
+                    report.outputLocation.set(reportFile(project, task.name, "html"))
                 }
             }
 
             if (config.textReports) {
                 reports.create("text") { report ->
                     report.required.set(true)
-                    report.outputLocation.set(project.file("build/reports/spotbugs/${task.name}.txt"))
+                    report.outputLocation.set(reportFile(project, task.name, "txt"))
                 }
             }
 
@@ -138,7 +146,7 @@ object SpotbugsConfigurator {
                 try {
                     reports.create("sarif") { report ->
                         report.required.set(true)
-                        report.outputLocation.set(project.file("build/reports/spotbugs/${task.name}.sarif"))
+                        report.outputLocation.set(reportFile(project, task.name, "sarif"))
                     }
                 } catch (_: Exception) {
                     LogUtil.essential("⚠️ SARIF reports not supported in this SpotBugs version")

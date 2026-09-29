@@ -234,6 +234,8 @@ Most tests are Gradle TestKit tests: they write a throwaway project to a tempora
 the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
 
 - **Functional tests** (`CodeArmorPluginFunctionalTest`): tasks, detection, tool wiring
+- **Project conventions** (`ProjectConventionsTest`): the SonarQube properties, test task setup, resource
+  processing and how a project is classified
 - **Configuration cache tests** (`ConfigurationCacheTest`): a second run must reuse the cache
 - **Check tiers and git hooks** (`CheckTiersTest`, `GitHooksTest`): what each tier runs; hooks installed, upgraded and removed only by their tasks, and a real `git push` through the hook
 - **Code stats** (`CodeStatsTest`, `CodeStatsSettingsTest`): installs and real commits through the hooks,

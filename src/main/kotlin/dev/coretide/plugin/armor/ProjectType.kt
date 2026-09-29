@@ -12,11 +12,13 @@ package dev.coretide.plugin.armor
 
 enum class ProjectType(
     val displayName: String,
+    val isApplication: Boolean,
+    val hasKotlin: Boolean,
 ) {
-    JAVA_APPLICATION("Java Application"),
-    JAVA_LIBRARY("Java Library"),
-    KOTLIN_APPLICATION("Kotlin Application"),
-    KOTLIN_LIBRARY("Kotlin Library"),
-    MIXED_APPLICATION("Mixed Application"),
-    MIXED_LIBRARY("Mixed Library"),
+    JAVA_APPLICATION("Java Application", isApplication = true, hasKotlin = false),
+    JAVA_LIBRARY("Java Library", isApplication = false, hasKotlin = false),
+    KOTLIN_APPLICATION("Kotlin Application", isApplication = true, hasKotlin = true),
+    KOTLIN_LIBRARY("Kotlin Library", isApplication = false, hasKotlin = true),
+    MIXED_APPLICATION("Mixed Application", isApplication = true, hasKotlin = true),
+    MIXED_LIBRARY("Mixed Library", isApplication = false, hasKotlin = true),
 }

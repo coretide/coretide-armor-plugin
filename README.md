@@ -164,6 +164,10 @@ CodeArmor automatically detects and supports:
 - **MIXED_APPLICATION** - Java + Kotlin applications
 - **MIXED_LIBRARY** - Java + Kotlin libraries
 
+The language comes from the production sources (`src/main`) and the Kotlin plugin. A project is an
+application when it applies `application`, Spring Boot, Quarkus, Micronaut's application plugin or Ktor;
+otherwise it is a library.
+
 ## 🎯 Available Tasks
 
 CodeArmor organizes its checks in three tiers, from fastest to most thorough:
@@ -252,7 +256,8 @@ Each tier's task list is configurable; see [Check Tiers](#check-tiers).
 
 ## 📝 Resource Processing
 
-CodeArmor automatically processes application configuration files and replaces tokens with build information:
+In application projects (see [Supported Project Types](#-supported-project-types)), CodeArmor processes
+application configuration files and replaces tokens with build information:
 
 ### Supported File Patterns
 - `application.yaml` / `application.yml`
@@ -295,8 +300,15 @@ codeArmor {
     coverageInclusions = mutableListOf("com/example/**")
     coverageExclusions = mutableListOf("**/generated/**")
     coverageIncludeDefaultExclusions = true   // Include common exclusions
+    junitPlatform = true                      // Run default JUnit 4 test tasks on the JUnit Platform
 }
 ```
+
+With JaCoCo on, CodeArmor also sets up the test tasks:
+- **Runner:** a test task still on Gradle's default runner (JUnit 4) runs on the JUnit Platform. A task that
+  chose TestNG, or configured the JUnit Platform itself, keeps its choice. Set `junitPlatform = false` to
+  keep JUnit 4.
+- **Logging:** failed tests are shown with their full stack trace. Passing tests and test output stay quiet.
 
 
 #### SpotBugs
@@ -343,9 +355,12 @@ codeArmor {
     sonarProjectName = "My Project"
     sonarToken = "your-sonar-token"
     sonarQualityGateWait = false             // Wait for quality gate result
-    sonarJavaVersion = "21"
+    sonarJavaVersion = "17"                  // Optional: taken from the project's Java settings when unset
 }
 ```
+
+The SonarScanner reads the sources, tests and compiled classes from the source sets, including Kotlin,
+generated and custom ones. CodeArmor adds the JaCoCo coverage, SpotBugs and OWASP reports.
 
 
 #### Veracode (In Development)

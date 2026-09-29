@@ -5,6 +5,25 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
 
 ## [Unreleased]
 
+### ⚠️ Behaviour changes
+- **Test tasks keep the framework they chose.** CodeArmor still moves test tasks on Gradle's default runner
+  (JUnit 4) to the JUnit Platform, but no longer switches TestNG tasks, and no longer resets JUnit Platform
+  settings. The new `junitPlatform = false` keeps JUnit 4.
+- **Quieter test output.** Test tasks no longer print every passing test and all test output; failures are
+  still shown with their full stack trace.
+- **Applications are recognised by their plugins** (`application`, Spring Boot, Quarkus, Micronaut, Ktor),
+  no longer by a project name ending in `-app` or `-service`. Only applications get resource processing.
+- **`sonarJavaVersion` has no default.** The SonarScanner reads the Java version from the project; set it to
+  override.
+
+### Fixed
+- SonarQube never imported SpotBugs findings: it was pointed at `build/reports/spotbugs/main.xml`, while
+  SpotBugs writes `spotbugsMain.xml`.
+- SonarQube only saw `src/main/java` / `src/main/kotlin`: CodeArmor overrode the sources, tests and class
+  directories the SonarScanner reads from the source sets, so generated and custom source sets were not
+  analysed. It also set `sonar.kotlin.*` keys the scanner does not read.
+- Mixed Java and Kotlin applications got no resource processing.
+
 ### Changed
 - **Configuration cache support is declared** in the plugin's metadata, so the Gradle Plugin Portal
   lists CodeArmor as compatible with it.

@@ -37,6 +37,13 @@ open class CodeArmorExtension
         var coverageInclusions: MutableList<String> = mutableListOf()
         var coverageExclusions: MutableList<String> = mutableListOf()
         var coverageIncludeDefaultExclusions: Boolean = true
+
+        /**
+         * Runs test tasks that are still on Gradle's default JUnit 4 runner on the JUnit Platform. A test
+         * task that chose TestNG, or configured the JUnit Platform itself, keeps its choice. Set to false to
+         * keep JUnit 4.
+         */
+        var junitPlatform: Boolean = true
         var owaspFailBuildOnCVSS: Double = 9.0
         var owaspSuppressionFile: String? = null
         var owaspAutoUpdate: Boolean = false
@@ -49,7 +56,11 @@ open class CodeArmorExtension
         var sonarProjectName: String? = ""
         var sonarToken: String? = ""
         var sonarQualityGateWait: Boolean = false
-        var sonarJavaVersion: String = "21"
+        /**
+         * The Java version SonarQube analyses the sources as. Left unset, the SonarScanner reads it from
+         * the project's Java toolchain or compatibility settings.
+         */
+        var sonarJavaVersion: String? = null
         var enableGitHooks: Boolean = true
         var prePushEnabled: Boolean = true
         var enableVersionFromGit: Boolean = true

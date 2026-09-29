@@ -26,9 +26,7 @@ object ResourceConfigurator {
         extension: CodeArmorExtension,
         projectType: ProjectType,
     ) {
-        if (extension.enableResourceProcessing &&
-            (projectType == ProjectType.JAVA_APPLICATION || projectType == ProjectType.KOTLIN_APPLICATION)
-        ) {
+        if (extension.enableResourceProcessing && projectType.isApplication) {
             configureResourceProcessing(project)
         }
     }

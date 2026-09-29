@@ -31,6 +31,6 @@ object ConfiguratorUtil {
         if (extension.spotbugs) SpotbugsConfigurator.configureSpotbugs(project, extension)
         if (extension.owasp) OwaspConfigurator.configureOwasp(project, extension)
         if (extension.veracode) VeracodeConfigurator.configureVeracode(project)
-        if (extension.sonarqube) SonarqubeConfigurator.configureSonarqube(project, extension, projectType)
+        if (extension.sonarqube) SonarqubeConfigurator.configureSonarqube(project, extension)
     }
 }
