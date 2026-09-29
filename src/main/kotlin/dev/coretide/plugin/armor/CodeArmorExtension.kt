@@ -116,6 +116,18 @@ open class CodeArmorExtension
          * but only there transitively, or on the wrong configuration. It reports; it does not fail the build. Opt-in.
          */
         var dependencyAnalysis: Boolean = false
+
+        /**
+         * A released version of this library, `1.4.0` or `group:name:1.4.0`, that `armorApiCheck` compares the jar
+         * with. It fails on binary incompatible changes. Part of the CI tier. Libraries only; opt-in.
+         */
+        var apiBaseline: String? = null
+
+        /**
+         * The Kotlin Gradle plugin's ABI validation (Kotlin 2.2+): the public API of a Kotlin library must match
+         * the dump committed under `api/`. Part of the build tier. Libraries only; opt-in.
+         */
+        var kotlinAbiValidation: Boolean = false
         var owaspFailBuildOnCVSS: Double = 9.0
         var owaspSuppressionFile: String? = null
         var owaspAutoUpdate: Boolean = false

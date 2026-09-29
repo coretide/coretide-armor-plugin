@@ -24,6 +24,9 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   `slowTestThresholdMillis` (default 2s) are listed.
 - **Kover** (`kover = true`, opt-in): coverage for Kotlin projects with Kover instead of JaCoCo, with the same
   thresholds and exclusions; SonarQube reads its report.
+- **Library API checks** (opt-in, libraries only):
+  - `apiBaseline = "1.4.0"` adds `armorApiCheck` to the CI tier. It runs japicmp against that release and fails on binary incompatible changes.
+  - `kotlinAbiValidation = true` switches on the Kotlin Gradle plugin's ABI validation (Kotlin 2.2+) and adds `checkLegacyAbi` to the build tier.
 - **Dependency health**, in the CI tier:
   - `dependencyUpdates` lists newer releases. Pre-releases are offered only for a dependency already on one.
   - `cyclonedxBom` writes a CycloneDX SBOM of `runtimeClasspath`.

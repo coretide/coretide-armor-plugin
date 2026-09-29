@@ -142,6 +142,7 @@ dependencies {
     implementation("net.ltgt.gradle:gradle-errorprone-plugin:5.1.1")
     implementation("com.github.ben-manes:gradle-versions-plugin:0.54.0")
     implementation("org.cyclonedx:cyclonedx-gradle-plugin:3.4.1")
+    implementation("me.champeau.gradle:japicmp-gradle-plugin:0.4.6")
     // Applied by id only. Its Kotlin 2.4 libraries stay off the compile classpath, which this Kotlin cannot read.
     runtimeOnly("com.autonomousapps:dependency-analysis-gradle-plugin:3.19.2")
     kotlinPluginForTests("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.21")
