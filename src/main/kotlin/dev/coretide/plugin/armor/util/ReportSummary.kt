@@ -115,10 +115,14 @@ object ReportSummary {
         return findings("SpotBugs", findings, File(buildDir, "reports/spotbugs/spotbugsMain.html"))
     }
 
+    /** `detekt`'s report, or `detektMain`'s with type resolution: the newer, when both are there. */
     fun detekt(buildDir: File): Row? {
-        val xml = File(buildDir, "reports/detekt/detekt.xml").takeIf { it.isFile } ?: return null
-        val findings = XmlReports.parse(xml).getElementsByTagName("error").length
-        return findings("detekt", findings, File(buildDir, "reports/detekt/detekt.html"))
+        val name =
+            listOf("detekt", "main")
+                .filter { File(buildDir, "reports/detekt/$it.xml").isFile }
+                .maxByOrNull { File(buildDir, "reports/detekt/$it.xml").lastModified() } ?: return null
+        val findings = XmlReports.parse(File(buildDir, "reports/detekt/$name.xml")).getElementsByTagName("error").length
+        return findings("detekt", findings, File(buildDir, "reports/detekt/$name.html"))
     }
 
     fun mutations(buildDir: File): Row? {

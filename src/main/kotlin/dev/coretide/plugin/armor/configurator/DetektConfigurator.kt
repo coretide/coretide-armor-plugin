@@ -27,6 +27,12 @@ object DetektConfigurator {
     const val PLUGIN_ID = "dev.detekt"
     const val TASK_NAME = "detekt"
 
+    /** detekt with type resolution, for the main source set. */
+    const val TYPE_RESOLUTION_TASK = "detektMain"
+
+    /** The detekt task the build tier runs. */
+    fun taskName(extension: CodeArmorExtension): String = if (extension.detektTypeResolution) TYPE_RESOLUTION_TASK else TASK_NAME
+
     /** detekt 1.x. A project that applies it keeps it, and its `detekt` task joins the build tier instead. */
     const val LEGACY_PLUGIN_ID = "io.gitlab.arturbosch.detekt"
 
@@ -92,9 +98,12 @@ object DetektConfigurator {
         generateSequence(failure) { it.cause.takeIf { cause -> cause !== it } }.filterIsInstance<LinkageError>().firstOrNull()
 
     /** The checkstyle-format XML report of the `detekt` task, which SonarQube imports. */
-    fun checkstyleReport(project: Project): File? {
+    fun checkstyleReport(
+        project: Project,
+        extension: CodeArmorExtension,
+    ): File? {
         if (!project.plugins.hasPlugin(PLUGIN_ID)) return null
-        val task = project.tasks.named(TASK_NAME, Detekt::class.java).get()
+        val task = project.tasks.named(taskName(extension), Detekt::class.java).get()
         return task.reports.checkstyle.outputLocation.orNull?.asFile
     }
 

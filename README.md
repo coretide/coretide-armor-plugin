@@ -497,6 +497,7 @@ SpotBugs also writes a SARIF report (`sarifReports = true`, the default), for Gi
 ```kotlin
 codeArmor {
     detekt = true                             // On by default in projects that apply the Kotlin JVM plugin
+    detektTypeResolution = false              // Opt-in: detektMain, with type resolution, instead of detekt
 }
 ```
 [detekt](https://detekt.dev) is the Kotlin static analyser. In projects that apply the Kotlin JVM plugin,
@@ -509,6 +510,10 @@ fails on its findings. Java projects are left alone.
   apply to everything else.
 - **Reports:** HTML, SARIF (for GitHub code scanning) and checkstyle XML in `build/reports/detekt/`.
   SonarQube imports the XML.
+- **Type resolution:** with `detektTypeResolution = true`, `detektMain` takes `detekt`'s place in the local tier.
+  It analyses the main sources against their compile classpath, so the rules that need types run too; it is
+  slower. Its baseline is `detekt-baseline-main.xml`, from `./gradlew detektBaselineMain`, and its reports are
+  `build/reports/detekt/main.*`.
 - **Kotlin version:** detekt parses with its own Kotlin compiler, 2.4. In a project on a newer Kotlin release,
   CodeArmor leaves detekt off and says so, rather than fail on syntax detekt cannot read.
 - **detekt 1.x:** a project that applies `io.gitlab.arturbosch.detekt` itself keeps it, and its `detekt`
@@ -630,6 +635,26 @@ codeArmor {
     veracode = true                           // Runs your Veracode plugin's veracodeUpload in fullAnalysis
 }
 ```
+
+### Tool Versions
+
+Each tool runs the version CodeArmor was tested with. To run another one, a newer release with a fix you need or
+one that supports your JDK:
+
+```kotlin
+codeArmor {
+    toolVersions {
+        jacoco = "0.8.15"
+        pitest = "1.30.0"
+        errorProne = "2.50.0"
+        nullAway = "0.14.2"
+        archUnit = "1.5.1"
+    }
+}
+```
+
+SpotBugs has its own setting, `spotbugs { toolVersion = "…" }`. detekt, OWASP Dependency Check and Kover come
+with their Gradle plugins, so their versions follow CodeArmor's. `./gradlew armorInfo` shows the versions in use.
 
 ### Strict Compilation
 ```kotlin

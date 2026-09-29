@@ -24,6 +24,8 @@ object SarifConfigurator {
     /** Where the tools write SARIF, under each project's `build/reports`. */
     val REPORT_PATTERNS = listOf("spotbugs/*.sarif", "detekt/*.sarif", "dependency-check/*.sarif", "gitleaks/*.sarif")
 
+    private val DETEKT_TASKS = setOf(DetektConfigurator.TASK_NAME, DetektConfigurator.TYPE_RESOLUTION_TASK)
+
     /** Registers the tasks on [root], gathering the reports of [projects]. */
     fun register(
         root: Project,
@@ -42,7 +44,7 @@ object SarifConfigurator {
                 task.mustRunAfter(project.tasks.withType(SpotBugsTask::class.java))
                 task.mustRunAfter(
                     project.tasks.named {
-                        it == DetektConfigurator.TASK_NAME || it == "dependencyCheckAnalyze" || it == SecretScanTask.TASK_NAME
+                        it in DETEKT_TASKS || it == "dependencyCheckAnalyze" || it == SecretScanTask.TASK_NAME
                     },
                 )
             }

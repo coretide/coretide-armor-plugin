@@ -60,6 +60,25 @@ class DetektTest {
     }
 
     @Test
+    fun `with type resolution detektMain takes detekt's place, with its own baseline`(
+        @TempDir dir: File,
+    ) {
+        ArmorTestFixture.writeProject(dir, language = Language.KOTLIN, armorConfig = "$FOCUS_ON_DETEKT\n    detektTypeResolution = true")
+        dir.resolve("src/main/kotlin/com/example/Legacy.kt").writeText("package com.example\n\npublic fun legacy() {\n}\n")
+
+        val failure = ArmorTestFixture.runAndFail(dir, "codeQuality")
+        ArmorTestFixture.run(dir, "detektBaselineMain")
+        val accepted = ArmorTestFixture.run(dir, "codeQuality", "armorReport")
+
+        assertEquals(TaskOutcome.FAILED, failure.task(":detektMain")?.outcome)
+        assertEquals(null, failure.task(":detekt"), "plain detekt ran as well")
+        assertContains(dir.resolve("detekt-baseline-main.xml").readText(), "EmptyFunctionBlock:Legacy.kt")
+        assertEquals(TaskOutcome.SUCCESS, accepted.task(":detektMain")?.outcome)
+        assertContains(accepted.output, "✅ detekt: no findings")
+        assertTrue(dir.resolve("build/reports/detekt/main.sarif").isFile)
+    }
+
+    @Test
     fun `config detekt yml overrides rules and keeps the other defaults`(
         @TempDir dir: File,
     ) {

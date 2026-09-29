@@ -50,6 +50,9 @@ class GroovyDslTest {
                 codeStats {
                     enabled = false
                 }
+                toolVersions {
+                    jacoco = '0.8.13'
+                }
             }
 
             tasks.register('printSettings') {
@@ -60,6 +63,7 @@ class GroovyDslTest {
                     'BUILD ' + armor.checks.build.get(),
                     'COVERAGE ' + armor.coverageMinimum,
                     'EXCLUSIONS ' + armor.coverageExclusions,
+                    'JACOCO ' + jacoco.toolVersion,
                 ]
                 doLast { lines.each { println 'GROOVY ' + it } }
             }
@@ -75,5 +79,6 @@ class GroovyDslTest {
         assertContains(output, "GROOVY BUILD [spotbugsMain]")
         assertContains(output, "GROOVY COVERAGE 0.5")
         assertContains(output, "GROOVY EXCLUSIONS [Dto]")
+        assertContains(output, "GROOVY JACOCO 0.8.13")
     }
 }

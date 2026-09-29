@@ -49,7 +49,7 @@ object MutationTestingConfigurator {
                 .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
                 .allSource.srcDirs
         project.extensions.configure(PitestPluginExtension::class.java) { pitest ->
-            pitest.pitestVersion.set(PITEST_VERSION)
+            pitest.pitestVersion.set(extension.toolVersions.pitest)
             pitest.junit5PluginVersion.set(junit5Plugin)
             pitest.targetClasses.set(project.provider { targetClasses(mainSources, group) })
             pitest.threads.set(maxOf(1, Runtime.getRuntime().availableProcessors() / 2))

@@ -33,7 +33,8 @@ object ArchitectureTestsConfigurator {
     ) {
         if (!extension.architectureTests) return
         project.plugins.withType(JavaPlugin::class.java) {
-            project.dependencies.add(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME, "com.tngtech.archunit:archunit-junit5:$ARCHUNIT_VERSION")
+            val version = extension.toolVersions.archUnit.get()
+            project.dependencies.add(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME, "com.tngtech.archunit:archunit-junit5:$version")
             // Gradle 9 no longer supplies the JUnit Platform launcher; JUnit's BOM, which ArchUnit brings, sets its version.
             project.dependencies.add(JavaPlugin.TEST_RUNTIME_ONLY_CONFIGURATION_NAME, "org.junit.platform:junit-platform-launcher")
             val mainSources =
@@ -48,7 +49,7 @@ object ArchitectureTestsConfigurator {
                 task.kotlin.set(kotlin)
                 task.testSourceDirectory.set(project.layout.projectDirectory.dir(if (kotlin) "src/test/kotlin" else "src/test/java"))
             }
-            LogUtil.verbose("🏛️ ArchUnit $ARCHUNIT_VERSION added to the tests: ./gradlew $SCAFFOLD_TASK")
+            LogUtil.verbose("🏛️ ArchUnit $version added to the tests: ./gradlew $SCAFFOLD_TASK")
         }
     }
 
