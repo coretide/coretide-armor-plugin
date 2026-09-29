@@ -19,6 +19,13 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   override.
 
 ### Added
+- **Flaky and slow tests:** on CI, a failed test is retried (`flakyTestRetries`, default 2) and, if it then passes,
+  named as flaky instead of failing the build. After every test run the slowest tests over
+  `slowTestThresholdMillis` (default 2s) are listed.
+- **Kover** (`kover = true`, opt-in): coverage for Kotlin projects with Kover instead of JaCoCo, with the same
+  thresholds and exclusions; SonarQube reads its report.
+- **Mutation testing** (`mutationTesting = true`, opt-in): `./gradlew pitest` runs PIT on the project's own
+  packages, with an optional `mutationThreshold`.
 - **Combined reports for multi-module builds:** `allCodeQuality` also writes one coverage report
   (`testCodeCoverageReport`) and one test report (`testAggregateTestReport`) for the whole build on the root
   project. Coverage counts tests in one module that exercise another's code, and each module's SonarQube

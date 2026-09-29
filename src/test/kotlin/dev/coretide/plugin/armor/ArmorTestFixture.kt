@@ -168,12 +168,28 @@ object ArmorTestFixture {
         vararg args: String,
         set: Map<String, String> = emptyMap(),
         unset: Set<String> = emptySet(),
-    ): BuildResult {
-        val replaced = unset + set.keys
-        val inherited = System.getenv().filterKeys { name -> replaced.none { it.equals(name, ignoreCase = isWindows) } }
-        return runner(dir, *args)
-            .withEnvironment(inherited + set)
+    ): BuildResult =
+        runner(dir, *args)
+            .withEnvironment(environment(set, unset))
             .build()
+
+    fun runAndFailWithEnvironment(
+        dir: File,
+        vararg args: String,
+        set: Map<String, String> = emptyMap(),
+        unset: Set<String> = emptySet(),
+    ): BuildResult =
+        runner(dir, *args)
+            .withEnvironment(environment(set, unset))
+            .buildAndFail()
+
+    /** This JVM's environment, less [unset], plus [set]. Names are case-insensitive on Windows. */
+    private fun environment(
+        set: Map<String, String>,
+        unset: Set<String>,
+    ): Map<String, String> {
+        val replaced = unset + set.keys
+        return System.getenv().filterKeys { name -> replaced.none { it.equals(name, ignoreCase = isWindows) } } + set
     }
 
     private val isWindows = System.getProperty("os.name").startsWith("Windows")

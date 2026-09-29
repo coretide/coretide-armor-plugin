@@ -17,9 +17,6 @@ import dev.coretide.plugin.armor.util.LogUtil
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.testing.Test
-import org.gradle.api.tasks.testing.junit.JUnitOptions
-import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.withType
 import org.gradle.testing.jacoco.plugins.JacocoPluginExtension
@@ -42,14 +39,6 @@ object JacocoConfigurator {
             // up in, say, a docs or aggregator project failed the whole configuration.
             if (!project.plugins.hasPlugin(JavaPlugin::class.java)) return@afterEvaluate
             project.tasks.withType<Test>().configureEach { testTask ->
-                if (extension.junitPlatform && usesDefaultRunner(testTask)) {
-                    testTask.useJUnitPlatform()
-                }
-                // Failures in full; passing tests and their output stay quiet.
-                testTask.testLogging { logging ->
-                    logging.events = logging.events + TestLogEvent.FAILED
-                    logging.exceptionFormat = TestExceptionFormat.FULL
-                }
                 testTask.finalizedBy("jacocoTestReport")
             }
             project.tasks.named("jacocoTestReport", JacocoReport::class.java) { report ->
@@ -95,10 +84,4 @@ object JacocoConfigurator {
             }
         }
     }
-
-    /**
-     * Gradle's default runner is JUnit 4. A test task that chose TestNG, or already configured the JUnit
-     * Platform (tags, engines), is left as it is.
-     */
-    private fun usesDefaultRunner(testTask: Test): Boolean = testTask.options is JUnitOptions
 }

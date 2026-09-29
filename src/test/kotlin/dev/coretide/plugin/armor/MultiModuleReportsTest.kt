@@ -33,6 +33,9 @@ class MultiModuleReportsTest {
         assertContains(xml, """<class name="com/example/b/Greeter"""")
         assertTrue(coveredLines(xml, "com/example/a/Calculator") > 0, "Calculator has no covered lines")
         assertTrue(dir.resolve("build/reports/jacoco/testCodeCoverageReport/html/index.html").isFile)
+        // JaCoCo is loaded from Gradle's cache: a jar in the build directory would stay locked on Windows.
+        val copies = dir.walk().filter { it.extension == "jar" && "/build/codearmor/" in it.invariantSeparatorsPath }.toList()
+        assertTrue(copies.isEmpty(), "jars copied into the build: $copies")
     }
 
     @Test

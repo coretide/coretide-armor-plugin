@@ -53,6 +53,27 @@ open class CodeArmorExtension
         var junitPlatform: Boolean = true
 
         /**
+         * On CI (`CI=true`), a failed test is re-run up to this many times. One that then passes does not fail
+         * the build, but is listed as flaky. 0 turns retries off.
+         */
+        var flakyTestRetries: Int = 2
+
+        /** Tests that take at least this long are listed after each test run. 0 turns the list off. */
+        var slowTestThresholdMillis: Long = 2000
+
+        /**
+         * Kover instead of JaCoCo for coverage, with the same thresholds and exclusions. It understands Kotlin's
+         * inline functions and coroutines better. Opt-in.
+         */
+        var kover: Boolean = false
+
+        /** PIT mutation testing, run on demand with `./gradlew pitest`. Opt-in. */
+        var mutationTesting: Boolean = false
+
+        /** The mutation score, in percent, `pitest` fails below. 0 only reports. */
+        var mutationThreshold: Int = 0
+
+        /**
          * Compiler warnings in production code fail the build: `-Xlint` with `-Werror` for Java, and
          * `allWarningsAsErrors` with `-Xjsr305=strict` for Kotlin, plus explicit API mode for Kotlin
          * libraries. Test code is not affected.

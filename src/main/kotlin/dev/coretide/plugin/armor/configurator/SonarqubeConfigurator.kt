@@ -25,6 +25,7 @@ object SonarqubeConfigurator {
         aggregatedCoverage: File? = null,
     ) {
         project.pluginManager.apply("org.sonarqube")
+        val usesKover = KoverConfigurator.usesKover(project, extension)
         project.configure<SonarExtension> {
             properties { sonarProperties ->
                 sonarProperties.property("sonar.scm.provider", "git")
@@ -53,7 +54,10 @@ object SonarqubeConfigurator {
                 // In a multi-module build, the combined report also counts tests in other modules.
                 sonarProperties.property(
                     "sonar.coverage.jacoco.xmlReportPaths",
-                    listOfNotNull("build/reports/jacoco/test/jacocoTestReport.xml", aggregatedCoverage?.absolutePath).joinToString(","),
+                    listOfNotNull(
+                        if (usesKover) KoverConfigurator.XML_REPORT else "build/reports/jacoco/test/jacocoTestReport.xml",
+                        aggregatedCoverage?.absolutePath,
+                    ).joinToString(","),
                 )
                 sonarProperties.property("sonar.coverage.minimum", "${(extension.coverageMinimum * 100).toInt()}")
                 val sonarCoverageExclusions = ExclusionUtil.generateSonarCoverageExclusions(extension)
@@ -99,7 +103,9 @@ object SonarqubeConfigurator {
                 task.group = "verification"
                 task.description = "Runs SonarQube analysis"
                 task.dependsOn("build")
-                if (extension.jacoco) {
+                if (usesKover) {
+                    task.dependsOn("koverXmlReport")
+                } else if (extension.jacoco) {
                     task.dependsOn("jacocoTestCoverageVerification")
                     if (aggregatedCoverage != null) {
                         task.dependsOn(":${AggregatedReportsConfigurator.COVERAGE_REPORT}")

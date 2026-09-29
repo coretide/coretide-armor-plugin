@@ -234,6 +234,8 @@ Most tests are Gradle TestKit tests: they write a throwaway project to a tempora
 the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
 
 - **Functional tests** (`CodeArmorPluginFunctionalTest`): tasks, detection, tool wiring
+- **Tests and coverage** (`TestsAndCoverageTest`, `TestResultsTest`, `SourcePackagesTest`): flaky-test retries on
+  CI, the slow-test list, Kover and PIT
 - **Multi-module reports** (`MultiModuleReportsTest`): the combined coverage and test reports, including a
   root without repositories and a module without the Java plugin
 - **detekt** (`DetektTest`, `DetektVersionTest`): the build tier, baselines, detekt 1.x projects, and the
