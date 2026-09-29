@@ -24,6 +24,12 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   `slowTestThresholdMillis` (default 2s) are listed.
 - **Kover** (`kover = true`, opt-in): coverage for Kotlin projects with Kover instead of JaCoCo, with the same
   thresholds and exclusions; SonarQube reads its report.
+- **Dependency health**, in the CI tier:
+  - `dependencyUpdates` lists newer releases. Pre-releases are offered only for a dependency already on one.
+  - `cyclonedxBom` writes a CycloneDX SBOM of `runtimeClasspath`.
+  - `armorLicenseReport` groups the SBOM's dependencies by licence, and can fail on `forbiddenLicenses`.
+  - The first two are on by default and never fail the build; `armorLicenseReport` fails only when `forbiddenLicenses` is set.
+  - `dependencyAnalysis = true` (opt-in) adds the dependency-analysis plugin's `projectHealth` report.
 - **Error Prone and NullAway** (`errorProne = true`, `nullAway = true`, opt-in): Error Prone checks the Java
   sources as they compile, and NullAway fails the build where production code may dereference null. Both need a
   JDK 21 compiler and are skipped, with a warning, on an older one.

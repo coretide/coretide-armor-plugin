@@ -92,6 +92,30 @@ open class CodeArmorExtension
          * Turns on Error Prone. Opt-in.
          */
         var nullAway: Boolean = false
+
+        /**
+         * `dependencyUpdates` lists dependencies that have a newer release. Pre-releases are only offered for a
+         * dependency already on one. Part of the CI tier.
+         */
+        var dependencyUpdates: Boolean = true
+
+        /**
+         * A CycloneDX SBOM of the runtime dependencies (`cyclonedxBom`), and a report of their licences built from
+         * it (`armorLicenseReport`). Both are part of the CI tier.
+         */
+        var sbom: Boolean = true
+
+        /**
+         * Licences, as SPDX ids (`GPL-3.0-only`) or names, that fail `armorLicenseReport` when a dependency can only
+         * be used under one of them. Empty by default.
+         */
+        var forbiddenLicenses: MutableList<String> = mutableListOf()
+
+        /**
+         * The dependency-analysis plugin's `projectHealth`, in the CI tier: dependencies declared but not used, used
+         * but only there transitively, or on the wrong configuration. It reports; it does not fail the build. Opt-in.
+         */
+        var dependencyAnalysis: Boolean = false
         var owaspFailBuildOnCVSS: Double = 9.0
         var owaspSuppressionFile: String? = null
         var owaspAutoUpdate: Boolean = false

@@ -39,6 +39,18 @@ gradle-errorprone-plugin
 License: Apache License 2.0
 Website: https://github.com/tbroyer/gradle-errorprone-plugin
 
+Gradle Versions Plugin
+License: Apache License 2.0
+Website: https://github.com/ben-manes/gradle-versions-plugin
+
+CycloneDX Gradle Plugin
+License: Apache License 2.0
+Website: https://github.com/CycloneDX/cyclonedx-gradle-plugin
+
+Dependency Analysis Gradle Plugin
+License: Apache License 2.0
+Website: https://github.com/autonomousapps/dependency-analysis-gradle-plugin
+
 Kover and its Gradle plugin
 License: Apache License 2.0
 Website: https://github.com/Kotlin/kotlinx-kover

@@ -20,6 +20,7 @@ CodeArmor is a powerful Gradle plugin that integrates multiple code quality and 
 - 🐞 **Bug and Null Checks on Request**: Error Prone and NullAway on Java sources as they compile
 - 🧪 **Test Insights**: flaky tests retried on CI and named, slowest tests listed; Kover and PIT mutation testing on request
 - 🔒 **Security Analysis**: OWASP Dependency Check (**Veracode integration in development**)
+- 📦 **Dependency Health**: newer versions, a CycloneDX SBOM and a licence report on CI; unused dependencies on request
 - 🚀 **Optimized Workflows**: Custom tasks for different development stages
 - 🪝 **Git Hooks on Request**: A blocking pre-push hook for the basic checks, installed only when you run `armorInstallGitHooks`
 - 🧱 **Check Tiers**: Basic checks before a push, local checks in every build, network checks on CI
@@ -179,7 +180,7 @@ CodeArmor organizes its checks in three tiers, from fastest to most thorough:
 |---|---|---|---|
 | Basic | the pre-push hook (`quickBuild`) | compile + unit tests | nothing |
 | Local | `./gradlew build` (through `codeQuality`) | SpotBugs, detekt (Kotlin projects), JaCoCo (or Kover) report + coverage verification | nothing |
-| CI | `fullAnalysis` | the local tier + OWASP Dependency Check + SonarQube | network, a SonarQube server |
+| CI | `fullAnalysis` | the local tier + OWASP Dependency Check + dependency updates + SBOM and licence report + SonarQube | network, a SonarQube server |
 
 Each tier's task list is configurable; see [Check Tiers](#check-tiers).
 
@@ -221,7 +222,7 @@ Each tier's task list is configurable; see [Check Tiers](#check-tiers).
 
 
 - **Purpose**: Comprehensive analysis including security scans
-- **Dependencies**: `codeQuality`, then the CI tier, by default `dependencyCheckAnalyze` and `sonar`, plus `veracodeUpload` (if configured)
+- **Dependencies**: `codeQuality`, then the CI tier, by default `dependencyCheckAnalyze`, `dependencyUpdates`, `armorLicenseReport` and `sonar`, plus `veracodeUpload` (if configured)
 - **Use Case**: CI/CD pipelines, release preparation
 - **Reports Generated**:
     - All quality reports from `codeQuality`
@@ -414,6 +415,33 @@ codeArmor {
 }
 ```
 
+#### Dependency Health
+```kotlin
+codeArmor {
+    dependencyUpdates = true                  // On by default, CI tier
+    sbom = true                               // On by default, CI tier
+    forbiddenLicenses = mutableListOf("AGPL-3.0-only", "GPL-3.0-only")   // Empty by default
+    dependencyAnalysis = true                 // Opt-in, CI tier
+}
+```
+- **Newer versions:** `./gradlew dependencyUpdates` ([gradle-versions-plugin](https://github.com/ben-manes/gradle-versions-plugin))
+  lists dependencies with a newer release in `build/dependencyUpdates/report.{txt,json,html}`. Pre-releases are only
+  offered for a dependency that is already on one. It never fails the build. It runs without the configuration cache,
+  which the versions plugin does not support.
+- **SBOM:** `./gradlew cyclonedxBom` ([CycloneDX](https://github.com/CycloneDX/cyclonedx-gradle-plugin)) writes
+  `build/reports/cyclonedx/bom.{json,xml}`. It covers `runtimeClasspath`, what ships, and so leaves out test
+  dependencies and tools such as SpotBugs and JaCoCo. Applications are typed `application`, everything else
+  `library`. Change either on the `cyclonedxDirectBom` task.
+- **Licences:** `./gradlew armorLicenseReport` groups the SBOM's dependencies by licence in
+  `build/reports/codearmor/licenses.txt`, with those that declare none listed last. With `forbiddenLicenses`, it fails
+  on a dependency that can only be used under one of them. A dependency that offers a choice, such as several
+  licences or `Apache-2.0 OR GPL-3.0-only`, fails only when every choice is forbidden. Licences are SPDX ids or names,
+  matched ignoring case.
+- **Dependency analysis:** `dependencyAnalysis = true` adds the
+  [dependency-analysis plugin](https://github.com/autonomousapps/dependency-analysis-gradle-plugin)'s `projectHealth`:
+  dependencies declared but not used, used but only there transitively, or on the wrong configuration. It reports
+  and does not fail the build. It analyzes `java-library` and Kotlin JVM projects, and applications. For Kotlin, the
+  Kotlin plugin must be loaded in the root build script, for example with `id("org.jetbrains.kotlin.jvm") apply false`.
 
 #### SonarQube
 ```kotlin
@@ -506,7 +534,9 @@ codeArmor {
         build = listOf(                                    // local: run by codeQuality and build
             "spotbugsMain", "detekt", "jacocoTestReport", "jacocoTestCoverageVerification",
         )
-        ci = listOf("dependencyCheckAnalyze", "sonar")     // network/server: added by fullAnalysis
+        ci = listOf(                                       // network/server: added by fullAnalysis
+            "dependencyCheckAnalyze", "dependencyUpdates", "armorLicenseReport", "sonar",
+        )
     }
 }
 ```

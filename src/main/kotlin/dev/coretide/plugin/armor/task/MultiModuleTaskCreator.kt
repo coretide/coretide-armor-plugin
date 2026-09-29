@@ -13,6 +13,7 @@ package dev.coretide.plugin.armor.task
 import dev.coretide.plugin.armor.CodeArmorExtension
 import dev.coretide.plugin.armor.ProjectType
 import dev.coretide.plugin.armor.configurator.AggregatedReportsConfigurator
+import dev.coretide.plugin.armor.configurator.DependencyHealthConfigurator
 import dev.coretide.plugin.armor.util.ConfiguratorUtil
 import dev.coretide.plugin.armor.util.LogUtil
 import dev.coretide.plugin.armor.util.ProjectDetector
@@ -32,6 +33,7 @@ object MultiModuleTaskCreator {
             }
 
         val aggregatedReports = AggregatedReportsConfigurator.configure(project, extension)
+        DependencyHealthConfigurator.configureAnalysisRoot(project, extension)
         val aggregatedCoverage = if (extension.jacoco && !extension.kover) AggregatedReportsConfigurator.coverageXml(project) else null
 
         actualProjects.forEach { subproject ->
