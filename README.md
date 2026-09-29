@@ -2,7 +2,7 @@
 
 [![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)]()
 [![Latest Release](https://img.shields.io/github/v/release/coretide/coretide-armor-plugin?include_prereleases&style=flat-square&logo=github)](https://github.com/coretide/coretide-armor-plugin/releases)
-[![Version](https://img.shields.io/badge/version-0.2.0--alpha-blue?style=flat-square)](https://github.com/coretide/coretide-armor-plugin)
+[![Version](https://img.shields.io/badge/version-0.3.0--alpha-blue?style=flat-square)](https://github.com/coretide/coretide-armor-plugin)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/dev.coretide.plugin.armor?style=flat-square&logo=gradle)](https://plugins.gradle.org/plugin/dev.coretide.plugin.armor)
 [![Maven Central](https://img.shields.io/maven-central/v/dev.coretide.plugin/code-armor-plugin?style=flat-square&logo=apache-maven)](https://central.sonatype.com/artifact/dev.coretide.plugin/code-armor-plugin)
@@ -10,7 +10,7 @@
 
 > **Comprehensive code quality and security plugin for Java/Kotlin projects**
 
-> ⚠️ **Status:** Alpha — This plugin is under active development (version: 0.2.0-alpha). Expect breaking changes and frequent updates until 1.0.0.
+> ⚠️ **Status:** Alpha — This plugin is under active development (version: 0.3.0-alpha). Expect breaking changes and frequent updates until 1.0.0.
 
 CodeArmor is a powerful Gradle plugin that integrates multiple code quality and security tools into a unified, easy-to-use solution. It provides automated project detection, intelligent configuration, and optimized development workflows for both single-module and multi-module projects.
 
@@ -74,18 +74,21 @@ Starting with version 0.1.4-alpha, CodeArmor no longer includes Spotless or Chec
 
 ---
 
-## 🆕 What's New in 0.2.0-alpha
+## 🆕 What's New in 0.3.0-alpha
 
-- 🧱 **Check tiers**: basic checks in the pre-push hook, local checks in every `build`, network checks
-  (OWASP, SonarQube) in `fullAnalysis` on CI. Each tier is configurable.
-- 🪝 **Git hooks on request**: `armorInstallGitHooks` installs a blocking pre-push hook; builds never
-  write hooks any more.
-- 📈 **Code stats**: optional [Code::Stats](https://codestats.net) reporting, per repository or
-  machine-wide.
-- ☕ **Gradle 9**: requires Gradle 9.0+ and JDK 17+, with current versions of every tool.
+- 🧪 **Tests**: flaky tests retried on CI and named, the slowest tests listed; Kover and PIT mutation testing on
+  request.
+- 🔍 **Analysis**: detekt for Kotlin, and on request strict compilation, Error Prone with NullAway, and ArchUnit
+  architecture tests.
+- 📦 **Dependencies**: newer versions, a CycloneDX SBOM and a licence report on CI; unused dependencies on request.
+- 🔌 **Libraries**: binary compatibility with your last release, and Kotlin ABI dumps, on request.
+- 🪝 **Hooks**: Conventional Commits and gitleaks secret scanning, on request.
+- 📋 **Reports**: one summary page after every build, SARIF gathered for GitHub code scanning, and a workflow to
+  start from.
 
-This release changes when checks and hooks run. See the [changelog](CHANGELOG.md) for everything,
-including [upgrading from 0.1.x](CHANGELOG.md#upgrading-from-01x).
+Some defaults change what `./gradlew build` does, notably narrower coverage exclusions and detekt in Kotlin
+projects. See the [changelog](CHANGELOG.md) for everything, including
+[upgrading from 0.2.x](CHANGELOG.md#upgrading-from-02x).
 
 ---
 
@@ -101,7 +104,7 @@ including [upgrading from 0.1.x](CHANGELOG.md#upgrading-from-01x).
 Add the plugin to your `build.gradle.kts`:
 ```kotlin
 plugins {
-  id("dev.coretide.plugin.armor") version "0.2.0-alpha"
+  id("dev.coretide.plugin.armor") version "0.3.0-alpha"
 }
 ```
 
@@ -133,9 +136,28 @@ codeArmor {
     sonarqube = true
     veracode = false
     
-    // Coverage settings
+    // Coverage and tests
     coverageMinimum = 0.80
     coverageClassMinimum = 0.75
+    flakyTestRetries = 2                      // On CI only
+    
+    // Dependency health, in fullAnalysis
+    dependencyUpdates = true
+    sbom = true                               // With a licence report
+    forbiddenLicenses = mutableListOf("AGPL-3.0-only")
+    
+    // Opt-in extras
+    kover = false                             // Kover instead of JaCoCo, in Kotlin projects
+    mutationTesting = false                   // ./gradlew pitest
+    strictCompilation = false                 // Warnings fail the build
+    errorProne = false                        // Error Prone on Java sources
+    nullAway = false                          // NullAway, with Error Prone
+    architectureTests = false                 // ArchUnit
+    dependencyAnalysis = false                // Unused and undeclared dependencies
+    apiBaseline = null                        // A release to check binary compatibility against
+    kotlinAbiValidation = false               // Kotlin ABI dumps
+    conventionalCommits = false               // commit-msg hook
+    secretScan = false                        // gitleaks pre-commit hook
     
     // Git integration
     enableGitHooks = true                     // registers armorInstallGitHooks / armorUninstallGitHooks
@@ -324,11 +346,18 @@ codeArmor {
     coverageMinimum = 0.80                    // Overall coverage threshold
     coverageClassMinimum = 0.75               // Per-class coverage threshold
     coverageInclusions = mutableListOf("com/example/**")
-    coverageExclusions = mutableListOf("**/generated/**")
-    coverageIncludeDefaultExclusions = true   // Include common exclusions
+    coverageExclusions = mutableListOf("Dto", "legacy")   // Anywhere in a class name, or a package name
+    coverageIncludeDefaultExclusions = true   // Entry points, configuration and generated code
     junitPlatform = true                      // Run default JUnit 4 test tasks on the JUnit Platform
 }
 ```
+
+The default exclusions leave out only entry points (`*Application`, `*ApplicationKt`), configuration
+(`*Config`, `*Configuration`) and generated code (`generated` packages, MapStruct's `*MapperImpl`, JPA's `*_`
+metamodel classes), matched as a whole class-name suffix or package, and a nested class with its outer class.
+`coverageExclusions` adds your own, matched anywhere in a class name or as a package name: `"Dto"` leaves out
+`UserDto`, and `"legacy"` the `legacy` package. The same exclusions apply to the reports, coverage verification,
+Kover and SonarQube; `./gradlew logExclusionInfo` shows them.
 
 With JaCoCo on, CodeArmor also sets up the test tasks:
 - **Runner:** a test task still on Gradle's default runner (JUnit 4) runs on the JUnit Platform. A task that
