@@ -79,6 +79,19 @@ open class CodeArmorExtension
          * libraries. Test code is not affected.
          */
         var strictCompilation: Boolean = false
+
+        /**
+         * Error Prone checks the Java sources as they compile, and its errors fail the build. It needs a JDK 21
+         * compiler; with an older one, compilation goes ahead without it, with a warning. Opt-in.
+         */
+        var errorProne: Boolean = false
+
+        /**
+         * NullAway, an Error Prone check, fails the build where production Java code may dereference null. It
+         * checks the project's own packages and believes `@Nullable` annotations (JSpecify's, for example).
+         * Turns on Error Prone. Opt-in.
+         */
+        var nullAway: Boolean = false
         var owaspFailBuildOnCVSS: Double = 9.0
         var owaspSuppressionFile: String? = null
         var owaspAutoUpdate: Boolean = false

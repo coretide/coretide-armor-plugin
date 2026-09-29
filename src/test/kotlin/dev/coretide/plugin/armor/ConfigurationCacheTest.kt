@@ -131,6 +131,18 @@ class ConfigurationCacheTest {
     }
 
     @Test
+    fun `Error Prone and NullAway compilation reuses the configuration cache`(
+        @TempDir dir: File,
+    ) {
+        ArmorTestFixture.writeProject(dir, armorConfig = "    errorProne = true\n    nullAway = true")
+
+        ArmorTestFixture.run(dir, "compileJava", "--configuration-cache")
+        val second = ArmorTestFixture.run(dir, "compileJava", "--configuration-cache")
+
+        assertContains(second.output, "Configuration cache entry reused")
+    }
+
+    @Test
     fun `multi-module build reuses the configuration cache on a second run`(
         @TempDir dir: File,
     ) {
