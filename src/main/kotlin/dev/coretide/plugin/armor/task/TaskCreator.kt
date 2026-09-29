@@ -11,6 +11,7 @@
 package dev.coretide.plugin.armor.task
 
 import dev.coretide.plugin.armor.CodeArmorExtension
+import dev.coretide.plugin.armor.configurator.ApiCompatibilityConfigurator
 import dev.coretide.plugin.armor.configurator.DependencyHealthConfigurator
 import dev.coretide.plugin.armor.configurator.DetektConfigurator
 import dev.coretide.plugin.armor.configurator.KoverConfigurator
@@ -51,6 +52,7 @@ object TaskCreator {
             // leaves out the ones it does not have.
             if (extension.kover) addAll(KoverConfigurator.BUILD_TIER_TASKS)
             if (extension.jacoco || extension.kover) addAll(JACOCO_TASKS)
+            if (extension.kotlinAbiValidation) add(ApiCompatibilityConfigurator.KOTLIN_ABI_CHECK_TASK)
         }
 
     private val JACOCO_TASKS = listOf("jacocoTestReport", "jacocoTestCoverageVerification")
@@ -59,7 +61,9 @@ object TaskCreator {
      * Default tier tasks that only some projects have: detekt exists in Kotlin projects only, and with
      * kover = true a project has either Kover's or JaCoCo's tasks.
      */
-    private val OPTIONAL_DEFAULT_TASKS = setOf(DetektConfigurator.TASK_NAME) + KoverConfigurator.BUILD_TIER_TASKS + JACOCO_TASKS
+    private val OPTIONAL_DEFAULT_TASKS =
+        setOf(DetektConfigurator.TASK_NAME, ApiCompatibilityConfigurator.KOTLIN_ABI_CHECK_TASK) + KoverConfigurator.BUILD_TIER_TASKS +
+            JACOCO_TASKS
 
     /**
      * The tier's tasks that exist in this project. A default task that only some projects have is left out
@@ -79,11 +83,12 @@ object TaskCreator {
             if (extension.dependencyUpdates) add(DependencyHealthConfigurator.UPDATES_TASK)
             if (extension.sbom) add(DependencyHealthConfigurator.LICENSE_TASK)
             if (extension.dependencyAnalysis) add(DependencyHealthConfigurator.ANALYSIS_TASK)
+            if (!extension.apiBaseline.isNullOrBlank()) add(ApiCompatibilityConfigurator.API_CHECK_TASK)
             if (extension.sonarqube) add("sonar")
         }
 
-    /** The dependency analysis only covers Java and Kotlin projects. */
-    private val OPTIONAL_CI_TASKS = setOf(DependencyHealthConfigurator.ANALYSIS_TASK)
+    /** The dependency analysis only covers Java and Kotlin projects, and the API check only libraries. */
+    private val OPTIONAL_CI_TASKS = setOf(DependencyHealthConfigurator.ANALYSIS_TASK, ApiCompatibilityConfigurator.API_CHECK_TASK)
 
     private fun createScaffoldConfigsTask(project: Project) {
         project.tasks.register("armorScaffoldConfigs", ScaffoldConfigsTask::class.java) { task ->

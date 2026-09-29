@@ -39,6 +39,10 @@ gradle-errorprone-plugin
 License: Apache License 2.0
 Website: https://github.com/tbroyer/gradle-errorprone-plugin
 
+japicmp and its Gradle plugin
+License: Apache License 2.0
+Website: https://github.com/siom79/japicmp
+
 Gradle Versions Plugin
 License: Apache License 2.0
 Website: https://github.com/ben-manes/gradle-versions-plugin

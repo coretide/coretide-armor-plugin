@@ -20,6 +20,7 @@ CodeArmor is a powerful Gradle plugin that integrates multiple code quality and 
 - 🐞 **Bug and Null Checks on Request**: Error Prone and NullAway on Java sources as they compile
 - 🧪 **Test Insights**: flaky tests retried on CI and named, slowest tests listed; Kover and PIT mutation testing on request
 - 🔒 **Security Analysis**: OWASP Dependency Check (**Veracode integration in development**)
+- 🔌 **Library API Checks on Request**: binary compatibility with your last release, and Kotlin ABI dumps
 - 📦 **Dependency Health**: newer versions, a CycloneDX SBOM and a licence report on CI; unused dependencies on request
 - 🚀 **Optimized Workflows**: Custom tasks for different development stages
 - 🪝 **Git Hooks on Request**: A blocking pre-push hook for the basic checks, installed only when you run `armorInstallGitHooks`
@@ -442,6 +443,23 @@ codeArmor {
   dependencies declared but not used, used but only there transitively, or on the wrong configuration. It reports
   and does not fail the build. It analyzes `java-library` and Kotlin JVM projects, and applications. For Kotlin, the
   Kotlin plugin must be loaded in the root build script, for example with `id("org.jetbrains.kotlin.jvm") apply false`.
+#### Library API Checks
+```kotlin
+codeArmor {
+    apiBaseline = "1.4.0"                     // Opt-in: a released version, or "group:name:1.4.0"
+    kotlinAbiValidation = true                // Opt-in: Kotlin libraries
+}
+```
+Both are for libraries; applications have no API to keep, and are left alone.
+- **Binary compatibility:** with `apiBaseline`, `./gradlew armorApiCheck` ([japicmp](https://github.com/melix/japicmp-gradle-plugin))
+  compares the jar with that release and fails on binary incompatible changes, such as a removed or changed public
+  method. Added API passes. It works on bytecode, so for Java and Kotlin alike. The release is resolved from the
+  project's repositories; give full coordinates when it was published under another group or name. Reports:
+  `build/reports/japicmp/api.{html,txt}`. Part of the CI tier.
+- **Kotlin ABI:** `kotlinAbiValidation` switches on the Kotlin Gradle plugin's own ABI validation (Kotlin 2.2 or
+  later). `./gradlew updateLegacyAbi` writes the public API to `api/`; commit it. `checkLegacyAbi` then joins the
+  build tier and fails when the public API no longer matches the dump, so every API change shows up in review as
+  a change to `api/`.
 
 #### SonarQube
 ```kotlin
