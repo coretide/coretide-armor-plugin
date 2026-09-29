@@ -21,12 +21,15 @@ object LogUtil {
      * Log level is shared static state, so in a multi-module build the last project to configure
      * wins. That is acceptable for armor's own status output, but note it is not per-project.
      *
+     * It starts at the extension's default: a build that reuses the configuration cache in a new daemon
+     * never configures, so never calls [initialize], and would otherwise log at a level nobody chose.
+     *
      * Deliberately a static Gradle logger rather than a retained `Project.logger`: the Gradle
      * daemon keeps this object alive between builds, so holding a Project's logger both leaks the
      * build's object graph and risks logging into an already-finished build.
      */
     @Volatile
-    private var currentLogLevel: ArmorLogLevel = ArmorLogLevel.VERBOSE
+    private var currentLogLevel: ArmorLogLevel = ArmorLogLevel.ESSENTIAL
 
     private val logger = Logging.getLogger("CodeArmor")
 

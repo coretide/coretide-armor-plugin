@@ -3,6 +3,27 @@
 All notable changes to CodeArmor. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [Semantic Versioning](https://semver.org/), and while in alpha, a minor version may break things.
 
+## [Unreleased]
+
+### Fixed
+- **SonarQube ignored `SONAR_TOKEN`.** CodeArmor always set `sonar.token`, to an empty value when `sonarToken` was
+  unset, and the SonarScanner reads the environment variable only while the property is unset. The usual way to
+  pass a token on CI now works.
+- **OWASP Dependency Check scanned CodeArmor's own tools.** With no configurations named, it scanned every one,
+  SpotBugs', detekt's, PIT's, Error Prone's and JaCoCo's included, so a vulnerability in a tool could fail the
+  build. It now scans `runtimeClasspath`, what ships, as the SBOM does.
+- **OWASP settings leaked through the Gradle daemon.** The analyzer switches and NVD settings were JVM-wide system
+  properties: in a multi-module build the last project configured won, and they outlived the build. They are now
+  set on the dependency-check extension.
+- **The `spotbugs { }` block failed in Groovy build scripts** ("Could not set unknown property"). It takes a
+  Gradle `Action` now.
+- **Log level after a configuration cache hit.** A build that reused the configuration cache in a new daemon
+  logged at `VERBOSE`; it now falls back to the default, `ESSENTIAL`.
+
+### Changed
+- The README describes Veracode as what it is: `veracode = true` runs the `veracodeUpload` task of a Veracode
+  Gradle plugin you apply, rather than an integration "in development".
+
 ## [0.3.0-alpha] - 2026-09-29
 
 A large release: tests and coverage, static analysis, dependency health, library API checks, commit hooks, code
@@ -238,6 +259,7 @@ The first release built for Gradle 9. It changes when checks and git hooks run, 
   wiring, project type detection, git hooks and git-derived versions, published to Maven Central and
   the Gradle Plugin Portal.
 
+[Unreleased]: https://github.com/coretide/coretide-armor-plugin/compare/0.3.0-alpha...HEAD
 [0.3.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.2.0-alpha...0.3.0-alpha
 [0.2.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.1.4-alpha...0.2.0-alpha
 [0.1.4-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.1.3-alpha...0.1.4-alpha

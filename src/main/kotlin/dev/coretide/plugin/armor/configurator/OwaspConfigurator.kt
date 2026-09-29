@@ -18,6 +18,7 @@ import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.configure
 import org.owasp.dependencycheck.gradle.extension.DependencyCheckExtension
+import org.owasp.dependencycheck.gradle.extension.NvdExtension
 
 object OwaspConfigurator {
     fun configureOwasp(
@@ -28,36 +29,31 @@ object OwaspConfigurator {
         project.configure<DependencyCheckExtension> {
             // dependency-check 12.2.x exposes lazy Gradle properties; plugin source must call
             // set() explicitly (the `=` form is a Kotlin DSL script-only convenience).
-            skipProjects.set(listOf("*"))
             failBuildOnCVSS.set(extension.owaspFailBuildOnCVSS.toFloat())
             formats.set(listOf("HTML", "XML", "JSON", "SARIF"))
             outputDirectory.set(project.layout.buildDirectory.dir("reports/dependency-check"))
             autoUpdate.set(extension.owaspAutoUpdate)
-            configureNvdApiSettings(project, extension)
-            this.suppressionFile.set(resolveSuppressionFile(project, extension))
-            // These System properties are set during *configuration*. That is only safe because
-            // dependencyCheckAnalyze is marked notCompatibleWithConfigurationCache (see
-            // ConfigurationCacheUtil), which forces a full configuration whenever it runs. If that
-            // opt-out is ever removed, a configuration-cache hit would skip these and the scan
-            // would silently run without the NVD API key and with the disabled analyzers re-enabled.
-            System.setProperty("dependencycheck.autoUpdate", extension.owaspAutoUpdate.toString())
-            System.setProperty("dependencycheck.failBuildOnCVSS", extension.owaspFailBuildOnCVSS.toString())
-            System.setProperty("dependencycheck.formats", "HTML,XML,JSON,SARIF")
-            System.setProperty("dependencycheck.outputDirectory", project.file("build/reports/dependency-check").absolutePath)
-            System.setProperty("dependencycheck.writeReports", "true")
-            System.setProperty("dependencycheck.reportFormat", "ALL")
-            System.setProperty("analyzer.assembly.enabled", "false")
-            System.setProperty("analyzer.nuspec.enabled", "false")
-            System.setProperty("analyzer.nugetconf.enabled", "false")
-            System.setProperty("analyzer.central.enabled", "false")
-            System.setProperty("analyzer.nexus.enabled", "false")
-            System.setProperty("analyzer.node.enabled", "false")
-            System.setProperty("analyzer.nodeAudit.enabled", "false")
-            System.setProperty("analyzer.retirejs.enabled", "false")
-            System.setProperty("analyzer.ossindex.enabled", "false")
-            System.setProperty("analyzer.jar.enabled", "true")
-            System.setProperty("analyzer.archive.enabled", "true")
-            System.setProperty("analyzer.filename.enabled", "true")
+            // What ships, as in the SBOM. Left empty, every configuration is scanned, CodeArmor's own tools
+            // (SpotBugs, detekt, PIT, Error Prone, JaCoCo) included, and a CVE in one of them fails the build.
+            scanConfigurations.set(DependencyHealthConfigurator.SBOM_CONFIGURATIONS)
+            suppressionFile.set(resolveSuppressionFile(project, extension))
+            // Through the extension, not System properties: those are JVM-wide, so the last project configured
+            // won, and they outlived the build in the Gradle daemon.
+            analyzers.apply {
+                jarEnabled.set(true)
+                archiveEnabled.set(true)
+                // Ecosystems a JVM build has no use for, and lookups that need their own credentials.
+                assemblyEnabled.set(false)
+                nuspecEnabled.set(false)
+                nugetconfEnabled.set(false)
+                nodeEnabled.set(false)
+                nodeAudit.enabled.set(false)
+                retirejs.enabled.set(false)
+                centralEnabled.set(false)
+                nexusEnabled.set(false)
+                ossIndexEnabled.set(false)
+            }
+            configureNvd(project, extension, nvd)
         }
         project.tasks.named("dependencyCheckAnalyze") { task ->
             task.doLast {
@@ -101,23 +97,22 @@ object OwaspConfigurator {
         return generator.flatMap { it.outputFile }.map { it.asFile.absolutePath }
     }
 
-    private fun configureNvdApiSettings(
+    private fun configureNvd(
         project: Project,
         extension: CodeArmorExtension,
+        nvd: NvdExtension,
     ) {
         val apiKey =
             extension.owaspNvdApiKey
                 ?: project.findProperty("nvd.api.key") as? String
                 ?: System.getenv("NVD_API_KEY")
                 ?: System.getProperty("nvd.api.key")
+        nvd.delay.set(extension.owaspNvdApiDelay)
+        nvd.maxRetryCount.set(extension.owaspNvdMaxRetryCount)
+        nvd.validForHours.set(extension.owaspNvdValidForHours)
         if (apiKey != null) {
             LogUtil.essential("🔑 CodeArmor: Using NVD API key for faster vulnerability lookups")
-            System.setProperty("nvd.api.key", apiKey)
-            System.setProperty("nvd.api.delay", extension.owaspNvdApiDelay.toString())
-            System.setProperty("nvd.api.max.retry.count", extension.owaspNvdMaxRetryCount.toString())
-            System.setProperty("nvd.api.valid.for.hours", extension.owaspNvdValidForHours.toString())
-            System.setProperty("nvd.api.datafeed.validation.enabled", "true")
-            System.setProperty("nvd.api.endpoint", "https://services.nvd.nist.gov/rest/json/cves/2.0/")
+            nvd.apiKey.set(apiKey)
         } else {
             LogUtil.essential("⚠️  CodeArmor: No NVD API key configured. Using slower public access.")
             LogUtil.essential("💡 To speed up scans, set NVD_API_KEY environment variable or configure in build.gradle")

@@ -240,6 +240,8 @@ the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
   root without repositories and a module without the Java plugin
 - **detekt** (`DetektTest`, `DetektVersionTest`): the build tier, baselines, detekt 1.x projects, and the
   Kotlin version guard, whose constants must match the bundled detekt plugin
+- **OWASP settings and the Groovy DSL** (`OwaspTest`, `GroovyDslTest`): what OWASP scans and how it is configured,
+  and the `codeArmor` block in a Groovy build script
 - **Coverage exclusions** (`CoverageExclusionsTest`): the narrow defaults, a build's own exclusions, and the
   changelog's snippet that brings back the pre-0.3.0 list
 - **Summary page and architecture tests** (`ArmorReportTest`): the page and console summary, each report parser,

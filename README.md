@@ -22,7 +22,7 @@ CodeArmor is a powerful Gradle plugin that integrates multiple code quality and 
 - 🧾 **Code Scanning Ready**: SARIF from SpotBugs, detekt and OWASP, gathered for GitHub code scanning, and a workflow to start from
 - 🐞 **Bug and Null Checks on Request**: Error Prone and NullAway on Java sources as they compile
 - 🧪 **Test Insights**: flaky tests retried on CI and named, slowest tests listed; Kover and PIT mutation testing on request
-- 🔒 **Security Analysis**: OWASP Dependency Check (**Veracode integration in development**)
+- 🔒 **Security Analysis**: OWASP Dependency Check, and Veracode through your own Veracode Gradle plugin
 - 🔌 **Library API Checks on Request**: binary compatibility with your last release, and Kotlin ABI dumps
 - 📦 **Dependency Health**: newer versions, a CycloneDX SBOM and a licence report on CI; unused dependencies on request
 - 🚀 **Optimized Workflows**: Custom tasks for different development stages
@@ -467,6 +467,8 @@ codeArmor {
     owaspNvdValidForHours = 24               // Cache validity period
 }
 ```
+It scans `runtimeClasspath`, what ships, and not the configurations of CodeArmor's own tools. The NVD API key comes
+from `owaspNvdApiKey`, the `nvd.api.key` Gradle property, or the `NVD_API_KEY` environment variable.
 
 #### Dependency Health
 ```kotlin
@@ -534,7 +536,7 @@ codeArmor {
     sonarHostUrl = "http://localhost:9000"
     sonarProjectKey = "my-project"
     sonarProjectName = "My Project"
-    sonarToken = "your-sonar-token"
+    sonarToken = "your-sonar-token"          // Or leave unset and set SONAR_TOKEN
     sonarQualityGateWait = false             // Wait for quality gate result
     sonarJavaVersion = "17"                  // Optional: taken from the project's Java settings when unset
 }
@@ -543,13 +545,17 @@ codeArmor {
 The SonarScanner reads the sources, tests and compiled classes from the source sets, including Kotlin,
 generated and custom ones. CodeArmor adds the JaCoCo coverage, SpotBugs and OWASP reports.
 
+On CI, keep the token out of the build script: leave `sonarToken` unset and set the `SONAR_TOKEN` environment
+variable, and `SONAR_HOST_URL` for the server.
 
-#### Veracode (In Development)
-> ⚠️ **Note:** Veracode integration is not yet fully implemented. CodeArmor does not create the `veracodeUpload` task itself: `fullAnalysis` runs it only when a separately applied Veracode Gradle plugin provides it and `VERACODE_USERNAME`/`VERACODE_PASSWORD` are set. Without such a plugin, CodeArmor logs a warning and skips the Veracode scan.
+
+#### Veracode (Bring Your Own Plugin)
+CodeArmor does not upload to Veracode itself. With `veracode = true`, `fullAnalysis` runs the `veracodeUpload` task
+of a Veracode Gradle plugin you apply and configure, when `VERACODE_USERNAME` and `VERACODE_PASSWORD` are set.
+Without such a plugin, CodeArmor logs a warning and skips the Veracode scan.
 ```kotlin
 codeArmor {
-    veracode = true
-    // Configuration will be available in future releases
+    veracode = true                           // Runs your Veracode plugin's veracodeUpload in fullAnalysis
 }
 ```
 

@@ -38,10 +38,9 @@ object SonarqubeConfigurator {
                     "sonar.projectName",
                     extension.sonarProjectName?.takeIf { it.isNotEmpty() } ?: project.name,
                 )
-                sonarProperties.property(
-                    "sonar.token",
-                    extension.sonarToken?.takeIf { it.isNotEmpty() } ?: "",
-                )
+                // Only when configured: the SonarScanner reads SONAR_TOKEN from the environment, the usual way on CI,
+                // only while sonar.token is unset. An empty value would shadow it.
+                extension.sonarToken?.takeIf { it.isNotEmpty() }?.let { sonarProperties.property("sonar.token", it) }
                 sonarProperties.property("sonar.projectVersion", "${project.version}")
                 sonarProperties.property("sonar.sourceEncoding", "UTF-8")
                 // Sources, tests and class directories come from the source sets: the SonarScanner reads
