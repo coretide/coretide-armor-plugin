@@ -189,9 +189,10 @@ open class CodeArmorExtension
                 scope.convention(CodeStatsScope.REPO)
             }
 
+        /** An [Action], not a Kotlin lambda, so the block also works in Groovy build scripts. */
         @Suppress("unused")
-        fun spotbugs(configure: SpotBugsConfig.() -> Unit) {
-            spotbugsConfig.configure()
+        fun spotbugs(action: Action<SpotBugsConfig>) {
+            action.execute(spotbugsConfig)
         }
 
         @Suppress("unused")

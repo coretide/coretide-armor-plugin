@@ -35,6 +35,22 @@ class ProjectConventionsTest {
     }
 
     @Test
+    fun `sonar_token is set only when configured, so SONAR_TOKEN from the environment still counts`(
+        @TempDir unset: File,
+        @TempDir configured: File,
+    ) {
+        ArmorTestFixture.writeProject(unset, extraScript = PRINT_SONAR)
+        ArmorTestFixture.writeProject(configured, armorConfig = "    sonarToken = \"from-the-build\"", extraScript = PRINT_SONAR)
+
+        val withoutToken = sonar(ArmorTestFixture.run(unset, "printSonarProperties"))
+        val withToken = sonar(ArmorTestFixture.run(configured, "printSonarProperties"))
+
+        // The SonarScanner ignores SONAR_TOKEN once sonar.token is set, even to an empty value.
+        assertFalse("sonar.token" in withoutToken, "sonar.token is set: ${withoutToken["sonar.token"]}")
+        assertEquals("from-the-build", withToken["sonar.token"])
+    }
+
+    @Test
     fun `sonar takes sources from the source sets and the Java version from the project`(
         @TempDir dir: File,
     ) {
