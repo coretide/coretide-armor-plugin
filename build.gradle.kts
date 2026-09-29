@@ -140,6 +140,10 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kover-gradle-plugin:0.9.10")
     implementation("info.solidsoft.gradle.pitest:gradle-pitest-plugin:1.19.0")
     implementation("net.ltgt.gradle:gradle-errorprone-plugin:5.1.1")
+    implementation("com.github.ben-manes:gradle-versions-plugin:0.54.0")
+    implementation("org.cyclonedx:cyclonedx-gradle-plugin:3.4.1")
+    // Applied by id only. Its Kotlin 2.4 libraries stay off the compile classpath, which this Kotlin cannot read.
+    runtimeOnly("com.autonomousapps:dependency-analysis-gradle-plugin:3.19.2")
     kotlinPluginForTests("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.21")
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")

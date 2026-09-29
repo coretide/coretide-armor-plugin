@@ -61,15 +61,26 @@ class CheckTiersTest {
     }
 
     @Test
-    fun `fullAnalysis adds OWASP and SonarQube to the local checks`(
+    fun `fullAnalysis adds OWASP, dependency health and SonarQube to the local checks`(
         @TempDir dir: File,
     ) {
         val planned = plan(dir, "fullAnalysis")
 
         assertTrue(
-            planned.containsAll(listOf("codeQuality", "jacocoTestCoverageVerification", "dependencyCheckAnalyze", "sonar")),
+            planned.containsAll(
+                listOf(
+                    "codeQuality",
+                    "jacocoTestCoverageVerification",
+                    "dependencyCheckAnalyze",
+                    "dependencyUpdates",
+                    "cyclonedxBom",
+                    "armorLicenseReport",
+                    "sonar",
+                ),
+            ),
             "$planned",
         )
+        assertFalse("projectHealth" in planned, "the dependency analysis is opt-in")
     }
 
     @Test
@@ -77,10 +88,13 @@ class CheckTiersTest {
         @TempDir dir: File,
     ) {
         val build = plan(dir, "build", armorConfig = "    jacoco = false")
-        val fullAnalysis = plan(dir, "fullAnalysis", armorConfig = "    sonarqube = false")
+        val fullAnalysis =
+            plan(dir, "fullAnalysis", armorConfig = "    sonarqube = false\n    sbom = false\n    dependencyUpdates = false")
 
         assertFalse("jacocoTestCoverageVerification" in build, "$build")
         assertFalse("sonar" in fullAnalysis, "$fullAnalysis")
+        assertFalse("armorLicenseReport" in fullAnalysis, "$fullAnalysis")
+        assertFalse("dependencyUpdates" in fullAnalysis, "$fullAnalysis")
         assertTrue("dependencyCheckAnalyze" in fullAnalysis, "$fullAnalysis")
     }
 

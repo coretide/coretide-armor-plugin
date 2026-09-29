@@ -82,6 +82,8 @@ class CodeArmorPluginFunctionalTest {
                     sonarqube = false
                     owasp = false
                     veracode = false
+                    dependencyUpdates = false
+                    sbom = false
                 """.trimIndent(),
         )
 

@@ -143,6 +143,18 @@ class ConfigurationCacheTest {
     }
 
     @Test
+    fun `the licence report reuses the configuration cache`(
+        @TempDir dir: File,
+    ) {
+        ArmorTestFixture.writeProject(dir)
+
+        ArmorTestFixture.run(dir, "armorLicenseReport", "--configuration-cache")
+        val second = ArmorTestFixture.run(dir, "armorLicenseReport", "--configuration-cache")
+
+        assertContains(second.output, "Configuration cache entry reused")
+    }
+
+    @Test
     fun `multi-module build reuses the configuration cache on a second run`(
         @TempDir dir: File,
     ) {

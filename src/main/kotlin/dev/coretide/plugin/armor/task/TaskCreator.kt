@@ -11,6 +11,7 @@
 package dev.coretide.plugin.armor.task
 
 import dev.coretide.plugin.armor.CodeArmorExtension
+import dev.coretide.plugin.armor.configurator.DependencyHealthConfigurator
 import dev.coretide.plugin.armor.configurator.DetektConfigurator
 import dev.coretide.plugin.armor.configurator.KoverConfigurator
 import dev.coretide.plugin.armor.util.LogUtil
@@ -28,8 +29,8 @@ object TaskCreator {
         // aggregator project that applies CodeArmor.
         if (project.plugins.hasPlugin(JavaBasePlugin::class.java)) {
             createQuickBuildTask(project)
-            val buildTier = tasksPresent(project, extension, extension.checks.build.get())
-            val ciTier = extension.checks.ci.get()
+            val buildTier = tasksPresent(project, extension.checks.build.get(), defaultBuildTier(extension), OPTIONAL_DEFAULT_TASKS)
+            val ciTier = tasksPresent(project, extension.checks.ci.get(), defaultCiTier(extension), OPTIONAL_CI_TASKS)
             if (buildTier.isNotEmpty()) {
                 createCodeQualityTask(project, extension, buildTier)
             }
@@ -66,19 +67,23 @@ object TaskCreator {
      */
     private fun tasksPresent(
         project: Project,
-        extension: CodeArmorExtension,
         tier: List<String>,
-    ): List<String> {
-        val defaults = defaultBuildTier(extension)
-        return tier.filter { name -> name !in OPTIONAL_DEFAULT_TASKS || name !in defaults || name in project.tasks.names }
-    }
+        defaults: List<String>,
+        optional: Set<String>,
+    ): List<String> = tier.filter { name -> name !in optional || name !in defaults || name in project.tasks.names }
 
     /** The network and server checks `fullAnalysis` adds by default: those of the tools switched on. */
     fun defaultCiTier(extension: CodeArmorExtension): List<String> =
         buildList {
             if (extension.owasp) add("dependencyCheckAnalyze")
+            if (extension.dependencyUpdates) add(DependencyHealthConfigurator.UPDATES_TASK)
+            if (extension.sbom) add(DependencyHealthConfigurator.LICENSE_TASK)
+            if (extension.dependencyAnalysis) add(DependencyHealthConfigurator.ANALYSIS_TASK)
             if (extension.sonarqube) add("sonar")
         }
+
+    /** The dependency analysis only covers Java and Kotlin projects. */
+    private val OPTIONAL_CI_TASKS = setOf(DependencyHealthConfigurator.ANALYSIS_TASK)
 
     private fun createScaffoldConfigsTask(project: Project) {
         project.tasks.register("armorScaffoldConfigs", ScaffoldConfigsTask::class.java) { task ->
