@@ -240,6 +240,8 @@ the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
   root without repositories and a module without the Java plugin
 - **detekt** (`DetektTest`, `DetektVersionTest`): the build tier, baselines, detekt 1.x projects, and the
   Kotlin version guard, whose constants must match the bundled detekt plugin
+- **Coverage exclusions** (`CoverageExclusionsTest`): the narrow defaults, a build's own exclusions, and the
+  changelog's snippet that brings back the pre-0.3.0 list
 - **Summary page and architecture tests** (`ArmorReportTest`): the page and console summary, each report parser,
   and the ArchUnit scaffold failing on a violation
 - **Code scanning and scaffolding** (`SarifAndScaffoldTest`): SARIF gathered with a category per run, in single
@@ -347,7 +349,7 @@ For maintainers. Versions come from git tags, so there is no version to bump in 
 1. **Prepare the release:** in `CHANGELOG.md`, replace the version's `Unreleased` with the release date,
    and check the versions in the README. Merge that.
 2. **Create the release in GitHub's web UI** (Releases → Draft a new release) with a **new tag** named
-   exactly the version, without a `v`: for example `0.2.0-alpha`. `tag-validation.yml` accepts
+   exactly the version, without a `v`: for example `0.3.0-alpha`. `tag-validation.yml` accepts
    `{major}.{minor}.{patch}` with an optional `-alpha`, `-beta`, `-gamma`, `-dev` or `-rc.{N}` suffix.
 3. **Fill in the details:** tick **Set as a pre-release** for alpha, beta and rc versions, and paste the
    version's section of `CHANGELOG.md` as the release notes.

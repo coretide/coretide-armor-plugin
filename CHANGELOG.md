@@ -3,11 +3,26 @@
 All notable changes to CodeArmor. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [Semantic Versioning](https://semver.org/), and while in alpha, a minor version may break things.
 
-## [Unreleased]
+## [0.3.0-alpha] - Unreleased
+
+A large release: tests and coverage, static analysis, dependency health, library API checks, commit hooks, code
+scanning and a summary page. Most of it is opt-in, and what is on by default reports rather than fails. A few
+defaults do change what `./gradlew build` does, so read [Upgrading from 0.2.x](#upgrading-from-02x) first.
 
 ### ⚠️ Behaviour changes
 - **Kotlin projects run detekt in `./gradlew build`.** Findings fail the build. Run `./gradlew detektBaseline`
   once to accept the findings already in the code, or set `detekt = false`.
+- **Narrower default coverage exclusions.** The defaults now leave out only entry points (`*Application`),
+  configuration (`*Config`, `*Configuration`) and generated code (`generated` packages, MapStruct's
+  `*MapperImpl`, JPA's `*_` metamodel classes), matched as a whole class-name suffix or package. They used to
+  match anywhere in a name: `Error` left out `ErrorHandler`, `Config` left out `ConfigParser`, and `model`,
+  `util` or `mapper` left out whole packages. Coverage can drop, and coverage verification can fail.
+- **Failed tests are retried on CI.** With `CI=true`, a failed test runs up to twice more; one that then passes
+  no longer fails the build, and is listed as flaky. `flakyTestRetries = 0` turns this off.
+- **`fullAnalysis` does more.** Its CI tier adds `dependencyUpdates`, and `armorLicenseReport` with the SBOM.
+  Neither fails the build unless `forbiddenLicenses` is set.
+- **`build` ends with a summary.** `codeQuality` and `fullAnalysis` are finalized by `armorReport`, which prints
+  a few lines and writes `build/reports/codearmor/index.html`.
 - **Test tasks keep the framework they chose.** CodeArmor still moves test tasks on Gradle's default runner
   (JUnit 4) to the JUnit Platform, but no longer switches TestNG tasks, and no longer resets JUnit Platform
   settings. The new `junitPlatform = false` keeps JUnit 4.
@@ -21,49 +36,62 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   off.
 
 ### Added
-- **Flaky and slow tests:** on CI, a failed test is retried (`flakyTestRetries`, default 2) and, if it then passes,
-  named as flaky instead of failing the build. After every test run the slowest tests over
+**Tests and coverage**
+- **Flaky and slow tests:** on CI, a failed test is retried (`flakyTestRetries`, default 2) and, if it then
+  passes, named as flaky instead of failing the build. After every test run, the slowest tests over
   `slowTestThresholdMillis` (default 2s) are listed.
 - **Kover** (`kover = true`, opt-in): coverage for Kotlin projects with Kover instead of JaCoCo, with the same
   thresholds and exclusions; SonarQube reads its report.
-- **Summary page:** `codeQuality` and `fullAnalysis` end with `armorReport`. It writes
-  `build/reports/codearmor/index.html` and a few console lines: tests, coverage, SpotBugs, detekt, PIT, OWASP,
-  dependency updates, licences and the API check, each linked to its own report.
-- **Architecture tests** (`architectureTests = true`, opt-in): ArchUnit on the test classpath.
-  `armorScaffoldArchitectureTests` writes a first `ArchitectureTest` in Java or Kotlin, covering package cycles,
-  field injection, standard streams, generic exceptions and `java.util.logging`.
-- **Code scanning:** `armorSarifReport` gathers the SpotBugs, detekt and OWASP SARIF reports of every project into
-  `build/reports/sarif/`. Each run gets its own category, as GitHub code scanning requires.
-- **`armorScaffoldProject`** writes an `.editorconfig` and a GitHub Actions workflow. The workflow runs the checks
-  and uploads the SARIF to code scanning. Existing files are never overwritten.
-- **Commit hooks** (opt-in, installed by `armorInstallGitHooks`):
-  - `conventionalCommits = true` adds a commit-msg hook that rejects messages that are not Conventional Commits. The allowed types are set by `conventionalCommitTypes`.
-  - `secretScan = true` adds a pre-commit hook that blocks a commit gitleaks finds a secret in. gitleaks is not bundled; without it, the hook warns and lets the commit through.
-- **Library API checks** (opt-in, libraries only):
-  - `apiBaseline = "1.4.0"` adds `armorApiCheck` to the CI tier. It runs japicmp against that release and fails on binary incompatible changes.
-  - `kotlinAbiValidation = true` switches on the Kotlin Gradle plugin's ABI validation (Kotlin 2.2+) and adds `checkLegacyAbi` to the build tier.
-- **Dependency health**, in the CI tier:
-  - `dependencyUpdates` lists newer releases. Pre-releases are offered only for a dependency already on one.
-  - `cyclonedxBom` writes a CycloneDX SBOM of `runtimeClasspath`.
-  - `armorLicenseReport` groups the SBOM's dependencies by licence, and can fail on `forbiddenLicenses`.
-  - The first two are on by default and never fail the build; `armorLicenseReport` fails only when `forbiddenLicenses` is set.
-  - `dependencyAnalysis = true` (opt-in) adds the dependency-analysis plugin's `projectHealth` report.
-- **Error Prone and NullAway** (`errorProne = true`, `nullAway = true`, opt-in): Error Prone checks the Java
-  sources as they compile, and NullAway fails the build where production code may dereference null. Both need a
-  JDK 21 compiler and are skipped, with a warning, on an older one.
 - **Mutation testing** (`mutationTesting = true`, opt-in): `./gradlew pitest` runs PIT on the project's own
   packages, with an optional `mutationThreshold`.
 - **Combined reports for multi-module builds:** `allCodeQuality` also writes one coverage report
   (`testCodeCoverageReport`) and one test report (`testAggregateTestReport`) for the whole build on the root
   project. Coverage counts tests in one module that exercise another's code, and each module's SonarQube
   analysis reads it.
+
+**Static analysis**
 - **detekt for Kotlin projects:** detekt 2.0.0-alpha.6 joins the local tier in projects that apply the Kotlin
   JVM plugin, with HTML, SARIF and checkstyle reports, a baseline (`detektBaseline`), and its findings
   imported into SonarQube. It is left off, with a message, when the project's Kotlin release is newer than
   detekt can read, and a project that applies detekt 1.x keeps it.
-- **`strictCompilation`** (off by default): compiler warnings in production code fail the build. Java gets
+- **`strictCompilation`** (opt-in): compiler warnings in production code fail the build. Java gets
   `-Xlint:all -Werror`; Kotlin gets `allWarningsAsErrors` and `-Xjsr305=strict`, and Kotlin libraries get
   explicit API mode.
+- **Error Prone and NullAway** (`errorProne = true`, `nullAway = true`, opt-in): Error Prone checks the Java
+  sources as they compile, and NullAway fails the build where production code may dereference null. Both need
+  a JDK 21 compiler and are skipped, with a warning, on an older one.
+- **Architecture tests** (`architectureTests = true`, opt-in): ArchUnit on the test classpath.
+  `armorScaffoldArchitectureTests` writes a first `ArchitectureTest` in Java or Kotlin, covering package
+  cycles, field injection, standard streams, generic exceptions and `java.util.logging`.
+
+**Dependencies**
+- **Dependency health**, in the CI tier:
+  - `dependencyUpdates` lists newer releases; pre-releases are offered only for a dependency already on one.
+  - `cyclonedxBom` writes a CycloneDX SBOM of `runtimeClasspath`.
+  - `armorLicenseReport` groups the SBOM's dependencies by licence, and fails on `forbiddenLicenses`.
+  - `dependencyAnalysis = true` (opt-in) adds the dependency-analysis plugin's `projectHealth` report.
+
+**Libraries**
+- **API checks** (opt-in, libraries only):
+  - `apiBaseline = "1.4.0"` adds `armorApiCheck` to the CI tier. It runs japicmp against that release and
+    fails on binary incompatible changes.
+  - `kotlinAbiValidation = true` switches on the Kotlin Gradle plugin's ABI validation (Kotlin 2.2+) and adds
+    `checkLegacyAbi` to the build tier.
+
+**Git hooks** (opt-in, installed by `armorInstallGitHooks`)
+- `conventionalCommits = true` adds a commit-msg hook that rejects messages that are not Conventional Commits,
+  with the types in `conventionalCommitTypes`.
+- `secretScan = true` adds a pre-commit hook that blocks a commit gitleaks finds a secret in. gitleaks is not
+  bundled; without it, the hook warns and lets the commit through.
+
+**Reports and CI**
+- **Summary page:** `armorReport` writes `build/reports/codearmor/index.html` and a few console lines: tests,
+  coverage, SpotBugs, detekt, PIT, OWASP, dependency updates, licences and the API check, each linked to its
+  own report.
+- **Code scanning:** `armorSarifReport` gathers the SpotBugs, detekt and OWASP SARIF reports of every project
+  into `build/reports/sarif/`, each run in a category of its own, as GitHub code scanning requires.
+- **`armorScaffoldProject`** writes an `.editorconfig` and a GitHub Actions workflow that runs the checks and
+  uploads the SARIF to code scanning. Existing files are never overwritten.
 
 ### Fixed
 - SonarQube never imported SpotBugs findings: it was pointed at `build/reports/spotbugs/main.xml`, while
@@ -80,6 +108,30 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
 ### Project
 - The CI and release workflows use the Node 24 releases of their actions, replacing the deprecated
   Node 20 ones. `setup-gradle` keeps the open-source basic cache provider.
+
+### Upgrading from 0.2.x
+1. **Kotlin projects:** `./gradlew build` now runs detekt. Run `./gradlew detektBaseline` once to accept the
+   findings already in the code, or set `detekt = false`.
+2. **Coverage:** classes the old defaults hid now count. If `build` fails coverage verification, or coverage
+   drops in SonarQube, add tests, lower `coverageMinimum` / `coverageClassMinimum`, or bring back the old list.
+   A build's own `coverageExclusions` match the way the old defaults did, anywhere in a name or as a package:
+   ```kotlin
+   codeArmor {
+       coverageExclusions.addAll(
+           listOf(
+               "annotation", "model", "dto", "entity", "entities", "mapper", "util", "utils", "helper", "helpers",
+               "config", "Application", "Config", "Configuration", "Repository", "generated", "Test", "Mock",
+               "Stubs", "Dummy", "Fake", "Abstract", "Base", "Exception", "Error", "logging",
+           ),
+       )
+   }
+   ```
+3. **CI:** failed tests are retried, and a test that passes on a retry is reported as flaky instead of
+   failing the build. Set `flakyTestRetries = 0` to keep one run.
+4. **`fullAnalysis`** also runs `dependencyUpdates` and `armorLicenseReport`. To keep the CI tier as it was,
+   set `dependencyUpdates = false` and `sbom = false`, or list `checks.ci` yourself.
+5. **New hooks:** after turning on `conventionalCommits` or `secretScan`, run `./gradlew armorInstallGitHooks`
+   in each clone.
 
 ## [0.2.0-alpha] - 2026-09-25
 
@@ -186,7 +238,7 @@ The first release built for Gradle 9. It changes when checks and git hooks run, 
   wiring, project type detection, git hooks and git-derived versions, published to Maven Central and
   the Gradle Plugin Portal.
 
-[Unreleased]: https://github.com/coretide/coretide-armor-plugin/compare/0.2.0-alpha...HEAD
+[0.3.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.2.0-alpha...HEAD
 [0.2.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.1.4-alpha...0.2.0-alpha
 [0.1.4-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.1.3-alpha...0.1.4-alpha
 [0.1.3-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.1.2-alpha...0.1.3-alpha
