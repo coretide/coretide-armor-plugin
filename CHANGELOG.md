@@ -24,6 +24,9 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   `slowTestThresholdMillis` (default 2s) are listed.
 - **Kover** (`kover = true`, opt-in): coverage for Kotlin projects with Kover instead of JaCoCo, with the same
   thresholds and exclusions; SonarQube reads its report.
+- **Commit hooks** (opt-in, installed by `armorInstallGitHooks`):
+  - `conventionalCommits = true` adds a commit-msg hook that rejects messages that are not Conventional Commits. The allowed types are set by `conventionalCommitTypes`.
+  - `secretScan = true` adds a pre-commit hook that blocks a commit gitleaks finds a secret in. gitleaks is not bundled; without it, the hook warns and lets the commit through.
 - **Library API checks** (opt-in, libraries only):
   - `apiBaseline = "1.4.0"` adds `armorApiCheck` to the CI tier. It runs japicmp against that release and fails on binary incompatible changes.
   - `kotlinAbiValidation = true` switches on the Kotlin Gradle plugin's ABI validation (Kotlin 2.2+) and adds `checkLegacyAbi` to the build tier.

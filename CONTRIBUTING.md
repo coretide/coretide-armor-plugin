@@ -250,7 +250,7 @@ the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
 - **Project conventions** (`ProjectConventionsTest`): the SonarQube properties, test task setup, resource
   processing and how a project is classified
 - **Configuration cache tests** (`ConfigurationCacheTest`): a second run must reuse the cache
-- **Check tiers and git hooks** (`CheckTiersTest`, `GitHooksTest`): what each tier runs; hooks installed, upgraded and removed only by their tasks, and a real `git push` through the hook
+- **Check tiers and git hooks** (`CheckTiersTest`, `GitHooksTest`): what each tier runs; hooks installed, upgraded and removed only by their tasks, a real `git push` through the pre-push hook, and real commits through the commit-msg and secret-scanning hooks (with a stand-in gitleaks)
 - **Code stats** (`CodeStatsTest`, `CodeStatsSettingsTest`): installs and real commits through the hooks,
   each in a throwaway home directory and git configuration, and who may choose which setting
 - **Focused tests** (`GitVersionTest`, `BytecodeTargetTest`): a single behaviour each

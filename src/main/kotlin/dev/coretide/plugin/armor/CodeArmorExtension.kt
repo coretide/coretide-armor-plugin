@@ -147,6 +147,23 @@ open class CodeArmorExtension
         var sonarJavaVersion: String? = null
         var enableGitHooks: Boolean = true
         var prePushEnabled: Boolean = true
+
+        /**
+         * A commit-msg hook, installed by `armorInstallGitHooks`, that rejects a commit whose message is not a
+         * Conventional Commit: `type(scope)!: description`, with a type from [conventionalCommitTypes]. Opt-in.
+         */
+        var conventionalCommits: Boolean = false
+
+        /** The types a Conventional Commit may start with. */
+        var conventionalCommitTypes: MutableList<String> =
+            mutableListOf("feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore", "revert")
+
+        /**
+         * A pre-commit hook, installed by `armorInstallGitHooks`, that scans the staged changes with gitleaks and
+         * blocks a commit that adds a secret. gitleaks is installed separately; without it, the hook warns and lets
+         * the commit through. Opt-in.
+         */
+        var secretScan: Boolean = false
         var enableVersionFromGit: Boolean = true
         var enableResourceProcessing: Boolean = true
         var spotbugsConfig: SpotBugsConfig = SpotBugsConfig()

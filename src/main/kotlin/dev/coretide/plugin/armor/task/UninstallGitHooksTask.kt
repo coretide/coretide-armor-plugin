@@ -46,7 +46,7 @@ abstract class UninstallGitHooksTask : DefaultTask() {
             return
         }
         val removed =
-            listOf("pre-push", "pre-commit")
+            GitHooksManager.HOOKS
                 .map { File(repository.hooksDir, it) }
                 .filter { GitHooksManager.isManagedByCodeArmor(it) && it.delete() }
         if (removed.isEmpty()) {

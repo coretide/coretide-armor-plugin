@@ -66,6 +66,25 @@ class GitHooksTest {
         return ArmorTestFixture.runGit(dir, "push", remote.absolutePath, "HEAD:refs/heads/main")
     }
 
+    /** Commits a change to `change.txt`, which fires the commit-msg and pre-commit hooks. */
+    private fun commit(
+        dir: File,
+        message: String,
+        content: String = message,
+        environment: Map<String, String> = ArmorTestFixture.isolatedGitEnvironment,
+    ): ArmorTestFixture.GitResult {
+        dir.resolve("change.txt").appendText("$content\n")
+        ArmorTestFixture.git(dir, "add", "change.txt")
+        return ArmorTestFixture.runGit(
+            dir,
+            "-c", "user.name=Armor Test",
+            "-c", "user.email=armor@example.test",
+            "-c", "commit.gpgsign=false",
+            "commit", "--quiet", "--message", message,
+            environment = environment,
+        )
+    }
+
     @Test
     fun `configuring a build never writes a hook`(
         @TempDir dir: File,
@@ -199,6 +218,107 @@ class GitHooksTest {
 
         assertFalse(hooks.resolve("pre-push").exists())
         assertEquals(teamHook, hooks.resolve("pre-commit").readText())
+    }
+
+    @Test
+    fun `conventionalCommits rejects a commit message that is not a Conventional Commit`(
+        @TempDir dir: File,
+    ) {
+        val hooks = gitProject(dir, "$hooksEnabled\n    conventionalCommits = true")
+        installHooks(dir)
+
+        val rejected = commit(dir, "updated the parser")
+        val unknownType = commit(dir, "feature: accept dates without a year")
+        val accepted = commit(dir, "feat(parser)!: accept dates without a year")
+        val merge = commit(dir, "Merge branch 'topic'")
+
+        assertTrue(hooks.resolve("commit-msg").canExecute())
+        assertNotEquals(0, rejected.exitCode)
+        assertContains(rejected.output, "the commit message is not a Conventional Commit:")
+        assertContains(rejected.output, "updated the parser")
+        assertNotEquals(0, unknownType.exitCode)
+        assertEquals(0, accepted.exitCode, accepted.output)
+        assertEquals(0, merge.exitCode, merge.output)
+    }
+
+    @Test
+    fun `conventionalCommitTypes sets the types a commit may start with`(
+        @TempDir dir: File,
+    ) {
+        gitProject(dir, "$hooksEnabled\n    conventionalCommits = true\n    conventionalCommitTypes = mutableListOf(\"feature\", \"bad type\")")
+        val install = installHooks(dir)
+
+        val accepted = commit(dir, "feature: accept dates without a year")
+        val rejected = commit(dir, "feat: accept dates without a year")
+
+        assertContains(install.output, "Left out conventionalCommitTypes that are not plain words: bad type")
+        assertEquals(0, accepted.exitCode, accepted.output)
+        assertNotEquals(0, rejected.exitCode)
+    }
+
+    @Test
+    fun `secretScan blocks a commit gitleaks finds a secret in`(
+        @TempDir dir: File,
+        @TempDir tools: File,
+    ) {
+        val hooks = gitProject(dir, "$hooksEnabled\n    secretScan = true")
+        // A stand-in gitleaks that finds a "secret" in the staged changes.
+        val gitleaks =
+            tools.resolve("gitleaks").apply {
+                writeText(
+                    """
+                    #!/bin/sh
+                    [ "${'$'}1 ${'$'}2" = "git --help" ] && exit 0
+                    [ "${'$'}*" = "git --pre-commit --staged --redact --no-banner" ] || exit 2
+                    if git diff --cached | grep -q 'AKIA'; then echo "leak found"; exit 1; fi
+                    """.trimIndent() + "\n",
+                )
+                setExecutable(true, false)
+            }
+        installHooks(dir)
+        val environment = ArmorTestFixture.isolatedGitEnvironment + ("CODEARMOR_GITLEAKS" to gitleaks.invariantSeparatorsPath)
+
+        val blocked = commit(dir, "chore: add a key", content = "key = AKIAIOSFODNN7EXAMPLE", environment = environment)
+        ArmorTestFixture.git(dir, "reset", "--quiet", "--hard")
+        val clean = commit(dir, "chore: add a note", environment = environment)
+
+        assertTrue(hooks.resolve("pre-commit").canExecute())
+        assertNotEquals(0, blocked.exitCode)
+        assertContains(blocked.output, "leak found")
+        assertContains(blocked.output, "gitleaks found a secret in the staged changes")
+        assertEquals(0, clean.exitCode, clean.output)
+    }
+
+    @Test
+    fun `without gitleaks the secret scan warns and lets the commit through`(
+        @TempDir dir: File,
+    ) {
+        gitProject(dir, "$hooksEnabled\n    secretScan = true")
+        installHooks(dir)
+        val environment = ArmorTestFixture.isolatedGitEnvironment + ("CODEARMOR_GITLEAKS" to dir.resolve("no-gitleaks").invariantSeparatorsPath)
+
+        val result = commit(dir, "chore: add a note", environment = environment)
+
+        assertEquals(0, result.exitCode, result.output)
+        assertContains(result.output, "gitleaks is not installed")
+    }
+
+    @Test
+    fun `switching a hook off removes the one CodeArmor wrote, and uninstall removes them all`(
+        @TempDir dir: File,
+    ) {
+        val hooks = gitProject(dir, "$hooksEnabled\n    conventionalCommits = true\n    secretScan = true")
+        installHooks(dir)
+        assertTrue(hooks.resolve("commit-msg").exists() && hooks.resolve("pre-commit").exists())
+
+        ArmorTestFixture.writeProject(dir, armorConfig = "$hooksEnabled\n    secretScan = true")
+        val result = installHooks(dir)
+        assertFalse(hooks.resolve("commit-msg").exists())
+        assertContains(result.output, "conventionalCommits = false: removed CodeArmor's commit-msg hook")
+
+        ArmorTestFixture.runWithEnvironment(dir, "armorUninstallGitHooks", set = ArmorTestFixture.isolatedGitEnvironment)
+        assertFalse(hooks.resolve("pre-commit").exists())
+        assertFalse(hooks.resolve("pre-push").exists())
     }
 
     @Test
