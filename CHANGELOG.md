@@ -3,7 +3,13 @@
 All notable changes to CodeArmor. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [Semantic Versioning](https://semver.org/), and while in alpha, a minor version may break things.
 
-## [Unreleased]
+## [0.4.0-alpha] - Unreleased
+
+A release about adopting CodeArmor in existing code and running it on CI: `armorInfo` shows what it checks and
+what needs attention, diff coverage measures what a pull request adds, a SpotBugs baseline accepts the findings
+already there, and gitleaks, the job summary and the dependency graph join the CI side. It also fixes SonarQube
+ignoring `SONAR_TOKEN`, and OWASP scanning CodeArmor's own tools. Read [Upgrading from 0.3.x](#upgrading-from-03x)
+first.
 
 ### ⚠️ Behaviour changes
 - **SonarQube runs only once it is configured.** `fullAnalysis` includes `sonar` by default only when a server or
@@ -13,17 +19,41 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   server set only in the build's own `sonar { }` block needs.
 - **`sonarHostUrl` no longer defaults to `http://localhost:9000`.** Left unset, the SonarScanner picks its own
   default, SonarQube Cloud. A local server needs `sonarHostUrl = "http://localhost:9000"`.
+- **`build` measures diff coverage.** `armorDiffCoverage` joins the build tier. It reports and never fails, unless
+  `diffCoverageMinimum` is set; `diffCoverage = false` leaves it out.
+- **OWASP Dependency Check scans only `runtimeClasspath`.** See Fixed: a vulnerability in a test-only or
+  compile-only dependency, or in a build tool, no longer fails the build.
 
 ### Added
+**Setup and diagnostics**
+- **`armorInfo`** prints what CodeArmor checks in a project: its version, what `build`, `fullAnalysis` and the
+  pre-push hook run, and each tool, switched on or off, with its version and settings. It ends with what needs
+  attention: SonarQube with no server, OWASP without an NVD API key, git hooks not installed, `secretScan` without
+  gitleaks, Veracode without its plugin or credentials. In a multi-module build, each module shows its own.
 - **Tool versions.** `toolVersions { jacoco; pitest; errorProne; nullAway; archUnit }` runs another version of a
   tool than the one CodeArmor was tested with, such as a newer release with a fix. SpotBugs keeps its own
   `spotbugs { toolVersion }`.
-- **detekt with type resolution.** `detektTypeResolution = true` runs `detektMain` in place of `detekt`: the main
-  sources against their compile classpath, so the rules that need types run too. Its baseline is
-  `detekt-baseline-main.xml`, from `./gradlew detektBaselineMain`.
+
+**Coverage and tests**
+- **Diff coverage.** `armorDiffCoverage`, in the build tier, measures the share of the lines changed since the base
+  branch that tests run, from the JaCoCo or Kover report, and names the untested ones. It also appears in the
+  summary. It only reports until `diffCoverageMinimum` is set. The base branch is the pull request's target on
+  common CI services, or `origin/HEAD`, `main` or `master`; `diffCoverageBase` overrides it. `diffCoverage = false`
+  turns it off.
 - **Integration tests.** `integrationTests = true` adds an `integrationTest` source set and task, run by `build`
   after the unit tests, with the unit tests' libraries and runner. Their coverage counts, and the summary has a line
   for them.
+
+**Static analysis**
+- **SpotBugs baseline.** `./gradlew armorSpotbugsBaseline` writes the findings already in the code to
+  `config/spotbugs/baseline.xml`, and from then on `spotbugsMain` fails on new findings only. SpotBugs matches a
+  finding by a hash that ignores line numbers, so edits around it keep it accepted. `spotbugs { baselineFile }`
+  moves the file.
+- **detekt with type resolution.** `detektTypeResolution = true` runs `detektMain` in place of `detekt`: the main
+  sources against their compile classpath, so the rules that need types run too. Its baseline is
+  `detekt-baseline-main.xml`, from `./gradlew detektBaselineMain`.
+
+**CI**
 - **Secret scanning in CI.** With `secretScan = true`, `fullAnalysis` also runs `armorSecretScan`: gitleaks over
   the whole history, failing on a secret, with a SARIF report that `armorSarifReport` gathers for code scanning. A
   multi-module build scans once, from the root.
@@ -31,19 +61,6 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
 - **Dependency graph and Dependabot scaffolding.** The workflow `armorScaffoldProject` writes gains a job that
   submits the resolved dependencies to GitHub's dependency graph, and it also writes `.github/dependabot.yml`, for
   weekly Gradle and GitHub Actions updates.
-- **SpotBugs baseline.** `./gradlew armorSpotbugsBaseline` writes the findings already in the code to
-  `config/spotbugs/baseline.xml`, and from then on `spotbugsMain` fails on new findings only. SpotBugs matches a
-  finding by a hash that ignores line numbers, so edits around it keep it accepted. `spotbugs { baselineFile }`
-  moves the file.
-- **Diff coverage.** `armorDiffCoverage`, in the build tier, measures the share of the lines changed since the base
-  branch that tests run, from the JaCoCo or Kover report, and names the untested ones. It also appears in the
-  summary. It only reports until `diffCoverageMinimum` is set. The base branch is the pull request's target on
-  common CI services, or `origin/HEAD`, `main` or `master`; `diffCoverageBase` overrides it. `diffCoverage = false`
-  turns it off.
-- **`armorInfo`** prints what CodeArmor checks in a project: its version, what `build`, `fullAnalysis` and the
-  pre-push hook run, and each tool, switched on or off, with its version and settings. It ends with what needs
-  attention: SonarQube with no server, OWASP without an NVD API key, git hooks not installed, `secretScan` without
-  gitleaks, Veracode without its plugin or credentials. In a multi-module build, each module shows its own.
 
 ### Fixed
 - **SonarQube ignored `SONAR_TOKEN`.** CodeArmor always set `sonar.token`, to an empty value when `sonarToken` was
@@ -63,6 +80,20 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
 ### Changed
 - The README describes Veracode as what it is: `veracode = true` runs the `veracodeUpload` task of a Veracode
   Gradle plugin you apply, rather than an integration "in development".
+
+### Upgrading from 0.3.x
+1. **SonarQube.** If `fullAnalysis` sent the analysis to a local server through the old default, set
+   `sonarHostUrl = "http://localhost:9000"`. On CI, pass `SONAR_TOKEN`, and `SONAR_HOST_URL` for your own server,
+   as secrets; the token no longer needs to go through `sonarToken`. Without either, `fullAnalysis` skips
+   SonarQube and says so.
+2. **Diff coverage on CI.** It compares with the pull request's target branch, so check out the full history: on
+   GitHub Actions, `actions/checkout` with `fetch-depth: 0`, as the scaffolded workflow does. Without it, it says so
+   and passes.
+3. **OWASP suppressions.** Findings in test-only and compile-only dependencies, and in those of SpotBugs, detekt,
+   PIT, Error Prone or JaCoCo, no longer appear; suppressions you added for them can go.
+4. **Adopting the new checks.** `./gradlew armorSpotbugsBaseline` accepts the SpotBugs findings already in the code;
+   with `detektTypeResolution = true`, `./gradlew detektBaselineMain` does the same for detekt. `./gradlew armorInfo`
+   lists what else needs attention.
 
 ## [0.3.0-alpha] - 2026-09-29
 
@@ -299,7 +330,7 @@ The first release built for Gradle 9. It changes when checks and git hooks run, 
   wiring, project type detection, git hooks and git-derived versions, published to Maven Central and
   the Gradle Plugin Portal.
 
-[Unreleased]: https://github.com/coretide/coretide-armor-plugin/compare/0.3.0-alpha...HEAD
+[0.4.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.3.0-alpha...HEAD
 [0.3.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.2.0-alpha...0.3.0-alpha
 [0.2.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.1.4-alpha...0.2.0-alpha
 [0.1.4-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.1.3-alpha...0.1.4-alpha
