@@ -16,6 +16,11 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
 - **`sonarJavaVersion` has no default.** The SonarScanner reads the Java version from the project; set it to
   override.
 
+### Added
+- **`strictCompilation`** (off by default): compiler warnings in production code fail the build. Java gets
+  `-Xlint:all -Werror`; Kotlin gets `allWarningsAsErrors` and `-Xjsr305=strict`, and Kotlin libraries get
+  explicit API mode.
+
 ### Fixed
 - SonarQube never imported SpotBugs findings: it was pointed at `build/reports/spotbugs/main.xml`, while
   SpotBugs writes `spotbugsMain.xml`.

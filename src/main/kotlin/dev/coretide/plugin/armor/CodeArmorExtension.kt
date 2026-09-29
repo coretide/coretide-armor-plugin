@@ -44,6 +44,13 @@ open class CodeArmorExtension
          * keep JUnit 4.
          */
         var junitPlatform: Boolean = true
+
+        /**
+         * Compiler warnings in production code fail the build: `-Xlint` with `-Werror` for Java, and
+         * `allWarningsAsErrors` with `-Xjsr305=strict` for Kotlin, plus explicit API mode for Kotlin
+         * libraries. Test code is not affected.
+         */
+        var strictCompilation: Boolean = false
         var owaspFailBuildOnCVSS: Double = 9.0
         var owaspSuppressionFile: String? = null
         var owaspAutoUpdate: Boolean = false

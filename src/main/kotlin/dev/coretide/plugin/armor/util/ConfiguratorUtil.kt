@@ -12,6 +12,7 @@ package dev.coretide.plugin.armor.util
 
 import dev.coretide.plugin.armor.CodeArmorExtension
 import dev.coretide.plugin.armor.ProjectType
+import dev.coretide.plugin.armor.configurator.CompilerConfigurator
 import dev.coretide.plugin.armor.configurator.JacocoConfigurator
 import dev.coretide.plugin.armor.configurator.OwaspConfigurator
 import dev.coretide.plugin.armor.configurator.ResourceConfigurator
@@ -27,6 +28,7 @@ object ConfiguratorUtil {
         projectType: ProjectType,
     ) {
         ResourceConfigurator.configure(project, extension, projectType)
+        CompilerConfigurator.configure(project, extension, projectType)
         if (extension.jacoco) JacocoConfigurator.configureJacoco(project, extension)
         if (extension.spotbugs) SpotbugsConfigurator.configureSpotbugs(project, extension)
         if (extension.owasp) OwaspConfigurator.configureOwasp(project, extension)
