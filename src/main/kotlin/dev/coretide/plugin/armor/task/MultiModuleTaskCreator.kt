@@ -13,6 +13,7 @@ package dev.coretide.plugin.armor.task
 import dev.coretide.plugin.armor.CodeArmorExtension
 import dev.coretide.plugin.armor.ProjectType
 import dev.coretide.plugin.armor.configurator.AggregatedReportsConfigurator
+import dev.coretide.plugin.armor.configurator.ArmorReportConfigurator
 import dev.coretide.plugin.armor.configurator.DependencyHealthConfigurator
 import dev.coretide.plugin.armor.configurator.SarifConfigurator
 import dev.coretide.plugin.armor.util.ConfiguratorUtil
@@ -47,6 +48,7 @@ object MultiModuleTaskCreator {
 
         createMultiModuleTasks(project, actualProjects, aggregatedReports)
         SarifConfigurator.register(project, listOf(project) + actualProjects)
+        ArmorReportConfigurator.register(project, listOf(project) + actualProjects)
     }
 
     private fun configureSingleModuleProject(

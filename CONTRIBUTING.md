@@ -240,6 +240,8 @@ the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
   root without repositories and a module without the Java plugin
 - **detekt** (`DetektTest`, `DetektVersionTest`): the build tier, baselines, detekt 1.x projects, and the
   Kotlin version guard, whose constants must match the bundled detekt plugin
+- **Summary page and architecture tests** (`ArmorReportTest`): the page and console summary, each report parser,
+  and the ArchUnit scaffold failing on a violation
 - **Code scanning and scaffolding** (`SarifAndScaffoldTest`): SARIF gathered with a category per run, in single
   and multi-module builds, and the `.editorconfig` and workflow `armorScaffoldProject` writes
 - **Library API checks** (`ApiCompatibilityTest`): japicmp against a published baseline, and the Kotlin ABI dump

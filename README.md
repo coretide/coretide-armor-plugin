@@ -17,6 +17,8 @@ CodeArmor is a powerful Gradle plugin that integrates multiple code quality and 
 ## ✨ Features
 
 - 🔍 **Comprehensive Code Quality**: JaCoCo, SpotBugs, detekt (Kotlin), SonarQube integration
+- 📋 **One Summary Page**: every check's result on one page and a few console lines, linking each tool's report
+- 🏛️ **Architecture Tests on Request**: ArchUnit, with a first set of rules scaffolded for Java or Kotlin
 - 🧾 **Code Scanning Ready**: SARIF from SpotBugs, detekt and OWASP, gathered for GitHub code scanning, and a workflow to start from
 - 🐞 **Bug and Null Checks on Request**: Error Prone and NullAway on Java sources as they compile
 - 🧪 **Test Insights**: flaky tests retried on CI and named, slowest tests listed; Kover and PIT mutation testing on request
@@ -464,6 +466,20 @@ codeArmor {
   dependencies declared but not used, used but only there transitively, or on the wrong configuration. It reports
   and does not fail the build. It analyzes `java-library` and Kotlin JVM projects, and applications. For Kotlin, the
   Kotlin plugin must be loaded in the root build script, for example with `id("org.jetbrains.kotlin.jvm") apply false`.
+#### Architecture Tests
+```kotlin
+codeArmor {
+    architectureTests = true                  // Opt-in
+}
+```
+Adds [ArchUnit](https://www.archunit.org) to the tests (and the JUnit Platform launcher Gradle 9 needs), for Java and
+Kotlin alike: ArchUnit reads bytecode. `./gradlew armorScaffoldArchitectureTests` writes a first
+`ArchitectureTest` into the project's top-level package, in Java or Kotlin:
+- no package cycles between the packages directly under it;
+- no field injection, no `System.out` or `System.err`, no generic exceptions thrown, no `java.util.logging`.
+
+From then on it is an ordinary test of the project's: extend it, and a violated rule fails the build.
+
 #### Library API Checks
 ```kotlin
 codeArmor {
@@ -760,15 +776,33 @@ On Windows, code stats runs in the bash that Git for Windows ships, so it needs 
 
 ## 📊 Reports and Output
 
-CodeArmor generates comprehensive reports in the `build/reports/` directory:
+`codeQuality`, and so `build`, and `fullAnalysis` end with `armorReport`: a summary on the console, and a page
+at `build/reports/codearmor/index.html` with one line per tool and a link to its report:
+
+```
+📋 CodeArmor summary: build/reports/codearmor/index.html
+   ✅ Tests: 214 tests
+   ✅ Coverage (JaCoCo): 83.4% of lines, 71.2% of branches
+   ⚠️ SpotBugs: 2 findings
+   ✅ Dependency updates: all dependencies up to date
+```
+
+It reads whatever reports exist and runs no tool itself, so `./gradlew armorReport` sums up the last run at any
+time. In a multi-module build the root's page has a section per module. The tools' own reports:
 
 ```
 build/reports/
-├── jacoco/test/html/index.html          # Coverage report
-├── spotbugs/main.html                   # Bug analysis
-├── dependency-check/                    # Security vulnerabilities
-│   └── dependency-check-report.html
-└── tests/test/index.html               # Test results
+├── codearmor/index.html                  # The summary, and licenses.txt
+├── tests/test/index.html                 # Test results
+├── jacoco/test/html/index.html           # Coverage (kover/html with Kover)
+├── spotbugs/spotbugsMain.html            # SpotBugs (also XML and SARIF)
+├── detekt/detekt.html                    # detekt, in Kotlin projects (also checkstyle XML and SARIF)
+├── pitest/index.html                     # Mutation testing, when run
+├── dependency-check/                     # OWASP Dependency Check (HTML, XML, JSON, SARIF)
+├── cyclonedx/bom.json                    # The SBOM
+├── japicmp/api.html                      # The API check, with apiBaseline
+└── sarif/                                # Gathered by armorSarifReport
+build/dependencyUpdates/report.html       # Dependency updates
 ```
 
 

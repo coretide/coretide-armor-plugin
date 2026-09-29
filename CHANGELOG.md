@@ -26,6 +26,12 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   `slowTestThresholdMillis` (default 2s) are listed.
 - **Kover** (`kover = true`, opt-in): coverage for Kotlin projects with Kover instead of JaCoCo, with the same
   thresholds and exclusions; SonarQube reads its report.
+- **Summary page:** `codeQuality` and `fullAnalysis` end with `armorReport`. It writes
+  `build/reports/codearmor/index.html` and a few console lines: tests, coverage, SpotBugs, detekt, PIT, OWASP,
+  dependency updates, licences and the API check, each linked to its own report.
+- **Architecture tests** (`architectureTests = true`, opt-in): ArchUnit on the test classpath.
+  `armorScaffoldArchitectureTests` writes a first `ArchitectureTest` in Java or Kotlin, covering package cycles,
+  field injection, standard streams, generic exceptions and `java.util.logging`.
 - **Code scanning:** `armorSarifReport` gathers the SpotBugs, detekt and OWASP SARIF reports of every project into
   `build/reports/sarif/`. Each run gets its own category, as GitHub code scanning requires.
 - **`armorScaffoldProject`** writes an `.editorconfig` and a GitHub Actions workflow. The workflow runs the checks
