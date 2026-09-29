@@ -27,6 +27,13 @@ open class CodeArmorExtension
         var autoDetect: Boolean = true
         var jacoco: Boolean = true
         var spotbugs: Boolean = true
+
+        /**
+         * detekt for projects that apply the Kotlin JVM plugin; its `detekt` task joins the build tier.
+         * Configure it in `config/detekt/detekt.yml`; findings already in the code can go in a baseline
+         * (`./gradlew detektBaseline`).
+         */
+        var detekt: Boolean = true
         var owasp: Boolean = true
         var veracode: Boolean = false
         var sonarqube: Boolean = true

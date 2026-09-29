@@ -110,12 +110,33 @@ repositories {
     gradlePluginPortal()
 }
 
+// The Kotlin Gradle plugin, for TestKit builds only: TestKit loads the plugin under test in its own class
+// loader, so detekt, which CodeArmor applies, can only see the Kotlin plugin's classes if it is on the same
+// injected classpath. Test builds then apply it without a version. It is not a dependency of the plugin.
+val kotlinPluginForTests: Configuration by configurations.creating {
+    isCanBeConsumed = false
+    attributes {
+        // The variant Gradle itself would pick when resolving the plugin.
+        val runtime = configurations.runtimeClasspath.get().attributes
+        runtime.keySet().forEach { key ->
+            @Suppress("UNCHECKED_CAST")
+            attribute(key as Attribute<Any>, runtime.getAttribute(key)!!)
+        }
+    }
+}
+
+tasks.pluginUnderTestMetadata {
+    pluginClasspath.from(kotlinPluginForTests)
+}
+
 dependencies {
     implementation(gradleApi())
     implementation(gradleKotlinDsl())
     implementation("com.github.spotbugs.snom:spotbugs-gradle-plugin:6.5.9")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:7.3.1.8318")
     implementation("org.owasp:dependency-check-gradle:12.2.2")
+    implementation("dev.detekt:detekt-gradle-plugin:2.0.0-alpha.6")
+    kotlinPluginForTests("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.21")
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

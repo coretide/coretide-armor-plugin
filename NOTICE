@@ -23,6 +23,10 @@ SpotBugs
 License: GNU Lesser General Public License v2.1
 Website: https://spotbugs.github.io/
 
+detekt and its Gradle plugin
+License: Apache License 2.0
+Website: https://detekt.dev/
+
 SonarScanner for Gradle
 License: GNU Lesser General Public License v3.0
 Website: https://github.com/SonarSource/sonar-scanner-gradle

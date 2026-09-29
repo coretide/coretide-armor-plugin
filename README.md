@@ -16,7 +16,7 @@ CodeArmor is a powerful Gradle plugin that integrates multiple code quality and 
 
 ## ✨ Features
 
-- 🔍 **Comprehensive Code Quality**: JaCoCo, SpotBugs, SonarQube integration
+- 🔍 **Comprehensive Code Quality**: JaCoCo, SpotBugs, detekt (Kotlin), SonarQube integration
 - 🔒 **Security Analysis**: OWASP Dependency Check (**Veracode integration in development**)
 - 🚀 **Optimized Workflows**: Custom tasks for different development stages
 - 🪝 **Git Hooks on Request**: A blocking pre-push hook for the basic checks, installed only when you run `armorInstallGitHooks`
@@ -121,6 +121,7 @@ codeArmor {
     // Tool enablement
     jacoco = true
     spotbugs = true
+    detekt = true                             // Kotlin projects only
     owasp = true
     sonarqube = true
     veracode = false
@@ -175,7 +176,7 @@ CodeArmor organizes its checks in three tiers, from fastest to most thorough:
 | Tier | Runs in | Default checks | Needs |
 |---|---|---|---|
 | Basic | the pre-push hook (`quickBuild`) | compile + unit tests | nothing |
-| Local | `./gradlew build` (through `codeQuality`) | SpotBugs, JaCoCo report + coverage verification | nothing |
+| Local | `./gradlew build` (through `codeQuality`) | SpotBugs, detekt (Kotlin projects), JaCoCo report + coverage verification | nothing |
 | CI | `fullAnalysis` | the local tier + OWASP Dependency Check + SonarQube | network, a SonarQube server |
 
 Each tier's task list is configurable; see [Check Tiers](#check-tiers).
@@ -203,11 +204,12 @@ Each tier's task list is configurable; see [Check Tiers](#check-tiers).
 
 
 - **Purpose**: Quality checks that need no network or server
-- **Dependencies**: the local tier, by default `spotbugsMain`, `jacocoTestReport`, `jacocoTestCoverageVerification`
+- **Dependencies**: the local tier, by default `spotbugsMain`, `detekt` (Kotlin projects), `jacocoTestReport`, `jacocoTestCoverageVerification`
 - **Use Case**: Every build; `check` (and so `build`) depends on it
 - **Reports Generated**:
     - JaCoCo coverage: `build/reports/jacoco/test/html/index.html`
-    - SpotBugs: `build/reports/spotbugs/main.html`
+    - SpotBugs: `build/reports/spotbugs/spotbugsMain.html`
+    - detekt: `build/reports/detekt/detekt.html` (also SARIF and checkstyle XML)
 
 #### `fullAnalysis`
 🔒 Complete security + quality analysis for CI/CD
@@ -331,6 +333,33 @@ that default and customize it, run `./gradlew armorScaffoldConfigs`: it writes
 files), which you then point `excludeFile` and `owaspSuppressionFile` at.
 
 
+#### detekt (Kotlin)
+```kotlin
+codeArmor {
+    detekt = true                             // On by default in projects that apply the Kotlin JVM plugin
+}
+```
+[detekt](https://detekt.dev) is the Kotlin static analyser. In projects that apply the Kotlin JVM plugin,
+CodeArmor applies detekt 2.0.0-alpha.6 and adds its `detekt` task to the local tier, so `./gradlew build`
+fails on its findings. Java projects are left alone.
+
+- **Adopting it:** `./gradlew detektBaseline` records the findings already in the code in
+  `detekt-baseline.xml`. detekt then reports only new ones. Commit the baseline and shrink it over time.
+- **Rules:** put overrides in `config/detekt/detekt.yml`. It only needs the rules you change; detekt's defaults
+  apply to everything else.
+- **Reports:** HTML, SARIF (for GitHub code scanning) and checkstyle XML in `build/reports/detekt/`.
+  SonarQube imports the XML.
+- **Kotlin version:** detekt parses with its own Kotlin compiler, 2.4. In a project on a newer Kotlin release,
+  CodeArmor leaves detekt off and says so, rather than fail on syntax detekt cannot read.
+- **detekt 1.x:** a project that applies `io.gitlab.arturbosch.detekt` itself keeps it, and its `detekt`
+  task joins the local tier instead.
+- **The Kotlin plugin's classes:** detekt needs them, so declare the Kotlin plugin in the build script that
+  applies CodeArmor, or in a parent one. In a multi-module build that applies CodeArmor at the root, use
+  `kotlin("jvm") version "…" apply false` there. Otherwise CodeArmor leaves detekt off and explains why.
+
+> ℹ️ detekt 2.0 is still an alpha, but it is the only release that reads current Kotlin: detekt 1.23 stops at
+> Kotlin 2.0. `detekt = false` switches it off.
+
 #### OWASP Dependency Check
 ```kotlin
 codeArmor {
@@ -416,7 +445,7 @@ codeArmor {
     checks {
         prePush = listOf("quickBuild")                     // basic: run by the pre-push hook
         build = listOf(                                    // local: run by codeQuality and build
-            "spotbugsMain", "jacocoTestReport", "jacocoTestCoverageVerification",
+            "spotbugsMain", "detekt", "jacocoTestReport", "jacocoTestCoverageVerification",
         )
         ci = listOf("dependencyCheckAnalyze", "sonar")     // network/server: added by fullAnalysis
     }
