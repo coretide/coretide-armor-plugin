@@ -2,7 +2,7 @@
 
 [![Status](https://img.shields.io/badge/status-alpha-orange?style=flat-square)]()
 [![Latest Release](https://img.shields.io/github/v/release/coretide/coretide-armor-plugin?include_prereleases&style=flat-square&logo=github)](https://github.com/coretide/coretide-armor-plugin/releases)
-[![Version](https://img.shields.io/badge/version-0.3.0--alpha-blue?style=flat-square)](https://github.com/coretide/coretide-armor-plugin)
+[![Version](https://img.shields.io/badge/version-0.4.0--alpha-blue?style=flat-square)](https://github.com/coretide/coretide-armor-plugin)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/dev.coretide.plugin.armor?style=flat-square&logo=gradle)](https://plugins.gradle.org/plugin/dev.coretide.plugin.armor)
 [![Maven Central](https://img.shields.io/maven-central/v/dev.coretide.plugin/code-armor-plugin?style=flat-square&logo=apache-maven)](https://central.sonatype.com/artifact/dev.coretide.plugin/code-armor-plugin)
@@ -10,7 +10,7 @@
 
 > **Comprehensive code quality and security plugin for Java/Kotlin projects**
 
-> ⚠️ **Status:** Alpha — This plugin is under active development (version: 0.3.0-alpha). Expect breaking changes and frequent updates until 1.0.0.
+> ⚠️ **Status:** Alpha — This plugin is under active development (version: 0.4.0-alpha). Expect breaking changes and frequent updates until 1.0.0.
 
 CodeArmor is a powerful Gradle plugin that integrates multiple code quality and security tools into a unified, easy-to-use solution. It provides automated project detection, intelligent configuration, and optimized development workflows for both single-module and multi-module projects.
 
@@ -74,21 +74,20 @@ Starting with version 0.1.4-alpha, CodeArmor no longer includes Spotless or Chec
 
 ---
 
-## 🆕 What's New in 0.3.0-alpha
+## 🆕 What's New in 0.4.0-alpha
 
-- 🧪 **Tests**: flaky tests retried on CI and named, the slowest tests listed; Kover and PIT mutation testing on
-  request.
-- 🔍 **Analysis**: detekt for Kotlin, and on request strict compilation, Error Prone with NullAway, and ArchUnit
-  architecture tests.
-- 📦 **Dependencies**: newer versions, a CycloneDX SBOM and a licence report on CI; unused dependencies on request.
-- 🔌 **Libraries**: binary compatibility with your last release, and Kotlin ABI dumps, on request.
-- 🪝 **Hooks**: Conventional Commits and gitleaks secret scanning, on request.
-- 📋 **Reports**: one summary page after every build, SARIF gathered for GitHub code scanning, and a workflow to
-  start from.
+- 🛡️ **`armorInfo`**: what CodeArmor checks in a project, with each tool's version, and what needs attention.
+- 📐 **Diff coverage**: every build reports how much of the lines changed since the base branch tests cover; a
+  minimum on request.
+- 🐛 **Adopting checks**: a SpotBugs baseline accepts the findings already there, and detekt can run with type
+  resolution.
+- 🧪 **Integration tests**: an `integrationTest` suite on request, in `build` and in coverage.
+- 🔑 **CI**: gitleaks over the history, the summary on the GitHub Actions run page, and a scaffolded workflow that
+  submits the dependency graph, with Dependabot.
+- 🔧 **Tool versions**: run a newer or older JaCoCo, PIT, Error Prone, NullAway or ArchUnit than the default.
 
-Some defaults change what `./gradlew build` does, notably narrower coverage exclusions and detekt in Kotlin
-projects. See the [changelog](CHANGELOG.md) for everything, including
-[upgrading from 0.2.x](CHANGELOG.md#upgrading-from-02x).
+SonarQube now runs only once a server or token is configured, and `SONAR_TOKEN` finally works. See the
+[changelog](CHANGELOG.md) for everything, including [upgrading from 0.3.x](CHANGELOG.md#upgrading-from-03x).
 
 ---
 
@@ -104,7 +103,7 @@ projects. See the [changelog](CHANGELOG.md) for everything, including
 Add the plugin to your `build.gradle.kts`:
 ```kotlin
 plugins {
-  id("dev.coretide.plugin.armor") version "0.3.0-alpha"
+  id("dev.coretide.plugin.armor") version "0.4.0-alpha"
 }
 ```
 
@@ -133,12 +132,14 @@ codeArmor {
     spotbugs = true
     detekt = true                             // Kotlin projects only
     owasp = true
-    sonarqube = true
+    sonarqube = true                          // In fullAnalysis once a server or token is configured
     veracode = false
     
     // Coverage and tests
     coverageMinimum = 0.80
     coverageClassMinimum = 0.75
+    diffCoverage = true                       // Coverage of the lines changed since the base branch
+    diffCoverageMinimum = null                // Set to fail below it
     flakyTestRetries = 2                      // On CI only
     
     // Dependency health, in fullAnalysis
@@ -148,6 +149,8 @@ codeArmor {
     
     // Opt-in extras
     kover = false                             // Kover instead of JaCoCo, in Kotlin projects
+    integrationTests = false                  // An integrationTest suite, in build
+    detektTypeResolution = false              // detektMain instead of detekt
     mutationTesting = false                   // ./gradlew pitest
     strictCompilation = false                 // Warnings fail the build
     errorProne = false                        // Error Prone on Java sources
@@ -157,7 +160,7 @@ codeArmor {
     apiBaseline = null                        // A release to check binary compatibility against
     kotlinAbiValidation = false               // Kotlin ABI dumps
     conventionalCommits = false               // commit-msg hook
-    secretScan = false                        // gitleaks pre-commit hook
+    secretScan = false                        // gitleaks pre-commit hook, and a history scan in fullAnalysis
     
     // Git integration
     enableGitHooks = true                     // registers armorInstallGitHooks / armorUninstallGitHooks
@@ -172,6 +175,11 @@ codeArmor {
     // Code::Stats reporting, off by default
     codeStats {
         enabled = true
+    }
+    
+    // Another version of a tool than the default
+    toolVersions {
+        jacoco = "0.8.15"
     }
     
     // Resource processing
