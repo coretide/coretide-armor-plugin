@@ -13,6 +13,11 @@ package dev.coretide.plugin.armor
 import dev.coretide.plugin.armor.config.ChecksConfig
 import dev.coretide.plugin.armor.config.CodeStatsConfig
 import dev.coretide.plugin.armor.config.SpotBugsConfig
+import dev.coretide.plugin.armor.config.ToolVersionsConfig
+import dev.coretide.plugin.armor.configurator.ArchitectureTestsConfigurator
+import dev.coretide.plugin.armor.configurator.ErrorProneConfigurator
+import dev.coretide.plugin.armor.configurator.JacocoConfigurator
+import dev.coretide.plugin.armor.configurator.MutationTestingConfigurator
 import dev.coretide.plugin.armor.enumeration.ArmorLogLevel
 import dev.coretide.plugin.armor.enumeration.CodeStatsScope
 import org.gradle.api.Action
@@ -34,6 +39,13 @@ open class CodeArmorExtension
          * (`./gradlew detektBaseline`).
          */
         var detekt: Boolean = true
+
+        /**
+         * detekt with type resolution: `detektMain`, which analyses the main sources against their compile
+         * classpath, takes `detekt`'s place in the build tier. Rules that need types then run too; it is slower.
+         * Its baseline is `detekt-baseline-main.xml`, written by `./gradlew detektBaselineMain`. Opt-in.
+         */
+        var detektTypeResolution: Boolean = false
         var owasp: Boolean = true
         var veracode: Boolean = false
         var sonarqube: Boolean = true
@@ -216,6 +228,16 @@ open class CodeArmorExtension
                 scope.convention(CodeStatsScope.REPO)
             }
 
+        /** Overrides for the versions of the tools CodeArmor runs; see [ToolVersionsConfig]. */
+        val toolVersions: ToolVersionsConfig =
+            objects.newInstance(ToolVersionsConfig::class.java).apply {
+                jacoco.convention(JacocoConfigurator.TOOL_VERSION)
+                pitest.convention(MutationTestingConfigurator.PITEST_VERSION)
+                errorProne.convention(ErrorProneConfigurator.ERROR_PRONE_VERSION)
+                nullAway.convention(ErrorProneConfigurator.NULLAWAY_VERSION)
+                archUnit.convention(ArchitectureTestsConfigurator.ARCHUNIT_VERSION)
+            }
+
         /** An [Action], not a Kotlin lambda, so the block also works in Groovy build scripts. */
         @Suppress("unused")
         fun spotbugs(action: Action<SpotBugsConfig>) {
@@ -230,5 +252,10 @@ open class CodeArmorExtension
         @Suppress("unused")
         fun codeStats(action: Action<CodeStatsConfig>) {
             action.execute(codeStats)
+        }
+
+        @Suppress("unused")
+        fun toolVersions(action: Action<ToolVersionsConfig>) {
+            action.execute(toolVersions)
         }
     }

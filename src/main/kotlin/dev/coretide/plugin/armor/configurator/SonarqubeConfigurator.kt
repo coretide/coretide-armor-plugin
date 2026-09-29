@@ -104,7 +104,7 @@ object SonarqubeConfigurator {
                         SpotbugsConfigurator.reportFile(project, "spotbugsMain", "xml").absolutePath,
                     )
                 }
-                DetektConfigurator.checkstyleReport(project)?.let { report ->
+                DetektConfigurator.checkstyleReport(project, extension)?.let { report ->
                     sonarProperties.property("sonar.kotlin.detekt.reportPaths", report.absolutePath)
                 }
                 if (extension.owasp) {

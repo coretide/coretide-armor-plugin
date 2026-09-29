@@ -63,7 +63,7 @@ object TaskCreator {
         buildList {
             if (extension.integrationTests) add(IntegrationTestsConfigurator.TASK_NAME)
             if (extension.spotbugs) add("spotbugsMain")
-            if (extension.detekt) add(DetektConfigurator.TASK_NAME)
+            if (extension.detekt) add(DetektConfigurator.taskName(extension))
             // With kover = true, Kotlin projects run Kover's tasks and Java-only projects JaCoCo's; each project
             // leaves out the ones it does not have.
             if (extension.kover) addAll(KoverConfigurator.BUILD_TIER_TASKS)
@@ -82,6 +82,7 @@ object TaskCreator {
     private val OPTIONAL_DEFAULT_TASKS =
         setOf(
             DetektConfigurator.TASK_NAME,
+            DetektConfigurator.TYPE_RESOLUTION_TASK,
             ApiCompatibilityConfigurator.KOTLIN_ABI_CHECK_TASK,
             DiffCoverageTask.TASK_NAME,
             IntegrationTestsConfigurator.TASK_NAME,

@@ -11,13 +11,9 @@
 package dev.coretide.plugin.armor.task
 
 import dev.coretide.plugin.armor.CodeArmorExtension
-import dev.coretide.plugin.armor.configurator.ArchitectureTestsConfigurator
 import dev.coretide.plugin.armor.configurator.DetektConfigurator
 import dev.coretide.plugin.armor.configurator.DiffCoverageConfigurator
-import dev.coretide.plugin.armor.configurator.ErrorProneConfigurator
-import dev.coretide.plugin.armor.configurator.JacocoConfigurator
 import dev.coretide.plugin.armor.configurator.KoverConfigurator
-import dev.coretide.plugin.armor.configurator.MutationTestingConfigurator
 import dev.coretide.plugin.armor.configurator.OwaspConfigurator
 import dev.coretide.plugin.armor.configurator.SonarqubeConfigurator
 import dev.coretide.plugin.armor.git.GitHooksManager
@@ -236,7 +232,8 @@ abstract class ArmorInfoTask : DefaultTask() {
             val minimum = percent(extension.coverageMinimum)
             val classMinimum = percent(extension.coverageClassMinimum)
             // JaCoCo's overall rule counts instructions, its default; the per-class rule and Kover's count lines.
-            val jacoco = "JaCoCo ${JacocoConfigurator.TOOL_VERSION}: at least $minimum of instructions, $classMinimum of lines per class"
+            val versions = extension.toolVersions
+            val jacoco = "JaCoCo ${versions.jacoco.get()}: at least $minimum of instructions, $classMinimum of lines per class"
 
             if (extension.spotbugs) {
                 val baseline = project.file(extension.spotbugsConfig.baselineFile).takeIf { it.isFile }
@@ -259,25 +256,25 @@ abstract class ArmorInfoTask : DefaultTask() {
             }
             when {
                 !extension.detekt -> plainOff += "detekt"
-                kotlin -> on += "detekt ${DetektConfigurator.DETEKT_VERSION}"
+                kotlin -> on += "detekt ${DetektConfigurator.DETEKT_VERSION}" + if (extension.detektTypeResolution) ", with type resolution (detektMain)" else ""
                 else -> off += "detekt: no Kotlin here"
             }
             if (extension.errorProne || extension.nullAway) {
-                on += "Error Prone ${ErrorProneConfigurator.ERROR_PRONE_VERSION}" +
-                    if (extension.nullAway) ", with NullAway ${ErrorProneConfigurator.NULLAWAY_VERSION}" else ""
+                on += "Error Prone ${versions.errorProne.get()}" +
+                    if (extension.nullAway) ", with NullAway ${versions.nullAway.get()}" else ""
             } else {
                 plainOff += "Error Prone"
             }
             if (extension.integrationTests) on += "Integration tests: src/integrationTest, in build" else plainOff += "integration tests"
             if (extension.strictCompilation) on += "Strict compilation: warnings fail the build" else plainOff += "strict compilation"
             if (extension.mutationTesting) {
-                on += "Mutation testing with PIT ${MutationTestingConfigurator.PITEST_VERSION}" +
+                on += "Mutation testing with PIT ${versions.pitest.get()}" +
                     if (extension.mutationThreshold > 0) ": at least ${extension.mutationThreshold}% of mutations killed" else ""
             } else {
                 plainOff += "mutation testing"
             }
             if (extension.architectureTests) {
-                on += "Architecture tests with ArchUnit ${ArchitectureTestsConfigurator.ARCHUNIT_VERSION}"
+                on += "Architecture tests with ArchUnit ${versions.archUnit.get()}"
             } else {
                 plainOff += "architecture tests"
             }

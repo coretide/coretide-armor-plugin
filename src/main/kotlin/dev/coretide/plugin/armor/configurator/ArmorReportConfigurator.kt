@@ -29,6 +29,7 @@ object ArmorReportConfigurator {
             "testCodeCoverageReport",
             DiffCoverageTask.TASK_NAME,
             DetektConfigurator.TASK_NAME,
+            DetektConfigurator.TYPE_RESOLUTION_TASK,
             MutationTestingConfigurator.TASK_NAME,
             "dependencyCheckAnalyze",
             DependencyHealthConfigurator.UPDATES_TASK,

@@ -47,7 +47,7 @@ object ErrorProneConfigurator {
         if (!extension.errorProne && !extension.nullAway) return
         project.plugins.withType(JavaPlugin::class.java) {
             project.pluginManager.apply(PLUGIN_ID)
-            addDependencies(project, extension.nullAway)
+            addDependencies(project, extension)
             val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
             val mainSources = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).java.srcDirs
             val nullAwayOptions = project.provider { nullAwayOptions(SourcePackages.roots(SourcePackages.declaredIn(mainSources))) }
@@ -59,7 +59,8 @@ object ErrorProneConfigurator {
                 }
             }
             LogUtil.verbose(
-                "🐞 Error Prone $ERROR_PRONE_VERSION configured" + if (extension.nullAway) " with NullAway $NULLAWAY_VERSION" else "",
+                "🐞 Error Prone ${extension.toolVersions.errorProne.get()} configured" +
+                    if (extension.nullAway) " with NullAway ${extension.toolVersions.nullAway.get()}" else "",
             )
         }
     }
@@ -70,7 +71,7 @@ object ErrorProneConfigurator {
      */
     private fun addDependencies(
         project: Project,
-        nullAway: Boolean,
+        extension: CodeArmorExtension,
     ) {
         val toolchain = project.extensions.getByType(JavaPluginExtension::class.java).toolchain
         val supported =
@@ -81,8 +82,8 @@ object ErrorProneConfigurator {
                 .orElse(true)
         val dependencies =
             listOfNotNull(
-                "com.google.errorprone:error_prone_core:$ERROR_PRONE_VERSION",
-                "com.uber.nullaway:nullaway:$NULLAWAY_VERSION".takeIf { nullAway },
+                "com.google.errorprone:error_prone_core:${extension.toolVersions.errorProne.get()}",
+                "com.uber.nullaway:nullaway:${extension.toolVersions.nullAway.get()}".takeIf { extension.nullAway },
             ).map { project.dependencies.create(it) }
         project.configurations.named(CONFIGURATION) { configuration ->
             configuration.dependencies.addAllLater(supported.map { if (it) dependencies else emptyList() })

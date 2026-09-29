@@ -15,6 +15,12 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   default, SonarQube Cloud. A local server needs `sonarHostUrl = "http://localhost:9000"`.
 
 ### Added
+- **Tool versions.** `toolVersions { jacoco; pitest; errorProne; nullAway; archUnit }` runs another version of a
+  tool than the one CodeArmor was tested with, such as a newer release with a fix. SpotBugs keeps its own
+  `spotbugs { toolVersion }`.
+- **detekt with type resolution.** `detektTypeResolution = true` runs `detektMain` in place of `detekt`: the main
+  sources against their compile classpath, so the rules that need types run too. Its baseline is
+  `detekt-baseline-main.xml`, from `./gradlew detektBaselineMain`.
 - **Integration tests.** `integrationTests = true` adds an `integrationTest` source set and task, run by `build`
   after the unit tests, with the unit tests' libraries and runner. Their coverage counts, and the summary has a line
   for them.

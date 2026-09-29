@@ -238,10 +238,11 @@ the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
   CI, the slow-test list, Kover and PIT
 - **Multi-module reports** (`MultiModuleReportsTest`): the combined coverage and test reports, including a
   root without repositories and a module without the Java plugin
-- **detekt** (`DetektTest`, `DetektVersionTest`): the build tier, baselines, detekt 1.x projects, and the
+- **detekt** (`DetektTest`, `DetektVersionTest`): the build tier, baselines, type resolution, detekt 1.x projects, and the
   Kotlin version guard, whose constants must match the bundled detekt plugin
 - **OWASP settings and the Groovy DSL** (`OwaspTest`, `GroovyDslTest`): what OWASP scans and how it is configured,
   and the `codeArmor` block in a Groovy build script
+- **Tool versions** (`ToolVersionsTest`): each tool's version from `toolVersions`, and the defaults without it
 - **Integration tests** (`IntegrationTestsTest`): the suite in `build`, its coverage alone passing coverage
   verification, a failure failing the build, and no suite when it is off
 - **Secret scanning in CI** (`SecretScanTest`): a stand-in gitleaks, a clean history with its SARIF gathered, a

@@ -47,7 +47,7 @@ object JacocoConfigurator {
     ) {
         project.pluginManager.apply("jacoco")
         project.configure<JacocoPluginExtension> {
-            toolVersion = TOOL_VERSION
+            toolVersion = extension.toolVersions.jacoco.get()
         }
         project.afterEvaluate {
             // The JaCoCo plugin only creates its report tasks alongside the Java plugin; looking them
