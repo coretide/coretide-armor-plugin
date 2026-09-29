@@ -242,16 +242,18 @@ the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
   Kotlin version guard, whose constants must match the bundled detekt plugin
 - **OWASP settings and the Groovy DSL** (`OwaspTest`, `GroovyDslTest`): what OWASP scans and how it is configured,
   and the `codeArmor` block in a Groovy build script
+- **Secret scanning in CI** (`SecretScanTest`): a stand-in gitleaks, a clean history with its SARIF gathered, a
+  secret, a missing gitleaks, and the scan in `fullAnalysis`, once for a multi-module build
 - **SpotBugs baseline** (`SpotbugsBaselineTest`): accepting the findings there, moved lines, a new finding failing,
   rewriting the baseline, all with the configuration cache
 - **Diff coverage** (`DiffCoverageTest`): a feature branch against its base with JaCoCo and Kover, the minimum,
   the diff parser (renames, deletions, quoted names) and matching report entries to changed files
 - **Coverage exclusions** (`CoverageExclusionsTest`): the narrow defaults, a build's own exclusions, and the
   changelog's snippet that brings back the pre-0.3.0 list
-- **Summary page and architecture tests** (`ArmorReportTest`): the page and console summary, each report parser,
+- **Summary page and architecture tests** (`ArmorReportTest`): the page, console and job summary, each report parser,
   and the ArchUnit scaffold failing on a violation
 - **Code scanning and scaffolding** (`SarifAndScaffoldTest`): SARIF gathered with a category per run, in single
-  and multi-module builds, and the `.editorconfig` and workflow `armorScaffoldProject` writes
+  and multi-module builds, and the `.editorconfig`, workflow and Dependabot configuration `armorScaffoldProject` writes
 - **Library API checks** (`ApiCompatibilityTest`): japicmp against a published baseline, and the Kotlin ABI dump
 - **Dependency health** (`DependencyHealthTest`, `SbomLicensesTest`): dependency updates, the SBOM and licence
   report, forbidden licences, and the dependency analysis

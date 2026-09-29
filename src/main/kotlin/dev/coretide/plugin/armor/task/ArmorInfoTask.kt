@@ -108,7 +108,7 @@ abstract class ArmorInfoTask : DefaultTask() {
         if (findExecutable(command, System.getenv("PATH").orEmpty()) != null) return emptyList()
         return listOf(
             "secretScan is on, but gitleaks is not installed, so the pre-commit hook lets commits through " +
-                "unscanned. Install it: https://github.com/gitleaks/gitleaks#installing",
+                "unscanned, and armorSecretScan fails. Install it: https://github.com/gitleaks/gitleaks#installing",
         )
     }
 
@@ -149,8 +149,8 @@ abstract class ArmorInfoTask : DefaultTask() {
                 if (repository && extension.enableGitHooks) {
                     task.gitRootDirectory.set(project.rootDir)
                     task.expectedHooks.set(project.provider { expectedHooks(extension) })
-                    task.secretScan.set(project.provider { extension.secretScan })
                 }
+                if (repository) task.secretScan.set(project.provider { extension.secretScan })
             }
         }
 
@@ -209,6 +209,7 @@ abstract class ArmorInfoTask : DefaultTask() {
                 } else {
                     plainOff += "git hooks"
                 }
+                if (extension.secretScan) on += "Secret scan with gitleaks: the history, in fullAnalysis (armorSecretScan)"
             }
             if (on.isNotEmpty() || off.isNotEmpty() || plainOff.isNotEmpty()) {
                 lines += ""

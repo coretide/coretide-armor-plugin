@@ -183,12 +183,15 @@ object ArmorTestFixture {
             .withEnvironment(environment(set, unset))
             .buildAndFail()
 
-    /** This JVM's environment, less [unset], plus [set]. Names are case-insensitive on Windows. */
+    /**
+     * This JVM's environment, less [unset], plus [set]. Names are case-insensitive on Windows. The GitHub Actions
+     * job summary is left out unless a test sets it: on CI, every fixture build would add its summary to the run's.
+     */
     private fun environment(
         set: Map<String, String>,
         unset: Set<String>,
     ): Map<String, String> {
-        val replaced = unset + set.keys
+        val replaced = unset + set.keys + "GITHUB_STEP_SUMMARY"
         return System.getenv().filterKeys { name -> replaced.none { it.equals(name, ignoreCase = isWindows) } } + set
     }
 
@@ -292,6 +295,7 @@ object ArmorTestFixture {
             .withProjectDir(dir)
             .withPluginClasspath()
             .withArguments(*args, "--stacktrace")
+            .withEnvironment(environment(emptyMap(), emptySet()))
             .forwardOutput()
 
     private fun writeSettings(
