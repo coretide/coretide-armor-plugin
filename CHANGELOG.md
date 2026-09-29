@@ -15,6 +15,10 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   default, SonarQube Cloud. A local server needs `sonarHostUrl = "http://localhost:9000"`.
 
 ### Added
+- **SpotBugs baseline.** `./gradlew armorSpotbugsBaseline` writes the findings already in the code to
+  `config/spotbugs/baseline.xml`, and from then on `spotbugsMain` fails on new findings only. SpotBugs matches a
+  finding by a hash that ignores line numbers, so edits around it keep it accepted. `spotbugs { baselineFile }`
+  moves the file.
 - **Diff coverage.** `armorDiffCoverage`, in the build tier, measures the share of the lines changed since the base
   branch that tests run, from the JaCoCo or Kover report, and names the untested ones. It also appears in the
   summary. It only reports until `diffCoverageMinimum` is set. The base branch is the pull request's target on

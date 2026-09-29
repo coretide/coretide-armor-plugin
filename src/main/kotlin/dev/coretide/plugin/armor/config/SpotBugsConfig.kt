@@ -18,6 +18,12 @@ open class SpotBugsConfig {
     var showStackTraces: Boolean = true
     var showProgress: Boolean = true
     var excludeFile: String? = null
+
+    /**
+     * The findings already in the code, which `spotbugsMain` leaves out: written by `armorSpotbugsBaseline`, and
+     * meant to be committed. Used when the file exists.
+     */
+    var baselineFile: String = "config/spotbugs/baseline.xml"
     var includeFile: String? = null
     var xmlReports: Boolean = true
     var htmlReports: Boolean = true

@@ -17,10 +17,12 @@ import com.github.spotbugs.snom.SpotBugsTask
 import dev.coretide.plugin.armor.CodeArmorExtension
 import dev.coretide.plugin.armor.config.SpotBugsConfig
 import dev.coretide.plugin.armor.task.GenerateConfigFileTask
+import dev.coretide.plugin.armor.task.SpotbugsBaselineTask
 import dev.coretide.plugin.armor.util.FileUtil
 import dev.coretide.plugin.armor.util.LogUtil
 import org.gradle.api.Project
 import org.gradle.api.file.RegularFile
+import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.configure
 import java.io.File
@@ -69,11 +71,29 @@ object SpotbugsConfigurator {
                 LogUtil.verbose("   • Bug categories: ${config.bugCategories.joinToString(", ")}")
             }
         }
+        val baseline = project.file(config.baselineFile)
+        // Writing the baseline needs every finding: none may fail the build, or be left out by the old baseline.
+        val writingBaseline = project.gradle.startParameter.taskNames.any { it.substringAfterLast(':') == SpotbugsBaselineTask.TASK_NAME }
         project.tasks.withType(SpotBugsTask::class.java).configureEach { task ->
-            configureSpotBugsTask(task, project, config)
+            val main = task.name == MAIN_TASK
+            configureSpotBugsTask(task, project, config, xml = config.xmlReports || (main && writingBaseline))
+            if (main && writingBaseline) {
+                task.ignoreFailures = true
+            } else if (main) {
+                task.baselineFile.set(project.layout.file(project.provider { baseline.takeIf { it.isFile } }))
+            }
+        }
+        project.plugins.withType(JavaPlugin::class.java) {
+            project.tasks.register(SpotbugsBaselineTask.TASK_NAME, SpotbugsBaselineTask::class.java) { task ->
+                task.dependsOn(MAIN_TASK)
+                task.report.set(reportFile(project, MAIN_TASK, "xml"))
+                task.baseline.set(baseline)
+            }
         }
         LogUtil.verbose("✅ SpotBugs configured with version ${config.toolVersion}")
     }
+
+    const val MAIN_TASK = "spotbugsMain"
 
     /**
      * A user-supplied exclude file wins; otherwise armor generates its default under `build/`.
@@ -119,9 +139,10 @@ object SpotbugsConfigurator {
         task: SpotBugsTask,
         project: Project,
         config: SpotBugsConfig,
+        xml: Boolean,
     ) {
         task.reports { reports ->
-            if (config.xmlReports) {
+            if (xml) {
                 reports.create("xml") { report ->
                     report.required.set(true)
                     report.outputLocation.set(reportFile(project, task.name, "xml"))

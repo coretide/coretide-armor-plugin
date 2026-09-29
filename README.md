@@ -450,9 +450,20 @@ codeArmor {
         effort = "MAX"                        // MIN, DEFAULT, MAX
         reportLevel = "HIGH"                  // LOW, MEDIUM, HIGH
         excludeFile = "config/spotbugs/spotbugs-exclude.xml"
+        baselineFile = "config/spotbugs/baseline.xml"   // The default; used when it exists
     }
 }
 ```
+
+To adopt SpotBugs in existing code, accept the findings already there, and fail only on new ones:
+
+```shell script
+./gradlew armorSpotbugsBaseline   # Writes config/spotbugs/baseline.xml; commit it
+```
+
+`spotbugsMain` then leaves out the findings in the baseline, from its reports as well as from failing the build.
+SpotBugs matches them by a hash of the bug pattern, class, method and names, not by line, so edits around a
+finding keep it accepted. Run the task again to accept what is there now; delete the file to see every finding.
 
 Without `excludeFile`, CodeArmor generates a default filter under `build/codearmor/`. To start from
 that default and customize it, run `./gradlew armorScaffoldConfigs`: it writes
