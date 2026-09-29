@@ -237,7 +237,13 @@ abstract class ArmorInfoTask : DefaultTask() {
             // JaCoCo's overall rule counts instructions, its default; the per-class rule and Kover's count lines.
             val jacoco = "JaCoCo ${JacocoConfigurator.TOOL_VERSION}: at least $minimum of instructions, $classMinimum of lines per class"
 
-            if (extension.spotbugs) on += "SpotBugs ${extension.spotbugsConfig.toolVersion}" else plainOff += "SpotBugs"
+            if (extension.spotbugs) {
+                val baseline = project.file(extension.spotbugsConfig.baselineFile).takeIf { it.isFile }
+                on += "SpotBugs ${extension.spotbugsConfig.toolVersion}" +
+                    (baseline?.let { ", with a baseline of ${SpotbugsBaselineTask.count(it)} accepted findings" } ?: "")
+            } else {
+                plainOff += "SpotBugs"
+            }
             when {
                 KoverConfigurator.usesKover(project, extension) -> on += "Kover: at least $minimum of lines, $classMinimum per class"
                 extension.kover -> on += "$jacoco (kover = true, but no Kotlin here)"
