@@ -10,8 +10,12 @@
 
 package dev.coretide.plugin.armor
 
+import dev.coretide.plugin.armor.util.FileUtil
 import java.io.File
 import kotlin.test.assertContains
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import org.owasp.dependencycheck.xml.suppression.SuppressionParser
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
@@ -30,6 +34,8 @@ class OwaspTest {
                     "RETIREJS " + check.analyzers.retirejs.enabled.get(),
                     "NVD_KEY " + check.nvd.apiKey.orNull,
                     "NVD_DELAY " + check.nvd.delay.get(),
+                    "AUTO_UPDATE " + check.autoUpdate.get(),
+                    "SUPPRESSION " + check.suppressionFile.orNull,
                     "SYSTEM_CENTRAL " + System.getProperty("analyzer.central.enabled"),
                     "SYSTEM_NVD_KEY " + System.getProperty("nvd.api.key"),
                 )
@@ -59,5 +65,52 @@ class OwaspTest {
         // System properties outlive the build in the Gradle daemon and are shared by every project.
         assertContains(output, "OWASP SYSTEM_CENTRAL null")
         assertContains(output, "OWASP SYSTEM_NVD_KEY null")
+    }
+
+    @Test
+    fun `the scan starts with the default suppressions`(
+        @TempDir dir: File,
+    ) {
+        // Offline: the test downloads no NVD data, so the analysis itself then fails for want of it. What matters is
+        // that it starts; until 0.4.0 it failed at once, reading a default suppression file from a task that had not run.
+        ArmorTestFixture.writeProject(dir, armorConfig = "    owaspAutoUpdate = false")
+
+        val output = ArmorTestFixture.runWhateverTheOutcome(dir, "dependencyCheckAnalyze").output
+
+        assertContains(output, "analyzing dependencies for vulnerabilities")
+        assertFalse(output.contains("property 'suppressionFile'"), output)
+    }
+
+    @Test
+    fun `CodeArmor suppresses nothing itself, passes the build's own suppressions on, and downloads the NVD data`(
+        @TempDir unset: File,
+        @TempDir configured: File,
+    ) {
+        ArmorTestFixture.writeProject(unset, extraScript = printOwasp)
+        ArmorTestFixture.writeProject(configured, armorConfig = "    owaspSuppressionFile = \"config/owasp/suppressions.xml\"", extraScript = printOwasp)
+        configured.resolve("config/owasp").mkdirs()
+        configured.resolve("config/owasp/suppressions.xml").writeText(FileUtil.defaultOwaspSuppressionContent())
+
+        val none = ArmorTestFixture.run(unset, "printOwasp").output
+        val own = ArmorTestFixture.run(configured, "printOwasp").output
+
+        assertContains(none, "OWASP SUPPRESSION null")
+        // Without it, a scan fails wherever there is no NVD data yet, as on a fresh CI runner.
+        assertContains(none, "OWASP AUTO_UPDATE true")
+        // As files: Gradle may name the project directory by another path to the same place, as macOS's /private/var.
+        val passed = own.lines().first { it.startsWith("OWASP SUPPRESSION ") }.removePrefix("OWASP SUPPRESSION ")
+        assertEquals(configured.resolve("config/owasp/suppressions.xml").canonicalFile, File(passed).canonicalFile)
+    }
+
+    @Test
+    fun `the suppression file armorScaffoldConfigs writes suppresses nothing, and dependency-check accepts it`(
+        @TempDir dir: File,
+    ) {
+        ArmorTestFixture.writeProject(dir)
+
+        ArmorTestFixture.run(dir, "armorScaffoldConfigs")
+
+        // dependency-check's own parser, which validates against its schema.
+        assertEquals(emptyList(), SuppressionParser().parseSuppressionRules(dir.resolve("config/owasp/suppressions.xml")))
     }
 }

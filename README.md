@@ -86,8 +86,9 @@ Starting with version 0.1.4-alpha, CodeArmor no longer includes Spotless or Chec
   submits the dependency graph, with Dependabot.
 - 🔧 **Tool versions**: run a newer or older JaCoCo, PIT, Error Prone, NullAway or ArchUnit than the default.
 
-SonarQube now runs only once a server or token is configured, and `SONAR_TOKEN` finally works. The default
-SpotBugs filter no longer skips classes that merely have `Test` or `Config` in their names. See the
+OWASP Dependency Check now runs with the default settings. SonarQube runs only once a server or token is configured,
+and `SONAR_TOKEN` finally works. The default SpotBugs filter no longer skips classes that merely have `Test` or
+`Config` in their names. See the
 [changelog](CHANGELOG.md) for everything, including [upgrading from 0.3.x](CHANGELOG.md#upgrading-from-03x).
 
 ---
@@ -542,8 +543,8 @@ fails on its findings. Java projects are left alone.
 codeArmor {
     owasp = true
     owaspFailBuildOnCVSS = 9.0               // Fail build on CVSS score
-    owaspSuppressionFile = "config/owasp/suppressions.xml"
-    owaspAutoUpdate = false                   // Auto-update vulnerability database
+    owaspSuppressionFile = "config/owasp/suppressions.xml"   // Optional: CodeArmor suppresses nothing itself
+    owaspAutoUpdate = true                    // Download the NVD data when missing or older than owaspNvdValidForHours
     owaspNvdApiKey = "your-nvd-api-key"      // NVD API key for faster updates
     owaspNvdApiDelay = 4000                  // Delay between API calls (ms)
     owaspNvdMaxRetryCount = 10               // Max retry attempts
@@ -552,6 +553,11 @@ codeArmor {
 ```
 It scans `runtimeClasspath`, what ships, and not the configurations of CodeArmor's own tools. The NVD API key comes
 from `owaspNvdApiKey`, the `nvd.api.key` Gradle property, or the `NVD_API_KEY` environment variable.
+
+The first scan on a machine downloads the NVD data, which takes long without an API key; later scans refresh it once
+`owaspNvdValidForHours` have passed. CodeArmor suppresses no findings itself. To suppress one you have checked, run
+`./gradlew armorScaffoldConfigs` for a starting file, add a narrow rule (one package and one CVE, with a note), and
+point `owaspSuppressionFile` at it.
 
 #### Dependency Health
 ```kotlin

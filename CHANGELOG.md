@@ -7,11 +7,15 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
 
 A release about adopting CodeArmor in existing code and running it on CI: `armorInfo` shows what it checks and
 what needs attention, diff coverage measures what a pull request adds, a SpotBugs baseline accepts the findings
-already there, and gitleaks, the job summary and the dependency graph join the CI side. It also fixes SonarQube
-ignoring `SONAR_TOKEN` and OWASP scanning CodeArmor's own tools, and stops the default SpotBugs filter from skipping
-classes that merely have `Test` or `Config` in their names. Read [Upgrading from 0.3.x](#upgrading-from-03x) first.
+already there, and gitleaks, the job summary and the dependency graph join the CI side. It also fixes OWASP
+Dependency Check, which failed before scanning with the default settings, and scanned CodeArmor's own tools when it
+did run; SonarQube ignoring `SONAR_TOKEN`; and the default SpotBugs filter skipping classes that merely have `Test` or
+`Config` in their names. Read [Upgrading from 0.3.x](#upgrading-from-03x) first.
 
 ### ⚠️ Behaviour changes
+- **OWASP Dependency Check runs with the default settings.** It failed before it scanned (see Fixed). `fullAnalysis`
+  now downloads the NVD data on a machine that has none, which is slow without an API key, and fails the build on a
+  finding at `owaspFailBuildOnCVSS` (9.0) or above. CodeArmor suppresses no findings itself any more.
 - **SonarQube runs only once it is configured.** `fullAnalysis` includes `sonar` by default only when a server or
   a token is set: `sonarHostUrl` or `sonarToken`, the `SONAR_HOST_URL` or `SONAR_TOKEN` environment variables, or
   the `sonar.host.url` or `sonar.token` system properties. Without one, it leaves SonarQube out and says why,
@@ -67,6 +71,16 @@ classes that merely have `Test` or `Config` in their names. Read [Upgrading from
   weekly Gradle and GitHub Actions updates.
 
 ### Fixed
+- **OWASP Dependency Check never ran with the default settings** (since 0.2.0-alpha). Without `owaspSuppressionFile`,
+  CodeArmor gave it a default suppression file that a task was to write, but nothing ran that task first, so
+  `dependencyCheckAnalyze`, and with it `fullAnalysis`, failed before scanning ("Querying the mapped value of …
+  generateOwaspSuppressionFile … is not supported"). Past that, `owaspAutoUpdate` defaulted to `false`, so on a
+  machine without NVD data, such as a fresh CI runner, it failed with "Autoupdate is disabled and the database does
+  not exist". CodeArmor now passes a suppression file only when the build names one, and `owaspAutoUpdate` defaults
+  to `true`, as in dependency-check itself.
+- **The default OWASP suppressions.** That default file suppressed findings in Spring Boot starters, JUnit and
+  Mockito, and dependency-check's own schema rejects it. A security check's defaults must hide nothing: CodeArmor now
+  suppresses nothing itself, and `armorScaffoldConfigs` writes a file with no rules, only an example, to start from.
 - **SonarQube ignored `SONAR_TOKEN`.** CodeArmor always set `sonar.token`, to an empty value when `sonarToken` was
   unset, and the SonarScanner reads the environment variable only while the property is unset. The usual way to
   pass a token on CI now works.
@@ -93,8 +107,11 @@ classes that merely have `Test` or `Config` in their names. Read [Upgrading from
 2. **Diff coverage on CI.** It compares with the pull request's target branch, so check out the full history: on
    GitHub Actions, `actions/checkout` with `fetch-depth: 0`, as the scaffolded workflow does. Without it, it says so
    and passes.
-3. **OWASP suppressions.** Findings in test-only and compile-only dependencies, and in those of SpotBugs, detekt,
-   PIT, Error Prone or JaCoCo, no longer appear; suppressions you added for them can go.
+3. **OWASP Dependency Check.** It now runs in `fullAnalysis` with the default settings. Set `NVD_API_KEY` on CI:
+   without it, the first download of the NVD data is very slow. Findings in test-only and compile-only dependencies,
+   and in those of SpotBugs, detekt, PIT, Error Prone or JaCoCo, no longer appear, so suppressions you added for them
+   can go. A suppression file scaffolded earlier with `armorScaffoldConfigs` holds rules dependency-check rejects:
+   delete them, or the file, and scaffold it again.
 4. **SpotBugs findings in classes it used to skip.** Classes whose names only contain `Test` or `Config` are now
    analysed. Fix what it finds, or accept it with `./gradlew armorSpotbugsBaseline`. A filter scaffolded earlier with
    `armorScaffoldConfigs` keeps the old patterns: narrow them there, or delete the file and scaffold it again.
