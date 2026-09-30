@@ -10,7 +10,7 @@
 
 > **Comprehensive code quality and security plugin for Java/Kotlin projects**
 
-> ⚠️ **Status:** Alpha — This plugin is under active development (version: 0.4.0-alpha). Expect breaking changes and frequent updates until 1.0.0.
+> ⚠️ **Status:** Alpha — This plugin is under active development (version: 0.5.0-alpha). Expect breaking changes and frequent updates until 1.0.0.
 
 CodeArmor is a powerful Gradle plugin that integrates multiple code quality and security tools into a unified, easy-to-use solution. It provides automated project detection, intelligent configuration, and optimized development workflows for both single-module and multi-module projects.
 
@@ -74,22 +74,19 @@ Starting with version 0.1.4-alpha, CodeArmor no longer includes Spotless or Chec
 
 ---
 
-## 🆕 What's New in 0.4.0-alpha
+## 🆕 What's New in 0.5.0-alpha
 
-- 🛡️ **`armorInfo`**: what CodeArmor checks in a project, with each tool's version, and what needs attention.
-- 📐 **Diff coverage**: every build reports how much of the lines changed since the base branch tests cover; a
-  minimum on request.
-- 🐛 **Adopting checks**: a SpotBugs baseline accepts the findings already there, and detekt can run with type
-  resolution.
-- 🧪 **Integration tests**: an `integrationTest` suite on request, in `build` and in coverage.
-- 🔑 **CI**: gitleaks over the history, the summary on the GitHub Actions run page, and a scaffolded workflow that
-  submits the dependency graph, with Dependabot.
-- 🔧 **Tool versions**: run a newer or older JaCoCo, PIT, Error Prone, NullAway or ArchUnit than the default.
+- 🧱 **Settings in blocks**: `coverage { minimum = 0.8 }`, `owasp { nvdApiKey = providers.environmentVariable("NVD_API_KEY") }`.
+  Every setting is a Gradle property, so it takes a provider. The flat settings of 0.4.0 still work until 1.0.0, and
+  the build log says what to write instead. [Every setting](docs/settings.md) is listed, with its default.
+- 🔒 **Settings can't change behind CodeArmor's back**: one changed after CodeArmor has read it fails the build,
+  instead of being ignored.
+- 🧪 **Samples**: a Java application, a Kotlin library and a multi-module build, in [`samples/`](samples), built by CI.
 
-OWASP Dependency Check now runs with the default settings. SonarQube runs only once a server or token is configured,
-and `SONAR_TOKEN` finally works. The default SpotBugs filter no longer skips classes that merely have `Test` or
-`Config` in their names. See the
-[changelog](CHANGELOG.md) for everything, including [upgrading from 0.3.x](CHANGELOG.md#upgrading-from-03x).
+They found real bugs, now fixed: the overall coverage minimum counted the classes coverage leaves out, Kotlin
+projects before Kotlin 2.4 compiled without the Kotlin daemon, and a build below the repository's root got no version
+from git. SonarQube now imports the OWASP findings, and `checks { ci.add("…") }` keeps the default checks. `veracode`
+is deprecated. See the [changelog](CHANGELOG.md), including [upgrading from 0.4.x](CHANGELOG.md#upgrading-from-04x).
 
 ---
 
@@ -105,7 +102,7 @@ and `SONAR_TOKEN` finally works. The default SpotBugs filter no longer skips cla
 Add the plugin to your `build.gradle.kts`:
 ```kotlin
 plugins {
-  id("dev.coretide.plugin.armor") version "0.4.0-alpha"
+  id("dev.coretide.plugin.armor") version "0.5.0-alpha"
 }
 ```
 
@@ -380,6 +377,9 @@ app.git.commit=@gitVersion@
 
 
 ## ⚙️ Configuration Options
+
+[docs/settings.md](docs/settings.md) lists every setting, block by block, with its default. The sections below show
+how the tools behave.
 
 ### Tool Configuration
 
