@@ -3,7 +3,7 @@
 All notable changes to CodeArmor. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [Semantic Versioning](https://semver.org/), and while in alpha, a minor version may break things.
 
-## [0.4.0-alpha] - Unreleased
+## [0.4.0-alpha] - 2026-09-30
 
 A release about adopting CodeArmor in existing code and running it on CI: `armorInfo` shows what it checks and
 what needs attention, diff coverage measures what a pull request adds, a SpotBugs baseline accepts the findings
@@ -354,7 +354,7 @@ The first release built for Gradle 9. It changes when checks and git hooks run, 
   wiring, project type detection, git hooks and git-derived versions, published to Maven Central and
   the Gradle Plugin Portal.
 
-[0.4.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.3.0-alpha...HEAD
+[0.4.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.3.0-alpha...0.4.0-alpha
 [0.3.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.2.0-alpha...0.3.0-alpha
 [0.2.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.1.4-alpha...0.2.0-alpha
 [0.1.4-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.1.3-alpha...0.1.4-alpha
