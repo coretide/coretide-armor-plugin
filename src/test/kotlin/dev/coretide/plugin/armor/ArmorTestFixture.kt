@@ -286,6 +286,12 @@ object ArmorTestFixture {
         vararg args: String,
     ): BuildResult = runner(dir, *args).buildAndFail()
 
+    /** Runs a build whose outcome depends on more than the test controls, such as a tool's downloaded data. */
+    fun runWhateverTheOutcome(
+        dir: File,
+        vararg args: String,
+    ): BuildResult = runner(dir, *args).run()
+
     private fun runner(
         dir: File,
         vararg args: String,

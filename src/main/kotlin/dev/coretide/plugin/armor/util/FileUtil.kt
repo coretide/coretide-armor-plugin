@@ -103,49 +103,30 @@ object FileUtil {
                 </FindBugsFilter>
         """.trimIndent()
 
+    /**
+     * The suppressions CodeArmor uses when the build names none, and that `armorScaffoldConfigs` writes: none at all,
+     * so every finding is reported. A security check's default must not hide anything; a build suppresses a finding
+     * it has checked, itself.
+     */
     fun defaultOwaspSuppressionContent(): String =
         """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
-                    <!-- 
-                        Default OWASP Dependency Check Suppressions
-                        
-                        Add suppressions here for false positives or accepted risks.
-                        
-                        Example suppression:
+                    <!--
+                        OWASP Dependency Check suppressions. CodeArmor suppresses nothing by default: every finding is
+                        reported.
+
+                        Suppress only a finding you have checked, with a note saying why, and as narrowly as you can:
+                        one package and one CVE. For example:
+
                         <suppress>
                             <notes><![CDATA[
-                                This is a false positive for our use case because...
+                                CVE-2023-12345 needs the parser to load external entities, which this service disables.
                             ]]></notes>
-                            <packageUrl regex="true">^pkg:maven/com\.example/.*$</packageUrl>
+                            <packageUrl regex="true">^pkg:maven/com\.example/parser@.*$</packageUrl>
                             <cve>CVE-2023-12345</cve>
                         </suppress>
                     -->
-                    
-                    <!-- Common Spring Boot false positives -->
-                    <suppress>
-                        <notes><![CDATA[
-                            Spring Boot starter dependencies are managed by Spring team
-                            and vulnerabilities are typically patched in newer versions.
-                        ]]></notes>
-                        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring-boot-starter.*$</packageUrl>
-                        <vulnerabilityName regex="true">.*spring.*</vulnerabilityName>
-                    </suppress>
-                    
-                    <!-- Test dependencies -->
-                    <suppress>
-                        <notes><![CDATA[
-                            Test dependencies are not part of production runtime
-                        ]]></notes>
-                        <packageUrl regex="true">^pkg:maven/org\.junit/.*$</packageUrl>
-                    </suppress>
-                    
-                    <suppress>
-                        <notes><![CDATA[
-                            Test dependencies are not part of production runtime
-                        ]]></notes>
-                        <packageUrl regex="true">^pkg:maven/org\.mockito/.*$</packageUrl>
-                    </suppress>
                 </suppressions>
         """.trimIndent()
 

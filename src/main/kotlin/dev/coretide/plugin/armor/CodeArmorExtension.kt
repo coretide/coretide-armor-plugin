@@ -170,7 +170,12 @@ open class CodeArmorExtension
         var architectureTests: Boolean = false
         var owaspFailBuildOnCVSS: Double = 9.0
         var owaspSuppressionFile: String? = null
-        var owaspAutoUpdate: Boolean = false
+        /**
+         * Downloads the NVD vulnerability data when there is none, and refreshes it after [owaspNvdValidForHours].
+         * Without it, a scan fails on a machine that has no data yet, such as a fresh CI runner, unless
+         * `dependencyCheckUpdate` ran first.
+         */
+        var owaspAutoUpdate: Boolean = true
         var owaspNvdApiKey: String? = null
         var owaspNvdApiDelay: Int = 4000
         var owaspNvdMaxRetryCount: Int = 10
