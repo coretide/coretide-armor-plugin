@@ -170,7 +170,7 @@ class ArmorReportTest {
     fun `architectureTests scaffolds an ArchUnit test that fails on a violation`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, armorConfig = "    architectureTests = true", extraScript = junit)
+        ArmorTestFixture.writeProject(dir, armorConfig = "    tests { architectureTests = true }", extraScript = junit)
         ArmorTestFixture.run(dir, "armorScaffoldArchitectureTests")
         val test = dir.resolve("src/test/java/com/example/ArchitectureTest.java")
         assertTrue(test.isFile)
@@ -189,7 +189,7 @@ class ArmorReportTest {
     fun `a Kotlin project gets a Kotlin architecture test`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, language = Language.KOTLIN, armorConfig = "    architectureTests = true", extraScript = junit)
+        ArmorTestFixture.writeProject(dir, language = Language.KOTLIN, armorConfig = "    tests { architectureTests = true }", extraScript = junit)
 
         ArmorTestFixture.run(dir, "armorScaffoldArchitectureTests")
         // detekt checks the scaffolded test too.

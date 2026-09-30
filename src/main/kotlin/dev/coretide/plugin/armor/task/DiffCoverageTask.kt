@@ -91,7 +91,7 @@ abstract class DiffCoverageTask : DefaultTask() {
             val configured = this.base.orNull?.let { "$it does not exist" } ?: "no base branch found"
             LogUtil.essential(
                 this,
-                "📐 Diff coverage skipped: $configured. Set diffCoverageBase, or fetch the base branch " +
+                "📐 Diff coverage skipped: $configured. Set diffCoverage { base }, or fetch the base branch " +
                     "(on GitHub Actions, actions/checkout with fetch-depth: 0)",
             )
             return
@@ -138,8 +138,8 @@ abstract class DiffCoverageTask : DefaultTask() {
         val required = minimum.orNull ?: return
         if (share < required) {
             throw GradleException(
-                "Diff coverage ${percent(share)} is below diffCoverageMinimum ${percent(required)}: test the changed lines " +
-                    "listed above, or lower diffCoverageMinimum",
+                "Diff coverage ${percent(share)} is below its minimum, ${percent(required)}: test the changed lines " +
+                    "listed above, or lower diffCoverage { minimum }",
             )
         }
     }

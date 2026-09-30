@@ -26,7 +26,7 @@ class ErrorProneTest {
         @TempDir lenient: File,
         @TempDir checked: File,
     ) {
-        listOf(lenient to "", checked to "    errorProne = true").forEach { (dir, config) ->
+        listOf(lenient to "", checked to "    compilation { errorProne = true }").forEach { (dir, config) ->
             ArmorTestFixture.writeProject(dir, armorConfig = config)
             writeDeadException(dir)
         }
@@ -43,8 +43,8 @@ class ErrorProneTest {
         @TempDir lenient: File,
         @TempDir strict: File,
     ) {
-        listOf(lenient to "", strict to "\n    strictCompilation = true").forEach { (dir, config) ->
-            ArmorTestFixture.writeProject(dir, armorConfig = "    errorProne = true$config")
+        listOf(lenient to "", strict to "\n    compilation { strict = true }").forEach { (dir, config) ->
+            ArmorTestFixture.writeProject(dir, armorConfig = "    compilation { errorProne = true }$config")
             dir.resolve("src/main/java/com/example/Named.java").writeText(
                 """
                 package com.example;
@@ -71,7 +71,7 @@ class ErrorProneTest {
         @TempDir careless: File,
         @TempDir careful: File,
     ) {
-        listOf(careless, careful).forEach { ArmorTestFixture.writeProject(it, armorConfig = "    nullAway = true") }
+        listOf(careless, careful).forEach { ArmorTestFixture.writeProject(it, armorConfig = "    compilation { nullAway = true }") }
         careless.resolve("src/main/java/com/example/Lookup.java").writeText(
             """
             package com.example;
@@ -130,7 +130,7 @@ class ErrorProneTest {
 
         ArmorTestFixture.writeProject(
             dir,
-            armorConfig = "    errorProne = true",
+            armorConfig = "    compilation { errorProne = true }",
             extraScript =
                 """
                 java {

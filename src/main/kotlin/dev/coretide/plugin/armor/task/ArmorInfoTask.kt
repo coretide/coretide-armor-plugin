@@ -143,11 +143,11 @@ abstract class ArmorInfoTask : DefaultTask() {
                 val setup by lazy { render(project, extension, kind, tiers, module, repository, modules) }
                 task.lines.set(project.provider { setup.first })
                 task.warnings.set(project.provider { setup.second })
-                if (repository && extension.enableGitHooks) {
+                if (repository && extension.gitHooks.enabled.get()) {
                     task.gitRootDirectory.set(project.rootDir)
                     task.expectedHooks.set(project.provider { expectedHooks(extension) })
                 }
-                if (repository) task.secretScan.set(project.provider { extension.secretScan })
+                if (repository) task.secretScan.set(extension.secretScan)
             }
         }
 
@@ -178,7 +178,7 @@ abstract class ArmorInfoTask : DefaultTask() {
                     checks += "  CI, through fullAnalysis: ${tiers.ci.joinToString().ifEmpty { "nothing" }}"
                 }
             }
-            if (repository && extension.enableGitHooks && extension.prePushEnabled) {
+            if (repository && extension.gitHooks.enabled.get() && extension.gitHooks.prePush.get()) {
                 checks += "  pre-push hook: ${extension.checks.prePush.get().joinToString().ifEmpty { "nothing" }}"
             }
             if (checks.isNotEmpty()) {
@@ -193,7 +193,7 @@ abstract class ArmorInfoTask : DefaultTask() {
                 tools(project, extension, tiers, on, off, plainOff, warnings)
             }
             if (repository) {
-                if (extension.enableGitHooks) {
+                if (extension.gitHooks.enabled.get()) {
                     val hooks =
                         expectedHooks(extension).map {
                             when (it) {
@@ -206,8 +206,10 @@ abstract class ArmorInfoTask : DefaultTask() {
                 } else {
                     plainOff += "git hooks"
                 }
-                if (extension.secretScan) on += "Secret scan with gitleaks: the history, in fullAnalysis (armorSecretScan)"
+                if (extension.secretScan.get()) on += "Secret scan with gitleaks: the history, in fullAnalysis (armorSecretScan)"
             }
+            // Settings are shared by every module, so the project CodeArmor is applied to lists them.
+            if (repository) warnings += extension.deprecations.messages()
             if (on.isNotEmpty() || off.isNotEmpty() || plainOff.isNotEmpty()) {
                 lines += ""
                 lines += "Tools"
@@ -230,61 +232,61 @@ abstract class ArmorInfoTask : DefaultTask() {
             warnings: MutableList<String>,
         ) {
             val kotlin = project.plugins.hasPlugin(KOTLIN_JVM_PLUGIN_ID)
-            val minimum = percent(extension.coverageMinimum)
-            val classMinimum = percent(extension.coverageClassMinimum)
+            val minimum = percent(extension.coverage.minimum.get())
+            val classMinimum = percent(extension.coverage.classMinimum.get())
             // JaCoCo's overall rule counts instructions, its default; the per-class rule and Kover's count lines.
             val versions = extension.toolVersions
             val jacoco = "JaCoCo ${versions.jacoco.get()}: at least $minimum of instructions, $classMinimum of lines per class"
 
-            if (extension.spotbugs) {
-                val baseline = project.file(extension.spotbugsConfig.baselineFile).takeIf { it.isFile }
-                on += "SpotBugs ${extension.spotbugsConfig.toolVersion}" +
+            if (extension.spotbugs.enabled.get()) {
+                val baseline = project.file(extension.spotbugs.baselineFile.get()).takeIf { it.isFile }
+                on += "SpotBugs ${extension.spotbugs.toolVersion.get()}" +
                     (baseline?.let { ", with a baseline of ${SpotbugsBaselineTask.count(it)} accepted findings" } ?: "")
             } else {
                 plainOff += "SpotBugs"
             }
             when {
                 KoverConfigurator.usesKover(project, extension) -> on += "Kover: at least $minimum of lines, $classMinimum per class"
-                extension.kover -> on += "$jacoco (kover = true, but no Kotlin here)"
-                extension.jacoco -> on += jacoco
+                extension.coverage.kover.get() -> on += "$jacoco (coverage { kover = true }, but no Kotlin here)"
+                extension.coverage.enabled.get() -> on += jacoco
                 else -> plainOff += "coverage"
             }
             if (DiffCoverageConfigurator.enabled(extension)) {
                 on += "Diff coverage: " +
-                    (extension.diffCoverageMinimum?.let { "at least ${percent(it)} of changed lines" } ?: "reports only")
+                    (extension.diffCoverage.minimum.orNull?.let { "at least ${percent(it)} of changed lines" } ?: "reports only")
             } else {
                 plainOff += "diff coverage"
             }
             when {
-                !extension.detekt -> plainOff += "detekt"
-                kotlin -> on += "detekt ${DetektConfigurator.DETEKT_VERSION}" + if (extension.detektTypeResolution) ", with type resolution (detektMain)" else ""
+                !extension.detekt.enabled.get() -> plainOff += "detekt"
+                kotlin -> on += "detekt ${DetektConfigurator.DETEKT_VERSION}" + if (extension.detekt.typeResolution.get()) ", with type resolution (detektMain)" else ""
                 else -> off += "detekt: no Kotlin here"
             }
-            if (extension.errorProne || extension.nullAway) {
+            if (extension.compilation.errorProne.get() || extension.compilation.nullAway.get()) {
                 on += "Error Prone ${versions.errorProne.get()}" +
-                    if (extension.nullAway) ", with NullAway ${versions.nullAway.get()}" else ""
+                    if (extension.compilation.nullAway.get()) ", with NullAway ${versions.nullAway.get()}" else ""
             } else {
                 plainOff += "Error Prone"
             }
-            if (extension.integrationTests) on += "Integration tests: src/integrationTest, in build" else plainOff += "integration tests"
-            if (extension.strictCompilation) on += "Strict compilation: warnings fail the build" else plainOff += "strict compilation"
-            if (extension.mutationTesting) {
+            if (extension.tests.integrationTests.get()) on += "Integration tests: src/integrationTest, in build" else plainOff += "integration tests"
+            if (extension.compilation.strict.get()) on += "Strict compilation: warnings fail the build" else plainOff += "strict compilation"
+            if (extension.mutationTesting.enabled.get()) {
                 on += "Mutation testing with PIT ${versions.pitest.get()}" +
-                    if (extension.mutationThreshold > 0) ": at least ${extension.mutationThreshold}% of mutations killed" else ""
+                    if (extension.mutationTesting.threshold.get() > 0) ": at least ${extension.mutationTesting.threshold.get()}% of mutations killed" else ""
             } else {
                 plainOff += "mutation testing"
             }
-            if (extension.architectureTests) {
+            if (extension.tests.architectureTests.get()) {
                 on += "Architecture tests with ArchUnit ${versions.archUnit.get()}"
             } else {
                 plainOff += "architecture tests"
             }
-            if (extension.kotlinAbiValidation) on += "Kotlin ABI validation" else plainOff += "Kotlin ABI validation"
-            if (!extension.apiBaseline.isNullOrBlank()) on += "API check against ${extension.apiBaseline}" else plainOff += "API check"
+            if (extension.libraryApi.kotlinAbiValidation.get()) on += "Kotlin ABI validation" else plainOff += "Kotlin ABI validation"
+            if (!extension.libraryApi.baseline.orNull.isNullOrBlank()) on += "API check against ${extension.libraryApi.baseline.orNull}" else plainOff += "API check"
 
-            if (extension.owasp) {
+            if (extension.owasp.enabled.get()) {
                 val nvdKey = OwaspConfigurator.nvdApiKey(project, extension) != null
-                on += "OWASP Dependency-Check: fails at CVSS ${extension.owaspFailBuildOnCVSS}" + if (nvdKey) ", with an NVD API key" else ""
+                on += "OWASP Dependency-Check: fails at CVSS ${extension.owasp.failBuildOnCvss.get()}" + if (nvdKey) ", with an NVD API key" else ""
                 if (!nvdKey && OWASP_TASK in tiers.ci) {
                     warnings +=
                         "OWASP has no NVD API key, so downloading the vulnerability database is slow: an hour or more " +
@@ -294,30 +296,29 @@ abstract class ArmorInfoTask : DefaultTask() {
             } else {
                 plainOff += "OWASP"
             }
-            if (extension.dependencyUpdates) on += "Dependency updates" else plainOff += "dependency updates"
-            if (extension.sbom) on += "SBOM and licence report" else plainOff += "SBOM"
-            if (extension.dependencyAnalysis) on += "Dependency analysis" else plainOff += "dependency analysis"
+            if (extension.dependencyHealth.updates.get()) on += "Dependency updates" else plainOff += "dependency updates"
+            if (extension.dependencyHealth.sbom.get()) on += "SBOM and licence report" else plainOff += "SBOM"
+            if (extension.dependencyHealth.analysis.get()) on += "Dependency analysis" else plainOff += "dependency analysis"
 
             val sonarConfigured = SonarqubeConfigurator.isConfigured(project, extension)
             when {
-                !extension.sonarqube -> plainOff += "SonarQube"
+                !extension.sonarqube.enabled.get() -> plainOff += "SonarQube"
                 sonarConfigured -> on += "SonarQube: ${SonarqubeConfigurator.hostUrl(extension) ?: "SonarQube Cloud"}"
                 SONAR_TASK in tiers.ci -> {
                     on += "SonarQube, listed in checks.ci"
                     warnings +=
                         "sonar is in checks.ci, but no SonarQube server or token is configured, so it would send the " +
-                        "analysis to SonarQube Cloud without a token. Set sonarHostUrl or SONAR_HOST_URL, and SONAR_TOKEN"
+                        "analysis to SonarQube Cloud without a token. Set sonarqube { hostUrl } or SONAR_HOST_URL, and SONAR_TOKEN"
                 }
                 else -> {
                     off += "SonarQube: no server configured"
                     warnings +=
                         "SonarQube is on, but no server or token is configured, so fullAnalysis leaves it out. Set " +
-                        "sonarHostUrl or SONAR_HOST_URL, or SONAR_TOKEN alone for SonarQube Cloud; or sonarqube = false"
+                        "sonarqube { hostUrl } or SONAR_HOST_URL, or SONAR_TOKEN alone for SonarQube Cloud; or sonarqube { enabled = false }"
                 }
             }
             if (VeracodeConfigurator.enabled(extension)) {
                 on += "Veracode, through your Veracode plugin's veracodeUpload"
-                warnings += VeracodeConfigurator.DEPRECATION
                 if ("veracodeUpload" !in project.tasks.names) {
                     warnings += "veracode = true, but there is no veracodeUpload task: apply your Veracode Gradle plugin"
                 }
@@ -336,9 +337,9 @@ abstract class ArmorInfoTask : DefaultTask() {
         /** The hooks `armorInstallGitHooks` installs with these settings. */
         fun expectedHooks(extension: CodeArmorExtension): List<String> =
             buildList {
-                if (extension.prePushEnabled) add("pre-push")
-                if (extension.conventionalCommits) add("commit-msg")
-                if (extension.secretScan) add("pre-commit")
+                if (extension.gitHooks.prePush.get()) add("pre-push")
+                if (extension.gitHooks.conventionalCommits.get()) add("commit-msg")
+                if (extension.secretScan.get()) add("pre-commit")
             }
 
         /**

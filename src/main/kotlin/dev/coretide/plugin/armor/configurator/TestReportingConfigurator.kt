@@ -33,12 +33,12 @@ object TestReportingConfigurator {
         extension: CodeArmorExtension,
     ) {
         project.plugins.withType(JavaPlugin::class.java) {
-            if (extension.flakyTestRetries > 0) {
+            if (extension.tests.flakyRetries.get() > 0) {
                 project.pluginManager.apply("org.gradle.test-retry")
             }
             val onCi = project.providers.environmentVariable("CI").map { it == "true" }.orElse(false)
-            val retries = extension.flakyTestRetries
-            val slowMillis = extension.slowTestThresholdMillis
+            val retries = extension.tests.flakyRetries.get()
+            val slowMillis = extension.tests.slowThresholdMillis.get()
             project.tasks.withType(Test::class.java).configureEach { test ->
                 if (retries > 0) {
                     test.extensions.configure(TestRetryTaskExtension::class.java) { retry ->

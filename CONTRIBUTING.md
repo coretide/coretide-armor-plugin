@@ -234,6 +234,9 @@ Most tests are Gradle TestKit tests: they write a throwaway project to a tempora
 the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
 
 - **Functional tests** (`CodeArmorPluginFunctionalTest`): tasks, detection, tool wiring
+- **Settings** (`SettingsDslTest`, `DeprecatedSettingsTest`): the blocks in a Kotlin build script, with values and
+  providers; each flat setting of 0.4.0 still setting the one that replaced it, and saying what to write instead; and
+  every setter on the extension being such a setting
 - **Tests and coverage** (`TestsAndCoverageTest`, `TestResultsTest`, `SourcePackagesTest`): flaky-test retries on
   CI, the slow-test list, Kover and PIT
 - **Multi-module reports** (`MultiModuleReportsTest`): the combined coverage and test reports, including a
@@ -242,7 +245,7 @@ the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
   Kotlin version guard, whose constants must match the bundled detekt plugin
 - **OWASP settings and the Groovy DSL** (`OwaspTest`, `GroovyDslTest`): what OWASP scans and how it is configured, the
   scan starting with the default settings, no suppressions of CodeArmor's own,
-  and the `codeArmor` block in a Groovy build script
+  and every `codeArmor` block in a Groovy build script, with the settings of 0.4.0 there too
 - **Tool versions** (`ToolVersionsTest`): each tool's version from `toolVersions`, and the defaults without it
 - **Integration tests** (`IntegrationTestsTest`): the suite in `build`, its coverage alone passing coverage
   verification, a failure failing the build, and no suite when it is off
@@ -263,7 +266,7 @@ the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
 - **Library API checks** (`ApiCompatibilityTest`): japicmp against a published baseline, and the Kotlin ABI dump
 - **Dependency health** (`DependencyHealthTest`, `SbomLicensesTest`): dependency updates, the SBOM and licence
   report, forbidden licences, and the dependency analysis
-- **Error Prone and NullAway** (`ErrorProneTest`): Error Prone errors, its warnings under `strictCompilation`,
+- **Error Prone and NullAway** (`ErrorProneTest`): Error Prone errors, its warnings under `compilation { strict }`,
   NullAway on production code only, and compiling without them below JDK 21
 - **Strict compilation** (`StrictCompilationTest`): Java and Kotlin warnings failing the build, with
   Kotlin projects applying the Kotlin Gradle plugin, which the build puts on TestKit's plugin classpath

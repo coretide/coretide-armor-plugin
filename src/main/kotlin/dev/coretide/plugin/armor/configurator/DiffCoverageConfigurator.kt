@@ -22,7 +22,7 @@ object DiffCoverageConfigurator {
     /** Where `armorDiffCoverage` leaves its result, under the build directory, for `armorReport`. */
     const val RESULT = "reports/codearmor/diff-coverage.json"
 
-    fun enabled(extension: CodeArmorExtension): Boolean = extension.diffCoverage && (extension.jacoco || extension.kover)
+    fun enabled(extension: CodeArmorExtension): Boolean = extension.diffCoverage.enabled.get() && (extension.coverage.enabled.get() || extension.coverage.kover.get())
 
     fun configure(
         project: Project,
@@ -39,8 +39,8 @@ object DiffCoverageConfigurator {
                 task.coverageReport.set(project.layout.buildDirectory.file(report))
                 task.sourceDirectories.from(main.map { it.allSource.srcDirs })
                 task.projectDirectory.set(project.layout.projectDirectory)
-                task.base.set(project.provider { extension.diffCoverageBase?.takeIf { it.isNotBlank() } })
-                task.minimum.set(project.provider { extension.diffCoverageMinimum })
+                task.base.set(project.provider { extension.diffCoverage.base.orNull?.takeIf { it.isNotBlank() } })
+                task.minimum.set(extension.diffCoverage.minimum)
                 task.result.set(project.layout.buildDirectory.file(RESULT))
             }
         }

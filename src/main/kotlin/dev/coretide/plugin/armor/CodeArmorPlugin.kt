@@ -13,7 +13,6 @@ package dev.coretide.plugin.armor
 import dev.coretide.plugin.armor.codestats.CodeStatsManager
 import dev.coretide.plugin.armor.configurator.ArmorReportConfigurator
 import dev.coretide.plugin.armor.configurator.SarifConfigurator
-import dev.coretide.plugin.armor.configurator.VeracodeConfigurator
 import dev.coretide.plugin.armor.git.GitHooksManager
 import dev.coretide.plugin.armor.git.VersionManager
 import dev.coretide.plugin.armor.task.MultiModuleTaskCreator
@@ -36,13 +35,8 @@ class CodeArmorPlugin : Plugin<Project> {
         extension.checks.ci.set(project.provider { TaskCreator.defaultCiTier(project, extension) })
         project.afterEvaluate {
             LogUtil.initialize(project, extension)
-            val projectType =
-                if (extension.autoDetect) {
-                    ProjectDetector.detectProjectType(project)
-                } else {
-                    extension.projectType ?: ProjectDetector.detectProjectType(project)
-                }
-            val isMultiModule = extension.isMultiModule || ProjectDetector.detectMultiModule(project)
+            val projectType = extension.projectType.orNull ?: ProjectDetector.detectProjectType(project)
+            val isMultiModule = extension.forcedMultiModule || ProjectDetector.detectMultiModule(project)
             LogUtil.essential(
                 "🛡️ CodeArmor: Detected ${projectType.displayName} project${if (isMultiModule) " (multi-module)" else ""}",
             )
@@ -51,14 +45,12 @@ class CodeArmorPlugin : Plugin<Project> {
             } else {
                 configureSingleModuleProject(project, extension, projectType)
             }
-            if (VeracodeConfigurator.enabled(extension)) {
-                LogUtil.essential("⚠️ CodeArmor: ${VeracodeConfigurator.DEPRECATION}")
-            }
-            if (extension.enableGitHooks) {
+            extension.deprecations.messages().forEach { LogUtil.essential("⚠️ CodeArmor: $it") }
+            if (extension.gitHooks.enabled.get()) {
                 GitHooksManager.registerTasks(project, extension)
             }
             CodeStatsManager.configure(project, extension)
-            if (extension.enableVersionFromGit) {
+            if (extension.versionFromGit.get()) {
                 VersionManager.configureVersionFromGit(project)
             }
             ConfigurationCacheUtil.optimizeThirdPartyPlugins(project)

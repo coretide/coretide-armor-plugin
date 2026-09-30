@@ -40,7 +40,7 @@ object TaskCreator {
         // exist once a Java plugin is applied. Without this, `build` would fail in, say, a docs or
         // aggregator project that applies CodeArmor.
         // Before the tiers, which leave out the default tasks a project does not have.
-        if (repository && extension.secretScan) SecretScanTask.register(project)
+        if (repository && extension.secretScan.get()) SecretScanTask.register(project)
         var tiers: ArmorInfoTask.Tiers? = null
         if (project.plugins.hasPlugin(JavaBasePlugin::class.java)) {
             createQuickBuildTask(project)
@@ -62,22 +62,22 @@ object TaskCreator {
     /** The local checks `codeQuality`, and so `build`, runs by default: those of the tools switched on. */
     fun defaultBuildTier(extension: CodeArmorExtension): List<String> =
         buildList {
-            if (extension.integrationTests) add(IntegrationTestsConfigurator.TASK_NAME)
-            if (extension.spotbugs) add("spotbugsMain")
-            if (extension.detekt) add(DetektConfigurator.taskName(extension))
-            // With kover = true, Kotlin projects run Kover's tasks and Java-only projects JaCoCo's; each project
+            if (extension.tests.integrationTests.get()) add(IntegrationTestsConfigurator.TASK_NAME)
+            if (extension.spotbugs.enabled.get()) add("spotbugsMain")
+            if (extension.detekt.enabled.get()) add(DetektConfigurator.taskName(extension))
+            // With coverage.kover, Kotlin projects run Kover's tasks and Java-only projects JaCoCo's; each project
             // leaves out the ones it does not have.
-            if (extension.kover) addAll(KoverConfigurator.BUILD_TIER_TASKS)
-            if (extension.jacoco || extension.kover) addAll(JACOCO_TASKS)
+            if (extension.coverage.kover.get()) addAll(KoverConfigurator.BUILD_TIER_TASKS)
+            if (extension.coverage.enabled.get() || extension.coverage.kover.get()) addAll(JACOCO_TASKS)
             if (DiffCoverageConfigurator.enabled(extension)) add(DiffCoverageTask.TASK_NAME)
-            if (extension.kotlinAbiValidation) add(ApiCompatibilityConfigurator.KOTLIN_ABI_CHECK_TASK)
+            if (extension.libraryApi.kotlinAbiValidation.get()) add(ApiCompatibilityConfigurator.KOTLIN_ABI_CHECK_TASK)
         }
 
     private val JACOCO_TASKS = listOf("jacocoTestReport", "jacocoTestCoverageVerification")
 
     /**
      * Default tier tasks that only some projects have: detekt exists in Kotlin projects only, with
-     * kover = true a project has either Kover's or JaCoCo's tasks, and those, diff coverage and integration tests
+     * coverage.kover a project has either Kover's or JaCoCo's tasks, and those, diff coverage and integration tests
      * need the Java plugin.
      */
     private val OPTIONAL_DEFAULT_TASKS =
@@ -110,13 +110,13 @@ object TaskCreator {
         extension: CodeArmorExtension,
     ): List<String> =
         buildList {
-            if (extension.owasp) add("dependencyCheckAnalyze")
-            if (extension.dependencyUpdates) add(DependencyHealthConfigurator.UPDATES_TASK)
-            if (extension.sbom) add(DependencyHealthConfigurator.LICENSE_TASK)
-            if (extension.dependencyAnalysis) add(DependencyHealthConfigurator.ANALYSIS_TASK)
-            if (!extension.apiBaseline.isNullOrBlank()) add(ApiCompatibilityConfigurator.API_CHECK_TASK)
-            if (extension.sonarqube && SonarqubeConfigurator.isConfigured(project, extension)) add(SONAR_TASK)
-            if (extension.secretScan) add(SecretScanTask.TASK_NAME)
+            if (extension.owasp.enabled.get()) add("dependencyCheckAnalyze")
+            if (extension.dependencyHealth.updates.get()) add(DependencyHealthConfigurator.UPDATES_TASK)
+            if (extension.dependencyHealth.sbom.get()) add(DependencyHealthConfigurator.LICENSE_TASK)
+            if (extension.dependencyHealth.analysis.get()) add(DependencyHealthConfigurator.ANALYSIS_TASK)
+            if (!extension.libraryApi.baseline.orNull.isNullOrBlank()) add(ApiCompatibilityConfigurator.API_CHECK_TASK)
+            if (extension.sonarqube.enabled.get() && SonarqubeConfigurator.isConfigured(project, extension)) add(SONAR_TASK)
+            if (extension.secretScan.get()) add(SecretScanTask.TASK_NAME)
         }
 
     private const val SONAR_TASK = "sonar"
@@ -175,10 +175,10 @@ object TaskCreator {
                 task.dependsOn(buildTier)
                 task.doLast {
                     LogUtil.verbose("✅ Code quality checks completed for $projectName")
-                    if (extension.jacoco) {
+                    if (extension.coverage.enabled.get()) {
                         LogUtil.verbose("📊 JaCoCo coverage: build/reports/jacoco/test/html/index.html")
                     }
-                    if (extension.spotbugs) {
+                    if (extension.spotbugs.enabled.get()) {
                         LogUtil.verbose("📊 SpotBugs report: build/reports/spotbugs/main.html")
                     }
                 }
@@ -214,17 +214,17 @@ object TaskCreator {
             }
             val veracodeUploadPresent = "veracodeUpload" in project.tasks.names
             val sonarInTier = SONAR_TASK in ciTier
-            val sonarUnconfigured = extension.sonarqube && !SonarqubeConfigurator.isConfigured(project, extension)
+            val sonarUnconfigured = extension.sonarqube.enabled.get() && !SonarqubeConfigurator.isConfigured(project, extension)
             task.doLast {
                 LogUtil.verbose("✅ Full analysis completed for $projectName")
-                if (extension.owasp) {
+                if (extension.owasp.enabled.get()) {
                     LogUtil.verbose("📊 OWASP report: build/reports/dependency-check/dependency-check-report.html")
                 }
                 if (sonarInTier) {
                     LogUtil.verbose("🔍 SonarQube analysis uploaded")
                 } else if (sonarUnconfigured) {
                     LogUtil.essential(
-                        "⚠️  SonarQube skipped: no server configured. Set sonarHostUrl or SONAR_HOST_URL, " +
+                        "⚠️  SonarQube skipped: no server configured. Set sonarqube { hostUrl } or SONAR_HOST_URL, " +
                             "or SONAR_TOKEN for SonarQube Cloud.",
                     )
                 }

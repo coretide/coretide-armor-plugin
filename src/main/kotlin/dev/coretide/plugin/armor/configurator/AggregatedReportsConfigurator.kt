@@ -52,7 +52,7 @@ object AggregatedReportsConfigurator {
         reportTasks += TEST_REPORT
 
         // Kover projects have their own coverage data, not JaCoCo's.
-        if (extension.jacoco && !extension.kover) {
+        if (extension.coverage.enabled.get() && !extension.coverage.kover.get()) {
             root.pluginManager.apply("jacoco-report-aggregation")
             registerIfAbsent(root, COVERAGE_REPORT, JacocoCoverageReport::class.java) { it.testSuiteName.set(TEST_SUITE) }
             val jacocoAnt =
@@ -92,7 +92,7 @@ object AggregatedReportsConfigurator {
     ) {
         if (!module.plugins.hasPlugin(JavaPlugin::class.java)) return
         root.dependencies.add("testReportAggregation", module)
-        if (!extension.jacoco || extension.kover) return
+        if (!extension.coverage.enabled.get() || extension.coverage.kover.get()) return
         root.dependencies.add("jacocoAggregation", module)
         val jacocoAnt = root.configurations.getByName(JACOCO_ANT)
         if (jacocoAnt.dependencies.isEmpty()) {

@@ -50,7 +50,7 @@ class CoverageExclusionsTest {
         ArmorTestFixture.writeProject(
             dir,
             // Coverage verification would fail on the untested classes; only the report matters here.
-            armorConfig = "    coverageMinimum = 0.0\n    coverageClassMinimum = 0.0\n$armorConfig",
+            armorConfig = "    coverage { minimum = 0.0; classMinimum = 0.0 }\n$armorConfig",
             extraScript =
                 """
                 dependencies {
@@ -130,7 +130,7 @@ class CoverageExclusionsTest {
     fun `a build's own exclusions match anywhere in a name, or a package`(
         @TempDir dir: File,
     ) {
-        writeProject(dir, armorConfig = "    coverageExclusions = mutableListOf(\"Database\", \"model\")")
+        writeProject(dir, armorConfig = "    coverage { exclusions = mutableListOf(\"Database\", \"model\") }")
 
         ArmorTestFixture.run(dir, "test")
 

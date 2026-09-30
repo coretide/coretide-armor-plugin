@@ -63,7 +63,7 @@ class DetektTest {
     fun `with type resolution detektMain takes detekt's place, with its own baseline`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, language = Language.KOTLIN, armorConfig = "$FOCUS_ON_DETEKT\n    detektTypeResolution = true")
+        ArmorTestFixture.writeProject(dir, language = Language.KOTLIN, armorConfig = "$FOCUS_ON_DETEKT\n    detekt { typeResolution = true }")
         dir.resolve("src/main/kotlin/com/example/Legacy.kt").writeText("package com.example\n\npublic fun legacy() {\n}\n")
 
         val failure = ArmorTestFixture.runAndFail(dir, "codeQuality")
@@ -106,10 +106,10 @@ class DetektTest {
     }
 
     @Test
-    fun `detekt = false leaves detekt out`(
+    fun `detekt { enabled = false } leaves detekt out`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, language = Language.KOTLIN, armorConfig = "$FOCUS_ON_DETEKT\n    detekt = false")
+        ArmorTestFixture.writeProject(dir, language = Language.KOTLIN, armorConfig = "$FOCUS_ON_DETEKT\n    detekt { enabled = false }")
 
         val result = ArmorTestFixture.run(dir, "codeQuality", "--dry-run", "tasks", "--all")
 
@@ -205,6 +205,6 @@ class DetektTest {
 
     private companion object {
         /** No SpotBugs, and no coverage thresholds for fixtures without tests. */
-        const val FOCUS_ON_DETEKT = "    spotbugs = false\n    coverageMinimum = 0.0\n    coverageClassMinimum = 0.0"
+        const val FOCUS_ON_DETEKT = "    spotbugs { enabled = false }\n    coverage { minimum = 0.0; classMinimum = 0.0 }"
     }
 }

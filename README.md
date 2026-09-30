@@ -119,74 +119,86 @@ The plugin works out of the box with zero configuration:
 ```
 
 
-For custom configuration:
+For custom configuration, each tool and area has a block of its own. Every setting is a Gradle property, so it
+also takes a provider, such as `providers.environmentVariable("NVD_API_KEY")`:
 ```kotlin
 import dev.coretide.plugin.armor.ProjectType
 
 codeArmor {
-    // Project configuration
-    autoDetect = false                        // projectType is only used when autoDetect = false
-    projectType = ProjectType.KOTLIN_APPLICATION
-    isMultiModule = false
-    
-    // Tool enablement
-    jacoco = true
-    spotbugs = true
-    detekt = true                             // Kotlin projects only
-    owasp = true
-    sonarqube = true                          // In fullAnalysis once a server or token is configured
-    
-    // Coverage and tests
-    coverageMinimum = 0.80
-    coverageClassMinimum = 0.75
-    diffCoverage = true                       // Coverage of the lines changed since the base branch
-    diffCoverageMinimum = null                // Set to fail below it
-    flakyTestRetries = 2                      // On CI only
-    
-    // Dependency health, in fullAnalysis
-    dependencyUpdates = true
-    sbom = true                               // With a licence report
-    forbiddenLicenses = mutableListOf("AGPL-3.0-only")
-    
-    // Opt-in extras
-    kover = false                             // Kover instead of JaCoCo, in Kotlin projects
-    integrationTests = false                  // An integrationTest suite, in build
-    detektTypeResolution = false              // detektMain instead of detekt
-    mutationTesting = false                   // ./gradlew pitest
-    strictCompilation = false                 // Warnings fail the build
-    errorProne = false                        // Error Prone on Java sources
-    nullAway = false                          // NullAway, with Error Prone
-    architectureTests = false                 // ArchUnit
-    dependencyAnalysis = false                // Unused and undeclared dependencies
-    apiBaseline = null                        // A release to check binary compatibility against
-    kotlinAbiValidation = false               // Kotlin ABI dumps
-    conventionalCommits = false               // commit-msg hook
+    projectType = ProjectType.KOTLIN_APPLICATION  // Unset, CodeArmor detects it
+
+    coverage {
+        enabled = true                        // JaCoCo, or Kover with kover = true
+        minimum = 0.80
+        classMinimum = 0.75
+        kover = false                         // Kover instead of JaCoCo, in Kotlin projects
+    }
+    diffCoverage {
+        enabled = true                        // Coverage of the lines changed since the base branch
+        minimum = 0.90                        // Unset, it only reports
+    }
+    tests {
+        flakyRetries = 2                      // On CI only
+        integrationTests = false              // An integrationTest suite, in build
+        architectureTests = false             // ArchUnit
+    }
+    mutationTesting { enabled = false }       // ./gradlew pitest
+    compilation {
+        strict = false                        // Warnings fail the build
+        errorProne = false                    // Error Prone on Java sources
+        nullAway = false                      // NullAway, with Error Prone
+    }
+
+    spotbugs { enabled = true }
+    detekt {
+        enabled = true                        // Kotlin projects only
+        typeResolution = false                // detektMain instead of detekt
+    }
+    owasp {
+        enabled = true
+        nvdApiKey = providers.environmentVariable("NVD_API_KEY")
+    }
+    sonarqube { enabled = true }              // In fullAnalysis once a server or token is configured
+    dependencyHealth {
+        updates = true
+        sbom = true                           // With a licence report
+        forbiddenLicenses = listOf("AGPL-3.0-only")
+        analysis = false                      // Unused and undeclared dependencies
+    }
+    libraryApi {
+        baseline = "1.4.0"                    // A release to check binary compatibility against
+        kotlinAbiValidation = false           // Kotlin ABI dumps
+    }
+
+    gitHooks {
+        enabled = true                        // Registers armorInstallGitHooks / armorUninstallGitHooks
+        prePush = true                        // armorInstallGitHooks includes the pre-push hook
+        conventionalCommits = false           // commit-msg hook
+    }
     secretScan = false                        // gitleaks pre-commit hook, and a history scan in fullAnalysis
-    
-    // Git integration
-    enableGitHooks = true                     // registers armorInstallGitHooks / armorUninstallGitHooks
-    prePushEnabled = true                     // armorInstallGitHooks includes the pre-push hook
-    enableVersionFromGit = true
-    
+    versionFromGit = true
+    resourceProcessing = true
+
     // Check tiers: what the pre-push hook, build and fullAnalysis run
     checks {
         prePush = listOf("quickBuild")
     }
-    
+
     // Code::Stats reporting, off by default
     codeStats {
         enabled = true
     }
-    
+
     // Another version of a tool than the default
     toolVersions {
         jacoco = "0.8.15"
     }
-    
-    // Resource processing
-    enableResourceProcessing = true
 }
 ```
+
+The flat settings of 0.4.0 and earlier, such as `coverageMinimum = 0.8`, still work until 1.0.0: the build log and
+`armorInfo` name each one a build uses, with the line to write instead. [Upgrading from
+0.4.x](CHANGELOG.md#upgrading-from-04x) lists them all.
 
 [Check Tiers](#check-tiers) lists the defaults for each tier. [Code Stats](#-code-stats) covers installing
 it, machine-wide reporting and each developer's own opt-in or opt-out.
@@ -369,35 +381,41 @@ app.git.commit=@gitVersion@
 #### JaCoCo Coverage
 ```kotlin
 codeArmor {
-    jacoco = true
-    coverageMinimum = 0.80                    // Overall coverage threshold
-    coverageClassMinimum = 0.75               // Per-class coverage threshold
-    coverageInclusions = mutableListOf("com/example/**")
-    coverageExclusions = mutableListOf("Dto", "legacy")   // Anywhere in a class name, or a package name
-    coverageIncludeDefaultExclusions = true   // Entry points, configuration and generated code
-    junitPlatform = true                      // Run default JUnit 4 test tasks on the JUnit Platform
+    coverage {
+        enabled = true
+        minimum = 0.80                        // Overall coverage threshold
+        classMinimum = 0.75                   // Per-class coverage threshold
+        inclusions = listOf("com/example/**")
+        exclusions = listOf("Dto", "legacy")  // Anywhere in a class name, or a package name
+        defaultExclusions = true              // Entry points, configuration and generated code
+    }
+    tests {
+        junitPlatform = true                  // Run default JUnit 4 test tasks on the JUnit Platform
+    }
 }
 ```
 
 The default exclusions leave out only entry points (`*Application`, `*ApplicationKt`), configuration
 (`*Config`, `*Configuration`) and generated code (`generated` packages, MapStruct's `*MapperImpl`, JPA's `*_`
 metamodel classes), matched as a whole class-name suffix or package, and a nested class with its outer class.
-`coverageExclusions` adds your own, matched anywhere in a class name or as a package name: `"Dto"` leaves out
+`exclusions` adds your own, matched anywhere in a class name or as a package name: `"Dto"` leaves out
 `UserDto`, and `"legacy"` the `legacy` package. The same exclusions apply to the reports, coverage verification,
 Kover and SonarQube; `./gradlew logExclusionInfo` shows them.
 
 With JaCoCo on, CodeArmor also sets up the test tasks:
 - **Runner:** a test task still on Gradle's default runner (JUnit 4) runs on the JUnit Platform. A task that
-  chose TestNG, or configured the JUnit Platform itself, keeps its choice. Set `junitPlatform = false` to
-  keep JUnit 4.
+  chose TestNG, or configured the JUnit Platform itself, keeps its choice. Set `tests { junitPlatform = false }`
+  to keep JUnit 4.
 - **Logging:** failed tests are shown with their full stack trace. Passing tests and test output stay quiet.
 
 #### Diff Coverage
 ```kotlin
 codeArmor {
-    diffCoverage = true                       // armorDiffCoverage, in build
-    diffCoverageMinimum = 0.80                // Optional: fail when tests cover less of the changed lines
-    diffCoverageBase = "origin/develop"       // Optional: the branch to compare with
+    diffCoverage {
+        enabled = true                        // armorDiffCoverage, in build
+        minimum = 0.80                        // Optional: fail when tests cover less of the changed lines
+        base = "origin/develop"               // Optional: the branch to compare with
+    }
 }
 ```
 
@@ -411,7 +429,7 @@ changes count too:
    src/main/java/com/example/OrderService.java: untested lines 41, 42, 57
 ```
 
-It reports and never fails, until `diffCoverageMinimum` is set. The base branch is `diffCoverageBase`, else the
+It reports and never fails, until `minimum` is set. The base branch is `base`, else the
 pull request's target on GitHub Actions, GitLab, Jenkins, Azure Pipelines or Bitbucket, else `origin/HEAD`,
 `origin/main`, `origin/master`, `main` or `master`. Without one, or without the history back to it, it says so and
 passes: on GitHub Actions, check out with `fetch-depth: 0`, as the workflow `armorScaffoldProject` writes does.
@@ -419,7 +437,7 @@ passes: on GitHub Actions, check out with `fetch-depth: 0`, as the workflow `arm
 #### Integration Tests
 ```kotlin
 codeArmor {
-    integrationTests = true                   // Opt-in
+    tests { integrationTests = true }         // Opt-in
 }
 ```
 
@@ -432,11 +450,13 @@ verification and diff coverage, and the summary has a line for them. Add librari
 #### Flaky and Slow Tests
 ```kotlin
 codeArmor {
-    flakyTestRetries = 2                      // On CI; 0 turns retries off
-    slowTestThresholdMillis = 2000            // 0 turns the list off
+    tests {
+        flakyRetries = 2                      // On CI; 0 turns retries off
+        slowThresholdMillis = 2000            // 0 turns the list off
+    }
 }
 ```
-- **Flaky tests:** on CI (`CI=true`), a failed test is re-run up to `flakyTestRetries` times. If it then passes, the
+- **Flaky tests:** on CI (`CI=true`), a failed test is re-run up to `flakyRetries` times. If it then passes, the
   build passes, but CodeArmor names it as flaky instead of letting it disappear. More than ten failures in one
   test task is treated as a broken build, and nothing is retried. Locally, nothing is retried.
 - **Slow tests:** after each test run, the five slowest tests over the threshold are listed.
@@ -444,12 +464,12 @@ codeArmor {
 #### Kover (Kotlin Coverage)
 ```kotlin
 codeArmor {
-    kover = true                              // Opt-in
+    coverage { kover = true }                 // Opt-in
 }
 ```
 [Kover](https://github.com/Kotlin/kotlinx-kover) measures coverage instead of JaCoCo in projects that apply the
-Kotlin JVM plugin. It understands Kotlin's inline functions and coroutines better. The same `coverageMinimum`,
-`coverageClassMinimum` and exclusions apply.
+Kotlin JVM plugin. It understands Kotlin's inline functions and coroutines better. The same `minimum`,
+`classMinimum` and exclusions apply.
 - **Tasks:** `koverXmlReport`, `koverHtmlReport` and `koverVerify` join the local tier.
 - **SonarQube:** reads `build/reports/kover/report.xml`.
 - **Java-only projects:** they keep JaCoCo, since Kover only measures Kotlin projects.
@@ -458,8 +478,10 @@ Kotlin JVM plugin. It understands Kotlin's inline functions and coroutines bette
 #### Mutation Testing (PIT)
 ```kotlin
 codeArmor {
-    mutationTesting = true                    // Opt-in
-    mutationThreshold = 60                    // Percent; 0 (the default) only reports
+    mutationTesting {
+        enabled = true                        // Opt-in
+        threshold = 60                        // Percent; 0 (the default) only reports
+    }
 }
 ```
 [PIT](https://pitest.org) makes small changes to the production code and reports which of them no test notices.
@@ -471,14 +493,13 @@ plugin.
 #### SpotBugs
 ```kotlin
 codeArmor {
-    spotbugs = true
-    
-    // Configure SpotBugs settings
     spotbugs {
+        enabled = true
         effort = "MAX"                        // MIN, DEFAULT, MAX
         reportLevel = "HIGH"                  // LOW, MEDIUM, HIGH
         excludeFile = "config/spotbugs/spotbugs-exclude.xml"
         baselineFile = "config/spotbugs/baseline.xml"   // The default; used when it exists
+        timeout = 600000                      // Optional: milliseconds before a SpotBugs task fails
     }
 }
 ```
@@ -499,7 +520,7 @@ code, test classes (names ending in `Test`, `Tests`, `IT` or `TestCase`) and con
 `dto` packages. `ConfigParser` or `TestimonialService` is analysed like any other class. To start from
 that default and customize it, run `./gradlew armorScaffoldConfigs`: it writes
 `config/spotbugs/spotbugs-exclude.xml` and `config/owasp/suppressions.xml` (never overwriting existing
-files), which you then point `excludeFile` and `owaspSuppressionFile` at.
+files), which you then point `spotbugs { excludeFile }` and `owasp { suppressionFile }` at.
 
 SpotBugs also writes a SARIF report (`sarifReports = true`, the default), for GitHub code scanning; see
 [Code Scanning](#code-scanning).
@@ -508,8 +529,10 @@ SpotBugs also writes a SARIF report (`sarifReports = true`, the default), for Gi
 #### detekt (Kotlin)
 ```kotlin
 codeArmor {
-    detekt = true                             // On by default in projects that apply the Kotlin JVM plugin
-    detektTypeResolution = false              // Opt-in: detektMain, with type resolution, instead of detekt
+    detekt {
+        enabled = true                        // On by default in projects that apply the Kotlin JVM plugin
+        typeResolution = false                // Opt-in: detektMain, with type resolution, instead of detekt
+    }
 }
 ```
 [detekt](https://detekt.dev) is the Kotlin static analyser. In projects that apply the Kotlin JVM plugin,
@@ -522,7 +545,7 @@ fails on its findings. Java projects are left alone.
   apply to everything else.
 - **Reports:** HTML, SARIF (for GitHub code scanning) and checkstyle XML in `build/reports/detekt/`.
   SonarQube imports the XML.
-- **Type resolution:** with `detektTypeResolution = true`, `detektMain` takes `detekt`'s place in the local tier.
+- **Type resolution:** with `typeResolution = true`, `detektMain` takes `detekt`'s place in the local tier.
   It analyses the main sources against their compile classpath, so the rules that need types run too; it is
   slower. Its baseline is `detekt-baseline-main.xml`, from `./gradlew detektBaselineMain`, and its reports are
   `build/reports/detekt/main.*`.
@@ -535,36 +558,40 @@ fails on its findings. Java projects are left alone.
   `kotlin("jvm") version "…" apply false` there. Otherwise CodeArmor leaves detekt off and explains why.
 
 > ℹ️ detekt 2.0 is still an alpha, but it is the only release that reads current Kotlin: detekt 1.23 stops at
-> Kotlin 2.0. `detekt = false` switches it off.
+> Kotlin 2.0. `detekt { enabled = false }` switches it off.
 
 #### OWASP Dependency Check
 ```kotlin
 codeArmor {
-    owasp = true
-    owaspFailBuildOnCVSS = 9.0               // Fail build on CVSS score
-    owaspSuppressionFile = "config/owasp/suppressions.xml"   // Optional: CodeArmor suppresses nothing itself
-    owaspAutoUpdate = true                    // Download the NVD data when missing or older than owaspNvdValidForHours
-    owaspNvdApiKey = "your-nvd-api-key"      // NVD API key for faster updates
-    owaspNvdApiDelay = 4000                  // Delay between API calls (ms)
-    owaspNvdMaxRetryCount = 10               // Max retry attempts
-    owaspNvdValidForHours = 24               // Cache validity period
+    owasp {
+        enabled = true
+        failBuildOnCvss = 9.0                 // Fail build on CVSS score
+        suppressionFile = "config/owasp/suppressions.xml"   // Optional: CodeArmor suppresses nothing itself
+        autoUpdate = true                     // Download the NVD data when missing or older than nvdValidForHours
+        nvdApiKey = providers.environmentVariable("NVD_API_KEY")   // NVD API key for faster updates
+        nvdApiDelay = 4000                    // Delay between API calls (ms)
+        nvdMaxRetryCount = 10                 // Max retry attempts
+        nvdValidForHours = 24                 // Cache validity period
+    }
 }
 ```
 It scans `runtimeClasspath`, what ships, and not the configurations of CodeArmor's own tools. The NVD API key comes
-from `owaspNvdApiKey`, the `nvd.api.key` Gradle property, or the `NVD_API_KEY` environment variable.
+from `nvdApiKey`, the `nvd.api.key` Gradle property, or the `NVD_API_KEY` environment variable.
 
 The first scan on a machine downloads the NVD data, which takes long without an API key; later scans refresh it once
-`owaspNvdValidForHours` have passed. CodeArmor suppresses no findings itself. To suppress one you have checked, run
+`nvdValidForHours` have passed. CodeArmor suppresses no findings itself. To suppress one you have checked, run
 `./gradlew armorScaffoldConfigs` for a starting file, add a narrow rule (one package and one CVE, with a note), and
-point `owaspSuppressionFile` at it.
+point `owasp { suppressionFile }` at it.
 
 #### Dependency Health
 ```kotlin
 codeArmor {
-    dependencyUpdates = true                  // On by default, CI tier
-    sbom = true                               // On by default, CI tier
-    forbiddenLicenses = mutableListOf("AGPL-3.0-only", "GPL-3.0-only")   // Empty by default
-    dependencyAnalysis = true                 // Opt-in, CI tier
+    dependencyHealth {
+        updates = true                        // On by default, CI tier
+        sbom = true                           // On by default, CI tier
+        forbiddenLicenses = listOf("AGPL-3.0-only", "GPL-3.0-only")   // Empty by default
+        analysis = true                       // Opt-in, CI tier
+    }
 }
 ```
 - **Newer versions:** `./gradlew dependencyUpdates` ([gradle-versions-plugin](https://github.com/ben-manes/gradle-versions-plugin))
@@ -580,7 +607,7 @@ codeArmor {
   on a dependency that can only be used under one of them. A dependency that offers a choice, such as several
   licences or `Apache-2.0 OR GPL-3.0-only`, fails only when every choice is forbidden. Licences are SPDX ids or names,
   matched ignoring case.
-- **Dependency analysis:** `dependencyAnalysis = true` adds the
+- **Dependency analysis:** `analysis = true` adds the
   [dependency-analysis plugin](https://github.com/autonomousapps/dependency-analysis-gradle-plugin)'s `projectHealth`:
   dependencies declared but not used, used but only there transitively, or on the wrong configuration. It reports
   and does not fail the build. It analyzes `java-library` and Kotlin JVM projects, and applications. For Kotlin, the
@@ -588,7 +615,7 @@ codeArmor {
 #### Architecture Tests
 ```kotlin
 codeArmor {
-    architectureTests = true                  // Opt-in
+    tests { architectureTests = true }        // Opt-in
 }
 ```
 Adds [ArchUnit](https://www.archunit.org) to the tests (and the JUnit Platform launcher Gradle 9 needs), for Java and
@@ -602,12 +629,14 @@ From then on it is an ordinary test of the project's: extend it, and a violated 
 #### Library API Checks
 ```kotlin
 codeArmor {
-    apiBaseline = "1.4.0"                     // Opt-in: a released version, or "group:name:1.4.0"
-    kotlinAbiValidation = true                // Opt-in: Kotlin libraries
+    libraryApi {
+        baseline = "1.4.0"                    // Opt-in: a released version, or "group:name:1.4.0"
+        kotlinAbiValidation = true            // Opt-in: Kotlin libraries
+    }
 }
 ```
 Both are for libraries; applications have no API to keep, and are left alone.
-- **Binary compatibility:** with `apiBaseline`, `./gradlew armorApiCheck` ([japicmp](https://github.com/melix/japicmp-gradle-plugin))
+- **Binary compatibility:** with `baseline`, `./gradlew armorApiCheck` ([japicmp](https://github.com/melix/japicmp-gradle-plugin))
   compares the jar with that release and fails on binary incompatible changes, such as a removed or changed public
   method. Added API passes. It works on bytecode, so for Java and Kotlin alike. The release is resolved from the
   project's repositories; give full coordinates when it was published under another group or name. Reports:
@@ -620,26 +649,28 @@ Both are for libraries; applications have no API to keep, and are left alone.
 #### SonarQube
 ```kotlin
 codeArmor {
-    sonarqube = true
-    sonarHostUrl = "https://sonar.example.com"   // Or leave unset and set SONAR_HOST_URL
-    sonarProjectKey = "my-project"
-    sonarProjectName = "My Project"
-    sonarToken = "your-sonar-token"          // Or leave unset and set SONAR_TOKEN
-    sonarQualityGateWait = false             // Wait for quality gate result
-    sonarJavaVersion = "17"                  // Optional: taken from the project's Java settings when unset
+    sonarqube {
+        enabled = true
+        hostUrl = "https://sonar.example.com" // Or leave unset and set SONAR_HOST_URL
+        projectKey = "my-project"
+        projectName = "My Project"
+        token = providers.gradleProperty("sonarToken")   // Or leave unset and set SONAR_TOKEN
+        qualityGateWait = false               // Wait for quality gate result
+        javaVersion = "17"                    // Optional: taken from the project's Java settings when unset
+    }
 }
 ```
 
 The SonarScanner reads the sources, tests and compiled classes from the source sets, including Kotlin,
 generated and custom ones. CodeArmor adds the JaCoCo coverage, SpotBugs and OWASP reports.
 
-On CI, keep the token out of the build script: leave `sonarToken` unset and set the `SONAR_TOKEN` environment
+On CI, keep the token out of the build script: leave `token` unset and set the `SONAR_TOKEN` environment
 variable, and `SONAR_HOST_URL` for the server.
 
-`sonar` joins `fullAnalysis` only once a server or a token is configured: `sonarHostUrl` or `sonarToken`, the
+`sonar` joins `fullAnalysis` only once a server or a token is configured: `hostUrl` or `token`, the
 `SONAR_HOST_URL` or `SONAR_TOKEN` environment variables, or the `sonar.host.url` or `sonar.token` system
 properties. Without one, `fullAnalysis` leaves it out and says so. With a token and no server, the SonarScanner
-uses its default, SonarQube Cloud; a local server needs `sonarHostUrl = "http://localhost:9000"`. Listing
+uses its default, SonarQube Cloud; a local server needs `hostUrl = "http://localhost:9000"`. Listing
 `sonar` in `checks.ci` runs it regardless.
 
 
@@ -678,7 +709,7 @@ with their Gradle plugins, so their versions follow CodeArmor's. `./gradlew armo
 ### Strict Compilation
 ```kotlin
 codeArmor {
-    strictCompilation = true                  // Off by default
+    compilation { strict = true }             // Off by default
 }
 ```
 Compiler warnings in production code (the `main` source set) fail the build. Test code is left alone,
@@ -695,12 +726,14 @@ Arguments the build already passes, such as `kotlin { explicitApi() }`, are not 
 ### Error Prone and NullAway
 ```kotlin
 codeArmor {
-    errorProne = true                         // Opt-in
-    nullAway = true                           // Opt-in; turns on Error Prone as well
+    compilation {
+        errorProne = true                     // Opt-in
+        nullAway = true                       // Opt-in; turns on Error Prone as well
+    }
 }
 ```
 [Error Prone](https://errorprone.info) checks the Java sources as they compile, and its errors fail the build.
-Its warnings only fail the build together with `strictCompilation`. Kotlin sources are not checked.
+Its warnings only fail the build together with `compilation { strict = true }`. Kotlin sources are not checked.
 - **NullAway:** [NullAway](https://github.com/uber/NullAway) fails the build where production code may
   dereference null, or return or pass null where no `@Nullable` says it may. Any annotation named `Nullable`
   counts; [JSpecify](https://jspecify.dev)'s `org.jspecify:jspecify` is a good choice. It checks the packages
@@ -750,10 +783,10 @@ codeArmor {
 
 - `ci = listOf(…)` replaces a tier's defaults; `ci.add("myCheck")` adds to them.
 - Because the local tier includes `jacocoTestCoverageVerification`, `./gradlew build` fails when coverage
-  is below `coverageMinimum` or a class is below `coverageClassMinimum`. Lower those thresholds, or
+  is below `coverage { minimum }` or a class is below `coverage { classMinimum }`. Lower those thresholds, or
   leave `jacocoTestCoverageVerification` out of `build`, to adopt CodeArmor gradually.
 - `build = listOf<String>()` keeps `./gradlew build` free of CodeArmor's checks. The SpotBugs plugin
-  itself still adds its tasks to `check`; `spotbugs = false` removes those.
+  itself still adds its tasks to `check`; `spotbugs { enabled = false }` removes those.
 - The tiers apply to projects with a Java plugin; other projects, such as a docs module, are left alone.
 - Tasks in `build` must not depend on `build` themselves (as `sonar` does), or `build` would depend on
   itself.
@@ -763,10 +796,12 @@ codeArmor {
 #### Git Hooks
 ```kotlin
 codeArmor {
-    enableGitHooks = true                     // Register armorInstallGitHooks / armorUninstallGitHooks
-    prePushEnabled = true                     // armorInstallGitHooks includes the pre-push hook
-    conventionalCommits = false               // Opt-in: a commit-msg hook for Conventional Commits
-    conventionalCommitTypes = mutableListOf("feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore", "revert")
+    gitHooks {
+        enabled = true                        // Register armorInstallGitHooks / armorUninstallGitHooks
+        prePush = true                        // armorInstallGitHooks includes the pre-push hook
+        conventionalCommits = false           // Opt-in: a commit-msg hook for Conventional Commits
+        conventionalCommitTypes.add("wip")    // Adds to feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+    }
     secretScan = false                        // Opt-in: a pre-commit hook that runs gitleaks
 }
 ```
@@ -785,20 +820,14 @@ reporting. See [Code Stats](#-code-stats).
 #### Version Management
 ```kotlin
 codeArmor {
-    enableVersionFromGit = true               // Auto-version from Git tags
-    enableResourceProcessing = true          // Enable token replacement
+    versionFromGit = true                     // Auto-version from Git tags
+    resourceProcessing = true                 // Enable token replacement
 }
 ```
 
 ## 🏗️ Multi-Module Projects
 
-CodeArmor automatically detects multi-module projects and applies appropriate configurations:
-
-```kotlin
-codeArmor {
-  isMultiModule = true  // Override auto-detection if needed
-}
-```
+CodeArmor detects a multi-module build from its subprojects and applies appropriate configurations.
 
 Apply CodeArmor to the root project; it configures every module. `./gradlew allCodeQuality` runs each module's
 `codeQuality`, then two reports for the whole build on the root:
@@ -814,7 +843,7 @@ Apply CodeArmor to the root project; it configures every module. `./gradlew allC
 - **Which modules:** only modules with the Java plugin are included, so a docs or aggregator module is fine.
 - **Repositories:** the root needs none of its own. It takes JaCoCo's reporting library from a module that
   already resolves it.
-- **Switching it off:** `jacoco = false` leaves out the coverage report; the test report stays.
+- **Switching it off:** `coverage { enabled = false }` leaves out the coverage report; the test report stays.
 
 ## 🪝 Git Hooks
 
@@ -833,9 +862,9 @@ CodeArmor installs hooks only when you ask it to; a build never writes them:
 The heavier checks run in `build` and in `fullAnalysis` on CI, not on every push.
 
 ### Commit Message Hook
-With `conventionalCommits = true`, a commit-msg hook rejects a commit whose first line is not a
+With `gitHooks { conventionalCommits = true }`, a commit-msg hook rejects a commit whose first line is not a
 [Conventional Commit](https://www.conventionalcommits.org): `type(scope)!: description`, where the scope and `!`
-are optional and the type is one of `conventionalCommitTypes`. Merge, revert, `fixup!`, `squash!` and `amend!`
+are optional and the type is one of `gitHooks { conventionalCommitTypes }`. Merge, revert, `fixup!`, `squash!` and `amend!`
 commits pass, since git writes their subjects itself. `git commit --no-verify` skips the check once.
 
 ### Secret Scanning Hook
@@ -959,7 +988,7 @@ build/reports/
 ├── pitest/index.html                     # Mutation testing, when run
 ├── dependency-check/                     # OWASP Dependency Check (HTML, XML, JSON, SARIF)
 ├── cyclonedx/bom.json                    # The SBOM
-├── japicmp/api.html                      # The API check, with apiBaseline
+├── japicmp/api.html                      # The API check, with libraryApi { baseline }
 └── sarif/                                # Gathered by armorSarifReport
 build/dependencyUpdates/report.html       # Dependency updates
 ```

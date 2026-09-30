@@ -47,9 +47,9 @@ object DependencyHealthConfigurator {
         extension: CodeArmorExtension,
         projectType: ProjectType,
     ) {
-        if (extension.dependencyUpdates) configureUpdates(project)
-        if (extension.sbom) configureSbom(project, extension, projectType)
-        if (extension.dependencyAnalysis) configureAnalysis(project)
+        if (extension.dependencyHealth.updates.get()) configureUpdates(project)
+        if (extension.dependencyHealth.sbom.get()) configureSbom(project, extension, projectType)
+        if (extension.dependencyHealth.analysis.get()) configureAnalysis(project)
     }
 
     /** The dependency-analysis plugin must also be on the root project of a multi-module build. */
@@ -57,7 +57,7 @@ object DependencyHealthConfigurator {
         root: Project,
         extension: CodeArmorExtension,
     ) {
-        if (extension.dependencyAnalysis) root.pluginManager.apply(ANALYSIS_PLUGIN_ID)
+        if (extension.dependencyHealth.analysis.get()) root.pluginManager.apply(ANALYSIS_PLUGIN_ID)
     }
 
     private fun configureUpdates(project: Project) {
@@ -83,7 +83,7 @@ object DependencyHealthConfigurator {
             task.group = "verification"
             task.description = "📜 Lists the licences of the dependencies in the SBOM"
             task.sbom.set(sbom.flatMap { it.xmlOutput })
-            task.forbiddenLicenses.set(extension.forbiddenLicenses)
+            task.forbiddenLicenses.set(extension.dependencyHealth.forbiddenLicenses)
             task.report.set(project.layout.buildDirectory.file("reports/codearmor/licenses.txt"))
         }
         LogUtil.verbose("📜 SBOM and licence report configured: ./gradlew $LICENSE_TASK")

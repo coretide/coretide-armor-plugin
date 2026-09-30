@@ -26,7 +26,7 @@ import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.toolchain.JavaToolchainService
 
 /**
- * Error Prone (`errorProne = true`) checks the Java sources as they compile, and NullAway (`nullAway = true`),
+ * Error Prone (`compilation { errorProne = true }`) checks the Java sources as they compile, and NullAway (`compilation { nullAway = true }`),
  * one of its checks, fails the build where production code may dereference null. Kotlin sources are not
  * checked: Error Prone is a javac plugin.
  */
@@ -44,7 +44,7 @@ object ErrorProneConfigurator {
         project: Project,
         extension: CodeArmorExtension,
     ) {
-        if (!extension.errorProne && !extension.nullAway) return
+        if (!extension.compilation.errorProne.get() && !extension.compilation.nullAway.get()) return
         project.plugins.withType(JavaPlugin::class.java) {
             project.pluginManager.apply(PLUGIN_ID)
             addDependencies(project, extension)
@@ -55,12 +55,12 @@ object ErrorProneConfigurator {
             sourceSets.configureEach { sourceSet ->
                 val main = sourceSet.name == SourceSet.MAIN_SOURCE_SET_NAME
                 project.tasks.named(sourceSet.compileJavaTaskName, JavaCompile::class.java).configure { task ->
-                    configureTask(task, if (extension.nullAway && main) nullAwayOptions else null, extension.nullAway)
+                    configureTask(task, if (extension.compilation.nullAway.get() && main) nullAwayOptions else null, extension.compilation.nullAway.get())
                 }
             }
             LogUtil.verbose(
                 "🐞 Error Prone ${extension.toolVersions.errorProne.get()} configured" +
-                    if (extension.nullAway) " with NullAway ${extension.toolVersions.nullAway.get()}" else "",
+                    if (extension.compilation.nullAway.get()) " with NullAway ${extension.toolVersions.nullAway.get()}" else "",
             )
         }
     }
@@ -83,7 +83,7 @@ object ErrorProneConfigurator {
         val dependencies =
             listOfNotNull(
                 "com.google.errorprone:error_prone_core:${extension.toolVersions.errorProne.get()}",
-                "com.uber.nullaway:nullaway:${extension.toolVersions.nullAway.get()}".takeIf { extension.nullAway },
+                "com.uber.nullaway:nullaway:${extension.toolVersions.nullAway.get()}".takeIf { extension.compilation.nullAway.get() },
             ).map { project.dependencies.create(it) }
         project.configurations.named(CONFIGURATION) { configuration ->
             configuration.dependencies.addAllLater(supported.map { if (it) dependencies else emptyList() })

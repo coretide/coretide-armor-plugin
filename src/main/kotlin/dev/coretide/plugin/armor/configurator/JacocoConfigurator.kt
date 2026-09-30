@@ -36,7 +36,7 @@ object JacocoConfigurator {
         extension: CodeArmorExtension,
         task: JacocoReportBase,
     ) {
-        if (!extension.integrationTests) return
+        if (!extension.tests.integrationTests.get()) return
         task.executionData.from(project.layout.buildDirectory.file("jacoco/${IntegrationTestsConfigurator.TASK_NAME}.exec"))
         task.mustRunAfter(project.tasks.named { it == IntegrationTestsConfigurator.TASK_NAME })
     }
@@ -82,16 +82,16 @@ object JacocoConfigurator {
                 verification.violationRules { rules ->
                     rules.rule { rule ->
                         rule.limit { limit ->
-                            limit.minimum = extension.coverageMinimum.toBigDecimal()
+                            limit.minimum = extension.coverage.minimum.get().toBigDecimal()
                         }
                     }
                     rules.rule { rule ->
                         rule.element = "CLASS"
                         rule.excludes = generateJacocoVerificationExclusions(extension)
-                        rule.includes = extension.coverageInclusions
+                        rule.includes = extension.coverage.inclusions.get()
                         rule.limit { limit ->
                             limit.counter = "LINE"
-                            limit.minimum = extension.coverageClassMinimum.toBigDecimal()
+                            limit.minimum = extension.coverage.classMinimum.get().toBigDecimal()
                         }
                     }
                 }

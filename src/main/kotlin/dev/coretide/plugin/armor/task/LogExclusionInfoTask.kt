@@ -56,23 +56,23 @@ abstract class LogExclusionInfoTask : DefaultTask() {
             lines += "🛡️ CodeArmor Exclusion Information"
             lines += "=".repeat(SEPARATOR_WIDTH)
             lines += "📊 Summary:"
-            if (extension.coverageIncludeDefaultExclusions) {
+            if (extension.coverage.defaultExclusions.get()) {
                 lines += "  • Default exclusions: ${defaultExclusions.size}"
             } else {
                 lines += "  • Default exclusions: DISABLED"
             }
-            lines += "  • User exclusions: ${extension.coverageExclusions.size}"
+            lines += "  • User exclusions: ${extension.coverage.exclusions.get().size}"
             lines += "  • Total patterns: ${combined.size}"
 
-            if (extension.logLevel == ArmorLogLevel.VERBOSE) {
+            if (extension.logLevel.get() == ArmorLogLevel.VERBOSE) {
                 lines += "\n📋 Detailed Patterns:"
-                if (extension.coverageIncludeDefaultExclusions) {
+                if (extension.coverage.defaultExclusions.get()) {
                     lines += "  Default patterns:"
                     defaultExclusions.forEach { lines += "    - $it" }
                 }
-                if (extension.coverageExclusions.isNotEmpty()) {
+                if (extension.coverage.exclusions.get().isNotEmpty()) {
                     lines += "  User patterns:"
-                    extension.coverageExclusions.forEach { lines += "    - $it" }
+                    extension.coverage.exclusions.get().forEach { lines += "    - $it" }
                 }
                 lines += "\n🔧 Generated Exclusions:"
                 lines += "  JaCoCo Report exclusions:"
@@ -86,10 +86,10 @@ abstract class LogExclusionInfoTask : DefaultTask() {
             }
 
             lines += "\n📈 Coverage Settings:"
-            lines += "  • Minimum coverage: ${(extension.coverageMinimum * 100).toInt()}%"
-            lines += "  • Class minimum coverage: ${(extension.coverageClassMinimum * 100).toInt()}%"
-            if (extension.coverageInclusions.isNotEmpty()) {
-                lines += "  • Coverage inclusions: ${extension.coverageInclusions.joinToString(", ")}"
+            lines += "  • Minimum coverage: ${(extension.coverage.minimum.get() * 100).toInt()}%"
+            lines += "  • Class minimum coverage: ${(extension.coverage.classMinimum.get() * 100).toInt()}%"
+            if (extension.coverage.inclusions.get().isNotEmpty()) {
+                lines += "  • Coverage inclusions: ${extension.coverage.inclusions.get().joinToString(", ")}"
             }
             lines += "=".repeat(SEPARATOR_WIDTH)
             return lines

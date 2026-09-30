@@ -21,8 +21,8 @@ import org.gradle.api.tasks.UntrackedTask
  * committed and customized.
  *
  * Previously this happened implicitly during configuration. It is now opt-in: run
- * `./gradlew armorScaffoldConfigs`, then point `spotbugsConfig.excludeFile` /
- * `owaspSuppressionFile` at the generated files (or leave them unset to keep using the
+ * `./gradlew armorScaffoldConfigs`, then point `spotbugs { excludeFile }` /
+ * `owasp { suppressionFile }` at the generated files (or leave them unset to keep using the
  * build-directory defaults).
  *
  * Existing files are never overwritten.

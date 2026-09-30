@@ -35,14 +35,14 @@ object SonarqubeConfigurator {
         project: Project,
         extension: CodeArmorExtension,
     ): Boolean =
-        !extension.sonarHostUrl.isNullOrBlank() ||
-            !extension.sonarToken.isNullOrBlank() ||
+        !extension.sonarqube.hostUrl.orNull.isNullOrBlank() ||
+            !extension.sonarqube.token.orNull.isNullOrBlank() ||
             SERVER_ENVIRONMENT.any { !project.providers.environmentVariable(it).orNull.isNullOrBlank() } ||
             SERVER_SYSTEM_PROPERTIES.any { !project.providers.systemProperty(it).orNull.isNullOrBlank() }
 
     /** `SONAR_HOST_URL`, else the build's own setting; null leaves the choice to the SonarScanner. */
     fun hostUrl(extension: CodeArmorExtension): String? =
-        System.getenv("SONAR_HOST_URL")?.takeIf { it.isNotBlank() } ?: extension.sonarHostUrl?.takeIf { it.isNotBlank() }
+        System.getenv("SONAR_HOST_URL")?.takeIf { it.isNotBlank() } ?: extension.sonarqube.hostUrl.orNull?.takeIf { it.isNotBlank() }
 
     fun configureSonarqube(
         project: Project,
@@ -58,16 +58,16 @@ object SonarqubeConfigurator {
                 sonarProperties.property("sonar.projectKey", projectKey(project, extension))
                 sonarProperties.property(
                     "sonar.projectName",
-                    extension.sonarProjectName?.takeIf { it.isNotEmpty() } ?: project.name,
+                    extension.sonarqube.projectName.orNull?.takeIf { it.isNotEmpty() } ?: project.name,
                 )
                 // Only when configured: the SonarScanner reads SONAR_TOKEN from the environment, the usual way on CI,
                 // only while sonar.token is unset. An empty value would shadow it.
-                extension.sonarToken?.takeIf { it.isNotEmpty() }?.let { sonarProperties.property("sonar.token", it) }
+                extension.sonarqube.token.orNull?.takeIf { it.isNotEmpty() }?.let { sonarProperties.property("sonar.token", it) }
                 sonarProperties.property("sonar.projectVersion", "${project.version}")
                 sonarProperties.property("sonar.sourceEncoding", "UTF-8")
                 // Sources, tests and class directories come from the source sets: the SonarScanner reads
                 // them itself, including Kotlin, generated and custom source sets.
-                extension.sonarJavaVersion?.takeIf { it.isNotBlank() }?.let { javaVersion ->
+                extension.sonarqube.javaVersion.orNull?.takeIf { it.isNotBlank() }?.let { javaVersion ->
                     sonarProperties.property("sonar.java.source", javaVersion)
                     sonarProperties.property("sonar.java.target", javaVersion)
                 }
@@ -93,8 +93,8 @@ object SonarqubeConfigurator {
                 )
                 // Quality gates, coverage and duplication thresholds, and ratings are set on the server; the
                 // SonarScanner has no properties for them.
-                sonarProperties.property("sonar.qualitygate.wait", extension.sonarQualityGateWait.toString())
-                if (extension.spotbugs && extension.spotbugsConfig.xmlReports) {
+                sonarProperties.property("sonar.qualitygate.wait", extension.sonarqube.qualityGateWait.get().toString())
+                if (extension.spotbugs.enabled.get() && extension.spotbugs.xmlReports.get()) {
                     sonarProperties.property(
                         "sonar.java.spotbugs.reportPaths",
                         SpotbugsConfigurator.reportFile(project, "spotbugsMain", "xml").absolutePath,
@@ -103,7 +103,7 @@ object SonarqubeConfigurator {
                 DetektConfigurator.checkstyleReport(project, extension)?.let { report ->
                     sonarProperties.property("sonar.kotlin.detekt.reportPaths", report.absolutePath)
                 }
-                if (extension.owasp) {
+                if (extension.owasp.enabled.get()) {
                     // The Dependency-Check SonarQube plugin reads the JSON report, and no other.
                     sonarProperties.property(
                         "sonar.dependencyCheck.jsonReportPath",
@@ -119,16 +119,16 @@ object SonarqubeConfigurator {
                 task.dependsOn("build")
                 if (usesKover) {
                     task.dependsOn("koverXmlReport")
-                } else if (extension.jacoco) {
+                } else if (extension.coverage.enabled.get()) {
                     task.dependsOn("jacocoTestCoverageVerification")
                     if (aggregatedCoverage != null) {
                         task.dependsOn(":${AggregatedReportsConfigurator.COVERAGE_REPORT}")
                     }
                 }
-                if (extension.spotbugs) {
+                if (extension.spotbugs.enabled.get()) {
                     task.dependsOn("spotbugsMain")
                 }
-                if (extension.owasp) {
+                if (extension.owasp.enabled.get()) {
                     task.dependsOn("dependencyCheckAnalyze")
                 }
                 val dashboard = "${hostUrl(extension) ?: DEFAULT_SERVER}/dashboard?id=${projectKey(project, extension)}"
@@ -143,5 +143,5 @@ object SonarqubeConfigurator {
     private fun projectKey(
         project: Project,
         extension: CodeArmorExtension,
-    ): String = extension.sonarProjectKey?.takeIf { it.isNotEmpty() } ?: "${project.group}:${project.name}"
+    ): String = extension.sonarqube.projectKey.orNull?.takeIf { it.isNotEmpty() } ?: "${project.group}:${project.name}"
 }

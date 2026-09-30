@@ -26,6 +26,7 @@ import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.configure
 import java.io.File
+import java.time.Duration
 
 object SpotbugsConfigurator {
     fun configureSpotbugs(
@@ -34,17 +35,17 @@ object SpotbugsConfigurator {
     ) {
         project.pluginManager.apply("com.github.spotbugs")
 
-        val config = extension.spotbugsConfig
+        val config = extension.spotbugs
 
         project.configure<SpotBugsExtension> {
-            toolVersion.set(config.toolVersion)
-            ignoreFailures.set(config.ignoreFailures)
-            showStackTraces.set(config.showStackTraces)
-            showProgress.set(config.showProgress)
-            effort.set(Effort.valueOf(config.effort))
-            reportLevel.set(Confidence.valueOf(config.reportLevel))
+            toolVersion.set(config.toolVersion.get())
+            ignoreFailures.set(config.ignoreFailures.get())
+            showStackTraces.set(config.showStackTraces.get())
+            showProgress.set(config.showProgress.get())
+            effort.set(Effort.valueOf(config.effort.get()))
+            reportLevel.set(Confidence.valueOf(config.reportLevel.get()))
             excludeFilter.set(resolveExcludeFile(project, config))
-            config.includeFile?.let { includeFilePath ->
+            config.includeFile.orNull?.let { includeFilePath ->
                 val includeFileObj = project.file(includeFilePath)
                 if (includeFileObj.exists()) {
                     includeFilter.set(includeFileObj)
@@ -52,31 +53,31 @@ object SpotbugsConfigurator {
                     LogUtil.essential("⚠️ SpotBugs include file not found: $includeFilePath")
                 }
             }
-            config.maxHeap?.let { heap ->
+            config.maxHeap.orNull?.let { heap ->
                 maxHeapSize.set(heap)
             }
-            if (config.bugCategories.isNotEmpty()) {
+            if (config.bugCategories.get().isNotEmpty()) {
                 visitors.set(config.bugCategories)
             }
-            if (config.extraArgs.isNotEmpty()) {
-                extraArgs.addAll(config.extraArgs)
-            }
+            extraArgs.addAll(config.extraArgs)
             LogUtil.verbose("🔧 SpotBugs configuration:")
-            LogUtil.verbose("   • Tool version: ${config.toolVersion}")
-            LogUtil.verbose("   • Effort: ${config.effort}")
-            LogUtil.verbose("   • Report level: ${config.reportLevel}")
-            config.maxHeap?.let { LogUtil.verbose("   • Max heap: $it") }
-            config.timeout?.let { LogUtil.verbose("   • Timeout: ${it}ms") }
-            if (config.bugCategories.isNotEmpty()) {
-                LogUtil.verbose("   • Bug categories: ${config.bugCategories.joinToString(", ")}")
+            LogUtil.verbose("   • Tool version: ${config.toolVersion.get()}")
+            LogUtil.verbose("   • Effort: ${config.effort.get()}")
+            LogUtil.verbose("   • Report level: ${config.reportLevel.get()}")
+            config.maxHeap.orNull?.let { LogUtil.verbose("   • Max heap: $it") }
+            config.timeout.orNull?.let { LogUtil.verbose("   • Timeout: ${it}ms") }
+            if (config.bugCategories.get().isNotEmpty()) {
+                LogUtil.verbose("   • Bug categories: ${config.bugCategories.get().joinToString(", ")}")
             }
         }
-        val baseline = project.file(config.baselineFile)
+        val baseline = project.file(config.baselineFile.get())
         // Writing the baseline needs every finding: none may fail the build, or be left out by the old baseline.
         val writingBaseline = project.gradle.startParameter.taskNames.any { it.substringAfterLast(':') == SpotbugsBaselineTask.TASK_NAME }
         project.tasks.withType(SpotBugsTask::class.java).configureEach { task ->
             val main = task.name == MAIN_TASK
-            configureSpotBugsTask(task, project, config, xml = config.xmlReports || (main && writingBaseline))
+            configureSpotBugsTask(task, project, config, xml = config.xmlReports.get() || (main && writingBaseline))
+            // Until 0.5.0 the timeout was only logged.
+            config.timeout.orNull?.let { task.timeout.set(Duration.ofMillis(it.toLong())) }
             if (main && writingBaseline) {
                 task.ignoreFailures = true
             } else if (main) {
@@ -90,7 +91,7 @@ object SpotbugsConfigurator {
                 task.baseline.set(baseline)
             }
         }
-        LogUtil.verbose("✅ SpotBugs configured with version ${config.toolVersion}")
+        LogUtil.verbose("✅ SpotBugs configured with version ${config.toolVersion.get()}")
     }
 
     const val MAIN_TASK = "spotbugsMain"
@@ -105,7 +106,7 @@ object SpotbugsConfigurator {
         project: Project,
         config: SpotBugsConfig,
     ): Provider<RegularFile> {
-        config.excludeFile?.let { excludeFilePath ->
+        config.excludeFile.orNull?.let { excludeFilePath ->
             val excludeFileObj = project.file(excludeFilePath)
             if (excludeFileObj.exists()) {
                 return project.layout.file(project.provider { excludeFileObj })
@@ -149,21 +150,21 @@ object SpotbugsConfigurator {
                 }
             }
 
-            if (config.htmlReports) {
+            if (config.htmlReports.get()) {
                 reports.create("html") { report ->
                     report.required.set(true)
                     report.outputLocation.set(reportFile(project, task.name, "html"))
                 }
             }
 
-            if (config.textReports) {
+            if (config.textReports.get()) {
                 reports.create("text") { report ->
                     report.required.set(true)
                     report.outputLocation.set(reportFile(project, task.name, "txt"))
                 }
             }
 
-            if (config.sarifReports) {
+            if (config.sarifReports.get()) {
                 try {
                     reports.create("sarif") { report ->
                         report.required.set(true)
@@ -175,15 +176,17 @@ object SpotbugsConfigurator {
             }
         }
 
+        val html = config.htmlReports.get()
+        val text = config.textReports.get()
         task.doLast {
             LogUtil.verbose("✅ SpotBugs analysis completed for ${task.name}")
-            if (config.htmlReports) {
+            if (html) {
                 LogUtil.verbose("📊 HTML report: build/reports/spotbugs/${task.name}.html")
             }
-            if (config.xmlReports) {
+            if (xml) {
                 LogUtil.verbose("📄 XML report: build/reports/spotbugs/${task.name}.xml")
             }
-            if (config.textReports) {
+            if (text) {
                 LogUtil.verbose("📝 Text report: build/reports/spotbugs/${task.name}.txt")
             }
         }

@@ -36,10 +36,10 @@ object OwaspConfigurator {
         project.configure<DependencyCheckExtension> {
             // dependency-check 12.2.x exposes lazy Gradle properties; plugin source must call
             // set() explicitly (the `=` form is a Kotlin DSL script-only convenience).
-            failBuildOnCVSS.set(extension.owaspFailBuildOnCVSS.toFloat())
+            failBuildOnCVSS.set(extension.owasp.failBuildOnCvss.get().toFloat())
             formats.set(listOf("HTML", "XML", "JSON", "SARIF"))
             outputDirectory.set(project.layout.buildDirectory.dir(REPORT_DIRECTORY))
-            autoUpdate.set(extension.owaspAutoUpdate)
+            autoUpdate.set(extension.owasp.autoUpdate.get())
             // What ships, as in the SBOM. Left empty, every configuration is scanned, CodeArmor's own tools
             // (SpotBugs, detekt, PIT, Error Prone, JaCoCo) included, and a CVE in one of them fails the build.
             scanConfigurations.set(DependencyHealthConfigurator.SBOM_CONFIGURATIONS)
@@ -78,7 +78,7 @@ object OwaspConfigurator {
         project: Project,
         extension: CodeArmorExtension,
     ): String? {
-        val configured = extension.owaspSuppressionFile ?: return null
+        val configured = extension.owasp.suppressionFile.orNull ?: return null
         val file = project.file(configured)
         if (file.isFile) return file.absolutePath
         LogUtil.essential("⚠️ OWASP suppression file not found, so no suppressions apply: $configured")
@@ -90,7 +90,7 @@ object OwaspConfigurator {
         project: Project,
         extension: CodeArmorExtension,
     ): String? =
-        extension.owaspNvdApiKey
+        extension.owasp.nvdApiKey.orNull
             ?: project.findProperty("nvd.api.key") as? String
             ?: System.getenv("NVD_API_KEY")
             ?: System.getProperty("nvd.api.key")
@@ -101,9 +101,9 @@ object OwaspConfigurator {
         nvd: NvdExtension,
     ) {
         val apiKey = nvdApiKey(project, extension)
-        nvd.delay.set(extension.owaspNvdApiDelay)
-        nvd.maxRetryCount.set(extension.owaspNvdMaxRetryCount)
-        nvd.validForHours.set(extension.owaspNvdValidForHours)
+        nvd.delay.set(extension.owasp.nvdApiDelay.get())
+        nvd.maxRetryCount.set(extension.owasp.nvdMaxRetryCount.get())
+        nvd.validForHours.set(extension.owasp.nvdValidForHours.get())
         if (apiKey != null) {
             LogUtil.essential("🔑 CodeArmor: Using NVD API key for faster vulnerability lookups")
             nvd.apiKey.set(apiKey)

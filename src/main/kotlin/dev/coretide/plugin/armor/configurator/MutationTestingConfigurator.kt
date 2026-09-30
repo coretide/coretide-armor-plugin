@@ -23,7 +23,7 @@ import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
 import java.io.File
 
 /**
- * Mutation testing with PIT (`mutationTesting = true`): `./gradlew pitest` changes the production code in
+ * Mutation testing with PIT (`mutationTesting { enabled = true }`): `./gradlew pitest` changes the production code in
  * small ways and reports which changes no test notices. It runs on demand, not in a check tier: it is slow.
  */
 object MutationTestingConfigurator {
@@ -36,7 +36,7 @@ object MutationTestingConfigurator {
         project: Project,
         extension: CodeArmorExtension,
     ) {
-        if (!extension.mutationTesting || !project.plugins.hasPlugin(JavaPlugin::class.java)) return
+        if (!extension.mutationTesting.enabled.get() || !project.plugins.hasPlugin(JavaPlugin::class.java)) return
         project.pluginManager.apply(PLUGIN_ID)
         // The JUnit 5 plugin only works when the tests run on the JUnit Platform. Looked up lazily: CodeArmor's
         // own switch to the JUnit Platform happens later in configuration.
@@ -56,7 +56,7 @@ object MutationTestingConfigurator {
             pitest.outputFormats.set(setOf("XML", "HTML"))
             pitest.timestampedReports.set(false)
             pitest.failWhenNoMutations.set(false)
-            pitest.mutationThreshold.set(extension.mutationThreshold)
+            pitest.mutationThreshold.set(extension.mutationTesting.threshold.get())
         }
         LogUtil.verbose("🧬 PIT mutation testing configured: ./gradlew pitest")
     }

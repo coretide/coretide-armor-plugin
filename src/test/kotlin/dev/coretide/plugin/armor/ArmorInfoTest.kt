@@ -61,7 +61,7 @@ class ArmorInfoTest {
     ) {
         ArmorTestFixture.writeProject(
             dir,
-            armorConfig = "    sonarHostUrl = \"https://sonar.example.com\"\n    owaspNvdApiKey = \"key\"\n    coverageMinimum = 0.825",
+            armorConfig = "    sonarqube { hostUrl = \"https://sonar.example.com\" }\n    owasp { nvdApiKey = \"key\" }\n    coverage { minimum = 0.825 }",
         )
 
         val output = info(dir)
@@ -85,26 +85,26 @@ class ArmorInfoTest {
     }
 
     @Test
-    fun `a Kotlin project with kover = true uses Kover and detekt, a Java one JaCoCo`(
+    fun `a Kotlin project with coverage { kover = true } uses Kover and detekt, a Java one JaCoCo`(
         @TempDir kotlin: File,
         @TempDir java: File,
     ) {
-        ArmorTestFixture.writeProject(kotlin, language = Language.KOTLIN, armorConfig = "    kover = true")
-        ArmorTestFixture.writeProject(java, armorConfig = "    kover = true")
+        ArmorTestFixture.writeProject(kotlin, language = Language.KOTLIN, armorConfig = "    coverage { kover = true }")
+        ArmorTestFixture.writeProject(java, armorConfig = "    coverage { kover = true }")
 
         val kotlinOutput = info(kotlin)
         val javaOutput = info(java)
 
         assertContains(kotlinOutput, "  ✅ Kover: at least 30% of lines, 25% per class")
         assertContains(kotlinOutput, "  ✅ detekt ")
-        assertContains(javaOutput, "(kover = true, but no Kotlin here)")
+        assertContains(javaOutput, "(coverage { kover = true }, but no Kotlin here)")
     }
 
     @Test
     fun `missing git hooks and gitleaks need attention, installed ones do not`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, armorConfig = "    enableGitHooks = true\n    secretScan = true\n    sonarqube = false\n    owasp = false")
+        ArmorTestFixture.writeProject(dir, armorConfig = "    gitHooks { enabled = true }\n    secretScan = true\n    sonarqube { enabled = false }\n    owasp { enabled = false }")
         ArmorTestFixture.initGitRepository(dir)
         val gitleaks = dir.resolve("tools/gitleaks").apply { parentFile.mkdirs() }
         gitleaks.writeText("#!/bin/sh\nexit 0\n")

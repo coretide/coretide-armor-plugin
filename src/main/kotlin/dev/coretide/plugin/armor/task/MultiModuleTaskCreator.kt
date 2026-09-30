@@ -36,10 +36,10 @@ object MultiModuleTaskCreator {
 
         val aggregatedReports = AggregatedReportsConfigurator.configure(project, extension)
         DependencyHealthConfigurator.configureAnalysisRoot(project, extension)
-        val aggregatedCoverage = if (extension.jacoco && !extension.kover) AggregatedReportsConfigurator.coverageXml(project) else null
+        val aggregatedCoverage = if (extension.coverage.enabled.get() && !extension.coverage.kover.get()) AggregatedReportsConfigurator.coverageXml(project) else null
 
         // The secret scan covers the repository: once, from the root, for every module's fullAnalysis.
-        val secretScan = if (extension.secretScan) SecretScanTask.register(project) else null
+        val secretScan = if (extension.secretScan.get()) SecretScanTask.register(project) else null
         actualProjects.forEach { subproject ->
             subproject.afterEvaluate {
                 val subProjectType = ProjectDetector.detectProjectType(subproject)

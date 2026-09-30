@@ -47,7 +47,7 @@ class DependencyHealthTest {
     fun `a forbidden licence fails the licence report`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, armorConfig = "    forbiddenLicenses = mutableListOf(\"MIT\")", extraScript = dependencies)
+        ArmorTestFixture.writeProject(dir, armorConfig = "    dependencyHealth { forbiddenLicenses = mutableListOf(\"MIT\") }", extraScript = dependencies)
 
         val failure = ArmorTestFixture.runAndFail(dir, "armorLicenseReport")
 
@@ -78,7 +78,7 @@ class DependencyHealthTest {
     ) {
         ArmorTestFixture.writeProject(
             dir,
-            armorConfig = "    dependencyAnalysis = true",
+            armorConfig = "    dependencyHealth { analysis = true }",
             extraPlugins = listOf("java-library"),
             extraScript = dependencies,
         )
@@ -93,7 +93,7 @@ class DependencyHealthTest {
     fun `a multi-module build gets the dependency analysis on its root and modules`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeMultiModuleProject(dir, armorConfig = "    dependencyAnalysis = true")
+        ArmorTestFixture.writeMultiModuleProject(dir, armorConfig = "    dependencyHealth { analysis = true }")
         dir.resolve("module-a/build.gradle.kts").writeText(
             """
             plugins {

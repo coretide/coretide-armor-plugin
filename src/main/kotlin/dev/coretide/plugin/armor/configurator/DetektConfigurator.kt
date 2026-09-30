@@ -31,7 +31,7 @@ object DetektConfigurator {
     const val TYPE_RESOLUTION_TASK = "detektMain"
 
     /** The detekt task the build tier runs. */
-    fun taskName(extension: CodeArmorExtension): String = if (extension.detektTypeResolution) TYPE_RESOLUTION_TASK else TASK_NAME
+    fun taskName(extension: CodeArmorExtension): String = if (extension.detekt.typeResolution.get()) TYPE_RESOLUTION_TASK else TASK_NAME
 
     /** detekt 1.x. A project that applies it keeps it, and its `detekt` task joins the build tier instead. */
     const val LEGACY_PLUGIN_ID = "io.gitlab.arturbosch.detekt"
@@ -48,7 +48,7 @@ object DetektConfigurator {
         project: Project,
         extension: CodeArmorExtension,
     ) {
-        if (!extension.detekt || !project.plugins.hasPlugin(KOTLIN_JVM_PLUGIN_ID)) return
+        if (!extension.detekt.enabled.get() || !project.plugins.hasPlugin(KOTLIN_JVM_PLUGIN_ID)) return
         if (project.plugins.hasPlugin(LEGACY_PLUGIN_ID)) {
             LogUtil.verbose("🔍 CodeArmor: this project applies detekt 1.x itself; its detekt task joins the build tier")
             return
@@ -58,7 +58,7 @@ object DetektConfigurator {
             LogUtil.essential(
                 "⚠️ CodeArmor: detekt ${DETEKT_VERSION} supports Kotlin up to " +
                     "${majorMinor(DETEKT_KOTLIN_VERSION)}, and this project uses Kotlin $kotlinVersion, " +
-                    "so detekt is off. A later CodeArmor release will update it; set detekt = false to hide this.",
+                    "so detekt is off. A later CodeArmor release will update it; set detekt { enabled = false } to hide this.",
             )
             return
         }

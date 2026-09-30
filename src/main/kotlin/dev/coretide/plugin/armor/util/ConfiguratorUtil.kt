@@ -45,23 +45,23 @@ object ConfiguratorUtil {
         CompilerConfigurator.configure(project, extension, projectType)
         ErrorProneConfigurator.configure(project, extension)
         IntegrationTestsConfigurator.configure(project, extension)
-        if (extension.jacoco || extension.kover) TestConventions.configure(project, extension)
+        if (extension.coverage.enabled.get() || extension.coverage.kover.get()) TestConventions.configure(project, extension)
         if (KoverConfigurator.usesKover(project, extension)) {
             KoverConfigurator.configure(project, extension)
-        } else if (extension.jacoco || extension.kover) {
-            if (extension.kover) LogUtil.verbose("📊 Kover measures Kotlin projects only; ${project.path} keeps JaCoCo")
+        } else if (extension.coverage.enabled.get() || extension.coverage.kover.get()) {
+            if (extension.coverage.kover.get()) LogUtil.verbose("📊 Kover measures Kotlin projects only; ${project.path} keeps JaCoCo")
             JacocoConfigurator.configureJacoco(project, extension)
         }
         DiffCoverageConfigurator.configure(project, extension)
         TestReportingConfigurator.configure(project, extension)
         MutationTestingConfigurator.configure(project, extension)
-        if (extension.spotbugs) SpotbugsConfigurator.configureSpotbugs(project, extension)
+        if (extension.spotbugs.enabled.get()) SpotbugsConfigurator.configureSpotbugs(project, extension)
         DetektConfigurator.configure(project, extension)
-        if (extension.owasp) OwaspConfigurator.configureOwasp(project, extension)
+        if (extension.owasp.enabled.get()) OwaspConfigurator.configureOwasp(project, extension)
         DependencyHealthConfigurator.configure(project, extension, projectType)
         ApiCompatibilityConfigurator.configure(project, extension, projectType)
         ArchitectureTestsConfigurator.configure(project, extension)
         if (VeracodeConfigurator.enabled(extension)) VeracodeConfigurator.configureVeracode(project)
-        if (extension.sonarqube) SonarqubeConfigurator.configureSonarqube(project, extension, aggregatedCoverage)
+        if (extension.sonarqube.enabled.get()) SonarqubeConfigurator.configureSonarqube(project, extension, aggregatedCoverage)
     }
 }

@@ -42,11 +42,11 @@ object GitHooksManager {
     ) {
         project.tasks.register("armorInstallGitHooks", InstallGitHooksTask::class.java) { task ->
             task.gradleRootDirectory.set(project.rootDir)
-            task.prePushEnabled.set(project.provider { extension.prePushEnabled })
+            task.prePushEnabled.set(extension.gitHooks.prePush)
             task.prePushTasks.set(extension.checks.prePush)
-            task.conventionalCommits.set(project.provider { extension.conventionalCommits })
-            task.conventionalCommitTypes.set(project.provider { extension.conventionalCommitTypes })
-            task.secretScan.set(project.provider { extension.secretScan })
+            task.conventionalCommits.set(extension.gitHooks.conventionalCommits)
+            task.conventionalCommitTypes.set(extension.gitHooks.conventionalCommitTypes)
+            task.secretScan.set(extension.secretScan)
         }
         project.tasks.register("armorUninstallGitHooks", UninstallGitHooksTask::class.java) { task ->
             task.gradleRootDirectory.set(project.rootDir)

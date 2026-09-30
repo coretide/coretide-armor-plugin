@@ -67,7 +67,7 @@ class ProjectConventionsTest {
         @TempDir configured: File,
     ) {
         ArmorTestFixture.writeProject(unset, extraScript = PRINT_SONAR)
-        ArmorTestFixture.writeProject(configured, armorConfig = "    sonarToken = \"from-the-build\"", extraScript = PRINT_SONAR)
+        ArmorTestFixture.writeProject(configured, armorConfig = "    sonarqube { token = \"from-the-build\" }", extraScript = PRINT_SONAR)
 
         val withoutToken = sonar(ArmorTestFixture.run(unset, "printSonarProperties"))
         val withToken = sonar(ArmorTestFixture.run(configured, "printSonarProperties"))
@@ -83,7 +83,7 @@ class ProjectConventionsTest {
         @TempDir configured: File,
     ) {
         ArmorTestFixture.writeProject(unset, extraScript = PRINT_SONAR)
-        ArmorTestFixture.writeProject(configured, armorConfig = "    sonarHostUrl = \"https://sonar.example.com\"", extraScript = PRINT_SONAR)
+        ArmorTestFixture.writeProject(configured, armorConfig = "    sonarqube { hostUrl = \"https://sonar.example.com\" }", extraScript = PRINT_SONAR)
         val noServer = setOf("SONAR_HOST_URL", "SONAR_TOKEN")
 
         val withoutHost = sonar(ArmorTestFixture.runWithEnvironment(unset, "printSonarProperties", unset = noServer))
@@ -141,7 +141,7 @@ class ProjectConventionsTest {
     fun `sonarJavaVersion still overrides the Java version`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, armorConfig = """    sonarJavaVersion = "17"""", extraScript = PRINT_SONAR)
+        ArmorTestFixture.writeProject(dir, armorConfig = """    sonarqube { javaVersion = "17" }""", extraScript = PRINT_SONAR)
 
         val properties = sonar(ArmorTestFixture.run(dir, "printSonarProperties"))
 
@@ -188,10 +188,10 @@ class ProjectConventionsTest {
     }
 
     @Test
-    fun `junitPlatform = false keeps JUnit 4`(
+    fun `tests { junitPlatform = false } keeps JUnit 4`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, armorConfig = "    junitPlatform = false", extraScript = PRINT_TEST_FRAMEWORK)
+        ArmorTestFixture.writeProject(dir, armorConfig = "    tests { junitPlatform = false }", extraScript = PRINT_TEST_FRAMEWORK)
 
         assertEquals("JUnitOptions", line(ArmorTestFixture.run(dir, "printTestFramework", "--warning-mode=fail"), "FRAMEWORK "))
     }
@@ -202,7 +202,7 @@ class ProjectConventionsTest {
     ) {
         ArmorTestFixture.writeProject(
             dir,
-            armorConfig = "    coverageMinimum = 0.0\n    coverageClassMinimum = 0.0",
+            armorConfig = "    coverage { minimum = 0.0; classMinimum = 0.0 }",
             extraScript =
                 """
                 dependencies {

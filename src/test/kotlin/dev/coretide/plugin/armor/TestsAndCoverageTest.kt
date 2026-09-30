@@ -66,7 +66,7 @@ class TestsAndCoverageTest {
     fun `tests over the slow threshold are listed`(
         @TempDir dir: File,
     ) {
-        writeJavaProjectWithTests(dir, armorConfig = "    slowTestThresholdMillis = 300")
+        writeJavaProjectWithTests(dir, armorConfig = "    tests { slowThresholdMillis = 300 }")
         writeTest(dir, "SlowTest", "@Test\nvoid sleeps() throws Exception {\n    Thread.sleep(600);\n}\n\n@Test\nvoid quick() {\n}")
 
         val result = ArmorTestFixture.run(dir, "test")
@@ -77,10 +77,10 @@ class TestsAndCoverageTest {
     }
 
     @Test
-    fun `kover = true measures a Kotlin project with Kover instead of JaCoCo`(
+    fun `coverage { kover = true } measures a Kotlin project with Kover instead of JaCoCo`(
         @TempDir dir: File,
     ) {
-        writeKotlinProjectWithTests(dir, armorConfig = "    kover = true")
+        writeKotlinProjectWithTests(dir, armorConfig = "    coverage { kover = true }")
         writeKotlinTest(dir, "SampleTest", "@Test\nfun adds() {\n    assertEquals(3, Sample().add(1, 2))\n}")
 
         val result = ArmorTestFixture.run(dir, "codeQuality")
@@ -96,7 +96,7 @@ class TestsAndCoverageTest {
         @TempDir dir: File,
     ) {
         // A test that calls nothing: Sample is not covered at all.
-        writeKotlinProjectWithTests(dir, armorConfig = "    kover = true\n    coverageMinimum = 0.5\n    coverageClassMinimum = 0.0")
+        writeKotlinProjectWithTests(dir, armorConfig = "    coverage { kover = true; minimum = 0.5; classMinimum = 0.0 }")
         writeKotlinTest(dir, "EmptyTest", "@Test\nfun nothing() {\n}")
 
         val failure = ArmorTestFixture.runAndFail(dir, "koverVerify")
@@ -105,11 +105,11 @@ class TestsAndCoverageTest {
     }
 
     @Test
-    fun `a Java-only project keeps JaCoCo when kover = true`(
+    fun `a Java-only project keeps JaCoCo when coverage { kover = true }`(
         @TempDir dir: File,
     ) {
         // Kover only measures projects that apply the Kotlin plugin.
-        writeJavaProjectWithTests(dir, armorConfig = "    kover = true")
+        writeJavaProjectWithTests(dir, armorConfig = "    coverage { kover = true }")
         writeTest(dir, "SampleTest", "@Test\nvoid adds() {\n    org.junit.jupiter.api.Assertions.assertEquals(3, new Sample().add(1, 2));\n}")
 
         val result = ArmorTestFixture.run(dir, "codeQuality")
@@ -125,7 +125,7 @@ class TestsAndCoverageTest {
         ArmorTestFixture.writeProject(
             dir,
             language = Language.KOTLIN,
-            armorConfig = "    kover = true",
+            armorConfig = "    coverage { kover = true }",
             extraScript =
                 """
                 tasks.register("printCoveragePaths") {
@@ -143,10 +143,10 @@ class TestsAndCoverageTest {
     }
 
     @Test
-    fun `mutationTesting = true runs PIT on demand and writes its reports`(
+    fun `mutationTesting { enabled = true } runs PIT on demand and writes its reports`(
         @TempDir dir: File,
     ) {
-        writeJavaProjectWithTests(dir, armorConfig = "    mutationTesting = true")
+        writeJavaProjectWithTests(dir, armorConfig = "    mutationTesting { enabled = true }")
         writeTest(dir, "SampleTest", "@Test\nvoid adds() {\n    org.junit.jupiter.api.Assertions.assertEquals(3, new Sample().add(1, 2));\n}")
 
         ArmorTestFixture.run(dir, "pitest")
@@ -225,6 +225,6 @@ class TestsAndCoverageTest {
 
     private companion object {
         /** No SpotBugs or detekt, and no coverage thresholds unless a test sets them. */
-        const val QUIET = "    spotbugs = false\n    detekt = false\n    coverageMinimum = 0.0\n    coverageClassMinimum = 0.0"
+        const val QUIET = "    spotbugs { enabled = false }\n    detekt { enabled = false }\n    coverage { minimum = 0.0; classMinimum = 0.0 }"
     }
 }
