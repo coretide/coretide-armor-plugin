@@ -47,6 +47,15 @@ open class CodeArmorExtension
          */
         var detektTypeResolution: Boolean = false
         var owasp: Boolean = true
+
+        /**
+         * Runs the `veracodeUpload` task of a Veracode Gradle plugin the build applies in `fullAnalysis`, when
+         * `VERACODE_USERNAME` and `VERACODE_PASSWORD` are set. Deprecated: 1.0.0 removes it.
+         */
+        @Deprecated(
+            "1.0.0 removes it. To keep running your Veracode plugin's upload in fullAnalysis, list it in the CI " +
+                "tier: checks { ci.add(\"veracodeUpload\") }",
+        )
         var veracode: Boolean = false
         var sonarqube: Boolean = true
         var projectType: ProjectType? = null
@@ -223,7 +232,7 @@ open class CodeArmorExtension
         /** Which tasks the pre-push, build and CI check tiers run. See [ChecksConfig]. */
         val checks: ChecksConfig =
             objects.newInstance(ChecksConfig::class.java).apply {
-                prePush.convention(listOf("quickBuild"))
+                prePush.set(listOf("quickBuild"))
             }
 
         /** Reporting commit activity to Code::Stats. Off by default; see [CodeStatsConfig]. */

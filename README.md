@@ -135,7 +135,6 @@ codeArmor {
     detekt = true                             // Kotlin projects only
     owasp = true
     sonarqube = true                          // In fullAnalysis once a server or token is configured
-    veracode = false
     
     // Coverage and tests
     coverageMinimum = 0.80
@@ -258,7 +257,7 @@ Each tier's task list is configurable; see [Check Tiers](#check-tiers).
 
 
 - **Purpose**: Comprehensive analysis including security scans
-- **Dependencies**: `codeQuality`, then the CI tier, by default `dependencyCheckAnalyze`, `dependencyUpdates`, `armorLicenseReport` and, once a SonarQube server or token is configured, `sonar`; plus `veracodeUpload` (if configured)
+- **Dependencies**: `codeQuality`, then the CI tier, by default `dependencyCheckAnalyze`, `dependencyUpdates`, `armorLicenseReport` and, once a SonarQube server or token is configured, `sonar`; plus `veracodeUpload` with the deprecated `veracode = true`
 - **Use Case**: CI/CD pipelines, release preparation
 - **Reports Generated**:
     - All quality reports from `codeQuality`
@@ -644,13 +643,15 @@ uses its default, SonarQube Cloud; a local server needs `sonarHostUrl = "http://
 `sonar` in `checks.ci` runs it regardless.
 
 
-#### Veracode (Bring Your Own Plugin)
-CodeArmor does not upload to Veracode itself. With `veracode = true`, `fullAnalysis` runs the `veracodeUpload` task
-of a Veracode Gradle plugin you apply and configure, when `VERACODE_USERNAME` and `VERACODE_PASSWORD` are set.
-Without such a plugin, CodeArmor logs a warning and skips the Veracode scan.
+#### Veracode (deprecated)
+`veracode = true` is deprecated, and 1.0.0 removes it. CodeArmor never uploaded to Veracode itself: the switch ran
+the `veracodeUpload` task of a Veracode Gradle plugin you apply, in `fullAnalysis`, when `VERACODE_USERNAME` and
+`VERACODE_PASSWORD` were set. Listing the task in the CI tier does the same, whether or not those are set:
 ```kotlin
 codeArmor {
-    veracode = true                           // Runs your Veracode plugin's veracodeUpload in fullAnalysis
+    checks {
+        ci.add("veracodeUpload")                  // Your Veracode plugin's task, run by fullAnalysis
+    }
 }
 ```
 
@@ -747,6 +748,7 @@ codeArmor {
 }
 ```
 
+- `ci = listOf(…)` replaces a tier's defaults; `ci.add("myCheck")` adds to them.
 - Because the local tier includes `jacocoTestCoverageVerification`, `./gradlew build` fails when coverage
   is below `coverageMinimum` or a class is below `coverageClassMinimum`. Lower those thresholds, or
   leave `jacocoTestCoverageVerification` out of `build`, to adopt CodeArmor gradually.

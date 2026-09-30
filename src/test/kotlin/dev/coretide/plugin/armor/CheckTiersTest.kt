@@ -209,6 +209,36 @@ class CheckTiersTest {
         assertFalse("sonar" in planned, "$planned")
     }
 
+    @Test
+    fun `checks ci add keeps the default network checks`(
+        @TempDir dir: File,
+    ) {
+        // Until 0.5.0, add() replaced the defaults, which were a convention: only armorCustomCheck would have run.
+        ArmorTestFixture.writeProject(
+            dir,
+            armorConfig = "    checks { ci.add(\"armorCustomCheck\") }",
+            extraScript = "tasks.register(\"armorCustomCheck\")",
+        )
+
+        val planned =
+            ArmorTestFixture.runWithEnvironment(dir, "fullAnalysis", "--dry-run", unset = SONAR_ENVIRONMENT).plannedTasks()
+
+        assertTrue("armorCustomCheck" in planned, "$planned")
+        assertTrue("dependencyCheckAnalyze" in planned, "$planned")
+        assertTrue("dependencyUpdates" in planned, "$planned")
+    }
+
+    @Test
+    fun `checks prePush add keeps quickBuild`(
+        @TempDir dir: File,
+    ) {
+        ArmorTestFixture.writeProject(dir, armorConfig = "    enableGitHooks = true\n    checks { prePush.add(\"spotbugsMain\") }")
+
+        val output = ArmorTestFixture.run(dir, "armorInfo").output
+
+        assertContains(output, "  pre-push hook: quickBuild, spotbugsMain")
+    }
+
     private companion object {
         val SONAR_ENVIRONMENT = setOf("SONAR_HOST_URL", "SONAR_TOKEN")
     }

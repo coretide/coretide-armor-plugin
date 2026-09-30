@@ -61,7 +61,7 @@ object ConfiguratorUtil {
         DependencyHealthConfigurator.configure(project, extension, projectType)
         ApiCompatibilityConfigurator.configure(project, extension, projectType)
         ArchitectureTestsConfigurator.configure(project, extension)
-        if (extension.veracode) VeracodeConfigurator.configureVeracode(project)
+        if (VeracodeConfigurator.enabled(extension)) VeracodeConfigurator.configureVeracode(project)
         if (extension.sonarqube) SonarqubeConfigurator.configureSonarqube(project, extension, aggregatedCoverage)
     }
 }

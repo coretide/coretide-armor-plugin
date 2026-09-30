@@ -3,6 +3,28 @@
 All notable changes to CodeArmor. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [Semantic Versioning](https://semver.org/), and while in alpha, a minor version may break things.
 
+## [0.5.0-alpha] - Unreleased
+
+### Deprecated
+- **`veracode`**, which 1.0.0 removes. CodeArmor never uploaded to Veracode itself: the switch ran the
+  `veracodeUpload` task of a Veracode Gradle plugin the build applies. The build log and `armorInfo` say so, with the
+  replacement: `checks { ci.add("veracodeUpload") }`. That runs the upload whether or not `VERACODE_USERNAME` and
+  `VERACODE_PASSWORD` are set.
+
+### Fixed
+- **`checks { ci.add("…") }` dropped the default checks.** The tiers' defaults were Gradle conventions, which `add()`
+  replaces, so `fullAnalysis` ran only the added task. `add()` now adds to the defaults, for `build` and `prePush`
+  too; `ci = listOf(…)` still replaces them.
+- **SonarQube did not import the OWASP Dependency Check findings.** CodeArmor passed the XML and HTML reports, under
+  names the Dependency-Check SonarQube plugin no longer reads. It now passes the JSON report, as
+  `sonar.dependencyCheck.jsonReportPath`.
+
+### Removed
+- Analysis properties SonarQube ignores: `sonar.coverage.minimum`, `sonar.duplicated_lines_density`, the
+  `sonar.maintainability_rating`, `sonar.reliability_rating` and `sonar.security_rating` ratings, and
+  `sonar.java.coveragePlugin`. Quality gates, thresholds and ratings are set on the SonarQube server, so these never
+  had an effect.
+
 ## [0.4.0-alpha] - 2026-09-30
 
 A release about adopting CodeArmor in existing code and running it on CI: `armorInfo` shows what it checks and
@@ -354,6 +376,7 @@ The first release built for Gradle 9. It changes when checks and git hooks run, 
   wiring, project type detection, git hooks and git-derived versions, published to Maven Central and
   the Gradle Plugin Portal.
 
+[0.5.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.4.0-alpha...HEAD
 [0.4.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.3.0-alpha...0.4.0-alpha
 [0.3.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.2.0-alpha...0.3.0-alpha
 [0.2.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.1.4-alpha...0.2.0-alpha

@@ -71,7 +71,6 @@ object SonarqubeConfigurator {
                     sonarProperties.property("sonar.java.source", javaVersion)
                     sonarProperties.property("sonar.java.target", javaVersion)
                 }
-                sonarProperties.property("sonar.java.coveragePlugin", "jacoco")
                 // In a multi-module build, the combined report also counts tests in other modules.
                 sonarProperties.property(
                     "sonar.coverage.jacoco.xmlReportPaths",
@@ -80,7 +79,6 @@ object SonarqubeConfigurator {
                         aggregatedCoverage?.absolutePath,
                     ).joinToString(","),
                 )
-                sonarProperties.property("sonar.coverage.minimum", "${(extension.coverageMinimum * 100).toInt()}")
                 val sonarCoverageExclusions = ExclusionUtil.generateSonarCoverageExclusions(extension)
                 sonarProperties.property("sonar.coverage.exclusions", sonarCoverageExclusions.joinToString(","))
                 sonarProperties.property(
@@ -93,11 +91,9 @@ object SonarqubeConfigurator {
                         "**/generated/**",
                     ).joinToString(","),
                 )
+                // Quality gates, coverage and duplication thresholds, and ratings are set on the server; the
+                // SonarScanner has no properties for them.
                 sonarProperties.property("sonar.qualitygate.wait", extension.sonarQualityGateWait.toString())
-                sonarProperties.property("sonar.duplicated_lines_density", "15")
-                sonarProperties.property("sonar.maintainability_rating", "C")
-                sonarProperties.property("sonar.reliability_rating", "C")
-                sonarProperties.property("sonar.security_rating", "C")
                 if (extension.spotbugs && extension.spotbugsConfig.xmlReports) {
                     sonarProperties.property(
                         "sonar.java.spotbugs.reportPaths",
@@ -108,13 +104,10 @@ object SonarqubeConfigurator {
                     sonarProperties.property("sonar.kotlin.detekt.reportPaths", report.absolutePath)
                 }
                 if (extension.owasp) {
+                    // The Dependency-Check SonarQube plugin reads the JSON report, and no other.
                     sonarProperties.property(
-                        "sonar.dependencyCheck.reportPath",
-                        "build/reports/dependency-check/dependency-check-report.xml",
-                    )
-                    sonarProperties.property(
-                        "sonar.dependencyCheck.htmlReportPath",
-                        "build/reports/dependency-check/dependency-check-report.html",
+                        "sonar.dependencyCheck.jsonReportPath",
+                        OwaspConfigurator.jsonReport(project).absolutePath,
                     )
                 }
             }
