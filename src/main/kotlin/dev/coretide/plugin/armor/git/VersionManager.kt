@@ -19,6 +19,11 @@ abstract class VersionManager
     constructor() {
         companion object {
             fun configureVersionFromGit(project: Project) {
+                // A version the build sets itself, in its script or gradle.properties, wins.
+                if (project.version.toString() != Project.DEFAULT_VERSION) {
+                    LogUtil.verbose("📋 Project version ${project.version}, set by the build; git tags not used")
+                    return
+                }
                 val versionProvider =
                     project.providers.of(GitValueSource::class.java) {
                         it.parameters.operation.set(GitOperation.VERSION)

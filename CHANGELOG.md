@@ -10,6 +10,8 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   script has run, so a change from a later `afterEvaluate` block was dropped without a word. Gradle now stops the
   build and names the setting ("The value for property 'minimum' cannot be changed any further"). Set CodeArmor's
   settings in the `codeArmor { }` block.
+- **`versionFromGit` leaves a version the build sets alone.** It replaced any version, including one set in the build
+  script or `gradle.properties`; it now sets one only where the build has none.
 
 ### Changed
 - **Settings in blocks.** Each tool and area has a block of its own, and every setting is a Gradle property, so it
@@ -35,6 +37,11 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
 - **Less waiting for `afterEvaluate`.** CodeArmor waits for the build script once, to decide which tools to apply;
   the JaCoCo, test runner and SonarQube settings now follow as the Java and SonarQube plugins and their tasks appear.
 
+### Added
+- **Sample builds.** [`samples/`](samples) holds a Java application with integration tests, a Kotlin library with
+  strict compilation and detekt, and a multi-module build, each applying CodeArmor from this repository. CI builds
+  them on every change, and they found most of the fixes below.
+
 ### Deprecated
 - **The flat settings of 0.4.0**, such as `coverageMinimum` and `detekt = false`, which 1.0.0 removes. They set the
   setting that replaced them. For each one a build uses, the build log and `armorInfo` say what to write instead,
@@ -47,6 +54,16 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   `VERACODE_PASSWORD` are set.
 
 ### Fixed
+- **The overall coverage minimum counted the classes coverage leaves out.** Only the per-class rule skipped the
+  entry points, configuration and generated code the report leaves out, so an untested `main` class could pull a
+  project below `coverage { minimum }`. The overall minimum now counts what the report counts.
+- **Kotlin projects on Kotlin before 2.4 compiled without the Kotlin daemon.** A Kotlin BOM that came with the
+  dependency-analysis plugin lifted the Kotlin daemon client on the build's classpath to 2.4, so the Kotlin Gradle
+  plugin failed to reach its daemon ("Daemon compilation failed"), and every compile task fell back to a slower
+  compilation without it. CodeArmor leaves that BOM out.
+- **The version from git tags in a build below the repository's root,** such as a monorepo's: CodeArmor looked for
+  `.git` in the build's own directory, found none, and used `0.0.1-SNAPSHOT`. It now asks git.
+- **The summary said "1 tests".**
 - **`spotbugs { timeout }` had no effect.** It was only logged; it now limits each SpotBugs task, in milliseconds.
 - **`checks { ci.add("…") }` dropped the default checks.** The tiers' defaults were Gradle conventions, which `add()`
   replaces, so `fullAnalysis` ran only the added task. `add()` now adds to the defaults, for `build` and `prePush`

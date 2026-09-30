@@ -1,6 +1,6 @@
 # Builds the plugin, runs the TestKit suite and validates the plugin metadata on
-# every pull request and on every push to main, and checks that the plugin still
-# loads in a Gradle build running on JDK 17. Releases are handled separately by
+# every pull request and on every push to main, builds the sample projects, and
+# checks that the plugin still loads in a Gradle build running on JDK 17. Releases are handled separately by
 # tag-validation.yml and publish.yml.
 name: ci
 
@@ -94,6 +94,39 @@ jobs:
           name: test-reports-${{ matrix.os }}
           path: build/reports/tests/
           retention-days: 7
+
+  # Real builds that apply CodeArmor as a project would, built from this
+  # repository through includeBuild: a Java application with integration
+  # tests, a strict Kotlin library, and a multi-module build. Each runs its
+  # checks and armorInfo.
+  samples:
+    strategy:
+      fail-fast: false
+      matrix:
+        sample: [java-app, kotlin-library, multi-module]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # The samples take their version from this repository's tags, and
+          # diff coverage compares with the base branch.
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      - name: Build the sample
+        run: ./gradlew -p samples/${{ matrix.sample }} build armorInfo --stacktrace
 
   # The code stats scripts: ShellCheck, and the POSIX router parsed by shells
   # that are not bash pretending, since a bashism there only shows up on

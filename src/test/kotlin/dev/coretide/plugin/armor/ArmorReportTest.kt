@@ -55,7 +55,7 @@ class ArmorReportTest {
         val result = ArmorTestFixture.run(dir, "build")
 
         assertContains(result.output, "📋 CodeArmor summary: ")
-        assertContains(result.output, "✅ Tests: 1 tests")
+        assertContains(result.output, "✅ Tests: 1 test")
         assertContains(result.output, "✅ Coverage (JaCoCo): 100.0% of lines")
         assertContains(result.output, "✅ SpotBugs: no findings")
         val page = dir.resolve("build/reports/codearmor/index.html").readText()
@@ -75,7 +75,7 @@ class ArmorReportTest {
 
         val text = summary.readText()
         assertContains(text, "### 🛡️ CodeArmor summary")
-        assertContains(text, "| ✅ | Tests | 1 tests |")
+        assertContains(text, "| ✅ | Tests | 1 test |")
         assertContains(text, "| ✅ | SpotBugs | no findings |")
     }
 

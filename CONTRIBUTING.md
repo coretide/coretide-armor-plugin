@@ -58,7 +58,15 @@ The plugin you build runs in projects on **Gradle 9.0+** with **JDK 17+**.
    ./gradlew publishToMavenLocal
    ```
 
-3. **Test the plugin in a sample project**
+3. **Try it in the samples**
+
+   [`samples/`](samples) holds a Java application, a Kotlin library and a multi-module build that apply the plugin
+   from this repository through `includeBuild`, so they run your changes without publishing anything. CI builds each:
+   ```bash
+   ./gradlew -p samples/java-app build armorInfo
+   ```
+
+4. **Test the plugin in a project of your own**
 
    Resolve the plugin from Maven local in the sample project's `settings.gradle.kts`:
    ```kotlin

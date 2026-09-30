@@ -63,7 +63,7 @@ object ReportSummary {
         val flaky = TestResults.flaky(executions).size
         val result =
             buildList {
-                add("${byTest.size} tests")
+                add(if (byTest.size == 1) "1 test" else "${byTest.size} tests")
                 if (failed > 0) add("$failed failed")
                 if (flaky > 0) add("$flaky flaky")
             }.joinToString(", ")

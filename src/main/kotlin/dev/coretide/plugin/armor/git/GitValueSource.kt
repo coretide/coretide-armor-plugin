@@ -51,13 +51,11 @@ abstract class GitValueSource : ValueSource<String, GitValueSource.Parameters> {
             return githubRef.removePrefix("refs/tags/v")
         }
 
-        val gitDir = File(projectDir, ".git")
         LogUtil.verbosePrint("🔍 Git version detection:")
         LogUtil.verbosePrint("   Project directory: ${projectDir.absolutePath}")
-        LogUtil.verbosePrint("   Git directory: ${gitDir.absolutePath}")
-        LogUtil.verbosePrint("   Git directory exists: ${gitDir.exists()}")
-        if (!gitDir.exists()) {
-            LogUtil.essentialPrint("   ⚠️ No .git directory found, using default version")
+        // Asked of git, not by looking for .git: the build may be a subdirectory of the repository, as in a monorepo.
+        if (!insideWorkTree(projectDir)) {
+            LogUtil.essentialPrint("   ⚠️ No git repository found, using default version")
             return "0.0.1-SNAPSHOT"
         }
         return try {
@@ -117,6 +115,20 @@ abstract class GitValueSource : ValueSource<String, GitValueSource.Parameters> {
             "0.0.1-SNAPSHOT"
         }
     }
+
+    private fun insideWorkTree(projectDir: File): Boolean =
+        try {
+            execOperations
+                .exec {
+                    it.workingDir = projectDir
+                    it.commandLine("git", "rev-parse", "--is-inside-work-tree")
+                    it.standardOutput = ByteArrayOutputStream()
+                    it.errorOutput = ByteArrayOutputStream()
+                    it.isIgnoreExitValue = true
+                }.exitValue == 0
+        } catch (_: Exception) {
+            false
+        }
 
     private fun obtainCommitHash(): String {
         val projectDirPath = parameters.projectDir.get()

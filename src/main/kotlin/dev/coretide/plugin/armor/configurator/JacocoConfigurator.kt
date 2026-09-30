@@ -41,6 +41,16 @@ object JacocoConfigurator {
         task.mustRunAfter(project.tasks.named { it == IntegrationTestsConfigurator.TASK_NAME })
     }
 
+    private fun excludeFrom(
+        project: Project,
+        task: JacocoReportBase,
+        exclusions: List<String>,
+    ) {
+        task.classDirectories.setFrom(
+            project.files(task.classDirectories.files.map { directory -> project.fileTree(directory).exclude(exclusions) }),
+        )
+    }
+
     fun configureJacoco(
         project: Project,
         extension: CodeArmorExtension,
@@ -63,14 +73,7 @@ object JacocoConfigurator {
                     reports.html.required.set(true)
                     reports.csv.required.set(false)
                 }
-                val jacocoExclusions = ExclusionUtil.generateJacocoReportExclusions(extension)
-                report.classDirectories.setFrom(
-                    project.files(
-                        report.classDirectories.files.map { file ->
-                            project.fileTree(file).exclude(jacocoExclusions)
-                        },
-                    ),
-                )
+                excludeFrom(project, report, ExclusionUtil.generateJacocoReportExclusions(extension))
                 report.doLast {
                     LogUtil.verbose("📊 JaCoCo coverage report generated")
                 }
@@ -78,6 +81,9 @@ object JacocoConfigurator {
             project.tasks.named("jacocoTestCoverageVerification", JacocoCoverageVerification::class.java) { verification ->
                 verification.dependsOn("jacocoTestReport")
                 includeIntegrationTests(project, extension, verification)
+                // The classes the report leaves out, left out of the overall minimum too. Until 0.5.0 only the
+                // per-class rule skipped them, so an untested main class dragged the whole project below it.
+                excludeFrom(project, verification, ExclusionUtil.generateJacocoReportExclusions(extension))
                 verification.violationRules { rules ->
                     rules.rule { rule ->
                         rule.limit { limit ->

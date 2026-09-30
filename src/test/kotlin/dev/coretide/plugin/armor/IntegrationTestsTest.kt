@@ -58,7 +58,7 @@ class IntegrationTestsTest {
         val result = ArmorTestFixture.run(dir, "build")
 
         assertTrue(result.output.lines().any { it == "> Task :integrationTest" }, result.output)
-        assertContains(result.output, "✅ Integration tests: 1 tests")
+        assertContains(result.output, "✅ Integration tests: 1 test")
         assertContains(result.output, "✅ Coverage (JaCoCo): 100.0% of lines")
         assertTrue(dir.resolve("build/test-results/integrationTest").isDirectory)
     }
