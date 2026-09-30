@@ -5,6 +5,12 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
 
 ## [0.5.0-alpha] - Unreleased
 
+### ⚠️ Behaviour changes
+- **A setting changed after CodeArmor has read it fails the build.** CodeArmor reads its settings once the build
+  script has run, so a change from a later `afterEvaluate` block was dropped without a word. Gradle now stops the
+  build and names the setting ("The value for property 'minimum' cannot be changed any further"). Set CodeArmor's
+  settings in the `codeArmor { }` block.
+
 ### Changed
 - **Settings in blocks.** Each tool and area has a block of its own, and every setting is a Gradle property, so it
   also takes a provider. The flat settings of 0.4.0 still work; see Deprecated, and
@@ -26,6 +32,8 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   replace `enableVersionFromGit` and `enableResourceProcessing`. A list with defaults, such as
   `conventionalCommitTypes`, takes `add()` without losing them.
 - **`projectType` is used whenever it is set.** Until 0.5.0 it only counted with `autoDetect = false`.
+- **Less waiting for `afterEvaluate`.** CodeArmor waits for the build script once, to decide which tools to apply;
+  the JaCoCo, test runner and SonarQube settings now follow as the Java and SonarQube plugins and their tasks appear.
 
 ### Deprecated
 - **The flat settings of 0.4.0**, such as `coverageMinimum` and `detekt = false`, which 1.0.0 removes. They set the

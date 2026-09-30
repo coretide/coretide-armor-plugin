@@ -41,6 +41,7 @@ object MultiModuleTaskCreator {
         // The secret scan covers the repository: once, from the root, for every module's fullAnalysis.
         val secretScan = if (extension.secretScan.get()) SecretScanTask.register(project) else null
         actualProjects.forEach { subproject ->
+            // A module applies its plugins in its own build script, which Gradle evaluates after the root's.
             subproject.afterEvaluate {
                 val subProjectType = ProjectDetector.detectProjectType(subproject)
                 configureSingleModuleProject(subproject, extension, subProjectType, aggregatedCoverage)

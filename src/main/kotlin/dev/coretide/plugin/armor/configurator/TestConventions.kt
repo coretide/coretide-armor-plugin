@@ -24,8 +24,7 @@ object TestConventions {
         project: Project,
         extension: CodeArmorExtension,
     ) {
-        project.afterEvaluate {
-            if (!project.plugins.hasPlugin(JavaPlugin::class.java)) return@afterEvaluate
+        project.plugins.withType(JavaPlugin::class.java) {
             project.tasks.withType(Test::class.java).configureEach { testTask ->
                 if (extension.tests.junitPlatform.get() && usesDefaultRunner(testTask)) {
                     testTask.useJUnitPlatform()

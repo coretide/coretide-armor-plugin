@@ -33,7 +33,9 @@ class CodeArmorPlugin : Plugin<Project> {
         // every default check.
         extension.checks.build.set(project.provider { TaskCreator.defaultBuildTier(extension) })
         extension.checks.ci.set(project.provider { TaskCreator.defaultCiTier(project, extension) })
+        // The one place CodeArmor waits for the build script: its settings decide which tools to apply.
         project.afterEvaluate {
+            extension.disallowChanges()
             LogUtil.initialize(project, extension)
             val projectType = extension.projectType.orNull ?: ProjectDetector.detectProjectType(project)
             val isMultiModule = extension.forcedMultiModule || ProjectDetector.detectMultiModule(project)
