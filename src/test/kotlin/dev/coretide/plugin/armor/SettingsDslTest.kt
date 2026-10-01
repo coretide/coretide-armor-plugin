@@ -113,4 +113,17 @@ class SettingsDslTest {
         assertContains(output, "Use sonarqube { hostUrl = \"https://sonar.example.com\" }.")
         assertContains(output, "  ⚠️  diffCoverageMinimum is deprecated, and 1.0.0 removes it. Use diffCoverage { minimum = 0.9 }.")
     }
+
+    @Test
+    fun `a setting changed after CodeArmor has read it fails the build, rather than being ignored`(
+        @TempDir dir: File,
+    ) {
+        // Until 0.5.0 the change was dropped without a word: CodeArmor had set up JaCoCo with 0.3 already.
+        ArmorTestFixture.writeProject(dir, extraScript = "afterEvaluate { codeArmor.coverage.minimum.set(0.9) }")
+
+        val output = ArmorTestFixture.runAndFail(dir, "help").output
+
+        assertContains(output, "property 'minimum'")
+        assertContains(output, "cannot be changed any further")
+    }
 }

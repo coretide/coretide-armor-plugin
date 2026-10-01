@@ -23,6 +23,8 @@ object SonarqubeConfigurator {
     private val SERVER_ENVIRONMENT = listOf("SONAR_HOST_URL", "SONAR_TOKEN")
     private val SERVER_SYSTEM_PROPERTIES = listOf("sonar.host.url", "sonar.token", "sonar.login")
 
+    private const val SONAR_TASK = "sonar"
+
     /** The SonarScanner's server when none is configured. */
     private const val DEFAULT_SERVER = "https://sonarcloud.io"
 
@@ -112,30 +114,29 @@ object SonarqubeConfigurator {
                 }
             }
         }
-        project.afterEvaluate {
-            project.tasks.named("sonar") { task ->
-                task.group = "verification"
-                task.description = "Runs SonarQube analysis"
-                task.dependsOn("build")
-                if (usesKover) {
-                    task.dependsOn("koverXmlReport")
-                } else if (extension.coverage.enabled.get()) {
-                    task.dependsOn("jacocoTestCoverageVerification")
-                    if (aggregatedCoverage != null) {
-                        task.dependsOn(":${AggregatedReportsConfigurator.COVERAGE_REPORT}")
-                    }
+        // By name, whenever the SonarQube plugin registers it.
+        project.tasks.named { it == SONAR_TASK }.configureEach { task ->
+            task.group = "verification"
+            task.description = "Runs SonarQube analysis"
+            task.dependsOn("build")
+            if (usesKover) {
+                task.dependsOn("koverXmlReport")
+            } else if (extension.coverage.enabled.get()) {
+                task.dependsOn("jacocoTestCoverageVerification")
+                if (aggregatedCoverage != null) {
+                    task.dependsOn(":${AggregatedReportsConfigurator.COVERAGE_REPORT}")
                 }
-                if (extension.spotbugs.enabled.get()) {
-                    task.dependsOn("spotbugsMain")
-                }
-                if (extension.owasp.enabled.get()) {
-                    task.dependsOn("dependencyCheckAnalyze")
-                }
-                val dashboard = "${hostUrl(extension) ?: DEFAULT_SERVER}/dashboard?id=${projectKey(project, extension)}"
-                task.doLast {
-                    LogUtil.verbose("✅ SonarQube analysis completed")
-                    LogUtil.verbose("🔍 View results at: $dashboard")
-                }
+            }
+            if (extension.spotbugs.enabled.get()) {
+                task.dependsOn("spotbugsMain")
+            }
+            if (extension.owasp.enabled.get()) {
+                task.dependsOn("dependencyCheckAnalyze")
+            }
+            val dashboard = "${hostUrl(extension) ?: DEFAULT_SERVER}/dashboard?id=${projectKey(project, extension)}"
+            task.doLast {
+                LogUtil.verbose("✅ SonarQube analysis completed")
+                LogUtil.verbose("🔍 View results at: $dashboard")
             }
         }
     }

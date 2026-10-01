@@ -35,6 +35,7 @@ import dev.coretide.plugin.armor.enumeration.ArmorLogLevel
 import dev.coretide.plugin.armor.enumeration.CodeStatsScope
 import org.gradle.api.Action
 import org.gradle.api.model.ObjectFactory
+import org.gradle.api.provider.HasConfigurableValue
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import javax.inject.Inject
@@ -206,6 +207,22 @@ abstract class CodeArmorExtension
             secretScan.convention(false)
             versionFromGit.convention(true)
             resourceProcessing.convention(true)
+        }
+
+        /**
+         * Makes every setting final. CodeArmor reads them once the build script has run, so a later change, as from
+         * an `afterEvaluate` block, would be ignored; Gradle now fails the build and names the setting instead.
+         */
+        internal fun disallowChanges() {
+            listOf(projectType, logLevel, secretScan, versionFromGit, resourceProcessing).forEach { it.disallowChanges() }
+            listOf(
+                coverage, diffCoverage, tests, mutationTesting, compilation, spotbugs, detekt, owasp, dependencyHealth,
+                libraryApi, sonarqube, gitHooks, checks, codeStats, toolVersions,
+            ).forEach { block ->
+                block.javaClass.methods
+                    .filter { it.parameterCount == 0 && HasConfigurableValue::class.java.isAssignableFrom(it.returnType) }
+                    .forEach { (it.invoke(block) as HasConfigurableValue).disallowChanges() }
+            }
         }
 
         // The blocks take a Gradle Action, not a Kotlin lambda, so they also work in Groovy build scripts.

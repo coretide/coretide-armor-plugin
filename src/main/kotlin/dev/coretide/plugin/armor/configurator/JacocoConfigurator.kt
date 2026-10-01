@@ -49,10 +49,9 @@ object JacocoConfigurator {
         project.configure<JacocoPluginExtension> {
             toolVersion = extension.toolVersions.jacoco.get()
         }
-        project.afterEvaluate {
-            // The JaCoCo plugin only creates its report tasks alongside the Java plugin; looking them
-            // up in, say, a docs or aggregator project failed the whole configuration.
-            if (!project.plugins.hasPlugin(JavaPlugin::class.java)) return@afterEvaluate
+        // The JaCoCo plugin only creates its report tasks alongside the Java plugin; looking them up in, say, a docs
+        // or aggregator project failed the whole configuration.
+        project.plugins.withType(JavaPlugin::class.java) {
             project.tasks.withType<Test>().configureEach { testTask ->
                 testTask.finalizedBy("jacocoTestReport")
             }
