@@ -5,6 +5,13 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
 
 ## [0.5.0-alpha] - Unreleased
 
+The settings move into blocks, as Gradle properties, in a shape meant to last to 1.0: `coverage { minimum = 0.8 }`.
+The flat settings of 0.4.0 still work until 1.0.0, and the build log says what to write instead;
+[docs/settings.md](docs/settings.md) lists every setting. Sample builds, built by CI, found the fixes in this release:
+the overall coverage minimum counted excluded classes, Kotlin projects before Kotlin 2.4 compiled without the Kotlin
+daemon, and a build below the repository's root got no version from git. Read
+[Upgrading from 0.4.x](#upgrading-from-04x) first.
+
 ### ⚠️ Behaviour changes
 - **A setting changed after CodeArmor has read it fails the build.** CodeArmor reads its settings once the build
   script has run, so a change from a later `afterEvaluate` block was dropped without a word. Gradle now stops the
@@ -38,6 +45,8 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   the JaCoCo, test runner and SonarQube settings now follow as the Java and SonarQube plugins and their tasks appear.
 
 ### Added
+- **A reference of every setting**, [docs/settings.md](docs/settings.md), block by block, with its default. A test
+  keeps it in step with the plugin.
 - **Sample builds.** [`samples/`](samples) holds a Java application with integration tests, a Kotlin library with
   strict compilation and detekt, and a multi-module build, each applying CodeArmor from this repository. CI builds
   them on every change, and they found most of the fixes below.

@@ -242,9 +242,10 @@ Most tests are Gradle TestKit tests: they write a throwaway project to a tempora
 the plugin to it and run a real build. `ArmorTestFixture` builds those projects.
 
 - **Functional tests** (`CodeArmorPluginFunctionalTest`): tasks, detection, tool wiring
-- **Settings** (`SettingsDslTest`, `DeprecatedSettingsTest`): the blocks in a Kotlin build script, with values and
-  providers; each flat setting of 0.4.0 still setting the one that replaced it, and saying what to write instead; and
-  every setter on the extension being such a setting
+- **Settings** (`SettingsDslTest`, `DeprecatedSettingsTest`, `SettingsReferenceTest`): the blocks in a Kotlin build
+  script, with values and providers; each flat setting of 0.4.0 still setting the one that replaced it, and saying what
+  to write instead; every setter on the extension being such a setting; and `docs/settings.md` listing every setting
+  with its default. A new setting goes on that page, or the test fails
 - **Tests and coverage** (`TestsAndCoverageTest`, `TestResultsTest`, `SourcePackagesTest`): flaky-test retries on
   CI, the slow-test list, Kover and PIT
 - **Multi-module reports** (`MultiModuleReportsTest`): the combined coverage and test reports, including a
