@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
 /**
- * Version derivation from git tags (`enableVersionFromGit`).
+ * Version derivation from git tags (`versionFromGit`).
  *
  * Only the leading `v` of a tag may be dropped. Stripping every `v` turned `v1.2.0-dev` into
  * `1.2.0-de`.
@@ -86,5 +86,31 @@ class GitVersionTest {
             )
 
         assertContains(result.output.lines(), "VERSION=3.1.0-dev")
+    }
+
+    @Test
+    fun `a build in a subdirectory of the repository takes the repository's tags`(
+        @TempDir repository: File,
+    ) {
+        // A monorepo, or a sample inside a plugin's own repository: until 0.5.0 CodeArmor looked for .git in the build.
+        val build = repository.resolve("services/orders")
+        writeVersionedProject(build)
+        ArmorTestFixture.initGitRepository(repository, tag = "v1.4.0")
+
+        val result = ArmorTestFixture.runWithEnvironment(build, "printVersion", unset = ciTagVariables)
+
+        assertContains(result.output.lines(), "VERSION=1.4.0")
+    }
+
+    @Test
+    fun `a version the build sets itself is kept`(
+        @TempDir dir: File,
+    ) {
+        ArmorTestFixture.writeProject(dir, armorConfig = "    versionFromGit = true", extraScript = "version = \"7.0.0\"\n$printVersion")
+        ArmorTestFixture.initGitRepository(dir, tag = "v1.2.0")
+
+        val result = ArmorTestFixture.runWithEnvironment(dir, "printVersion", unset = ciTagVariables)
+
+        assertContains(result.output.lines(), "VERSION=7.0.0")
     }
 }

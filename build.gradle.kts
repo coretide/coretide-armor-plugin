@@ -155,7 +155,12 @@ dependencies {
     implementation("org.cyclonedx:cyclonedx-gradle-plugin:3.4.1")
     implementation("me.champeau.gradle:japicmp-gradle-plugin:0.4.6")
     // Applied by id only. Its Kotlin 2.4 libraries stay off the compile classpath, which this Kotlin cannot read.
-    runtimeOnly("com.autonomousapps:dependency-analysis-gradle-plugin:3.19.2")
+    // Without its Kotlin BOM: the BOM's constraints lifted the Kotlin daemon client on every build's classpath to 2.4,
+    // and the Kotlin Gradle plugin of an older Kotlin, such as 2.2, then failed to reach its daemon ("Daemon
+    // compilation failed") and compiled without it.
+    runtimeOnly("com.autonomousapps:dependency-analysis-gradle-plugin:3.19.2") {
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-bom")
+    }
     kotlinPluginForTests("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.21")
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")

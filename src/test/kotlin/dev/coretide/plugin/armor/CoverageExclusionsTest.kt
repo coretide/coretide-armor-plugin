@@ -139,4 +139,17 @@ class CoverageExclusionsTest {
         assertFalse(report.contains("com/example/model/User"))
         assertContains(report, "<class name=\"com/example/ConfigParser\"")
     }
+
+    @Test
+    fun `the overall minimum leaves out the classes the report does`(
+        @TempDir dir: File,
+    ) {
+        // Only Sample is tested. Without the excluded classes, the project is fully covered; with them, far from it.
+        writeProject(dir, armorConfig = "    coverage { minimum = 0.9 }")
+        kept.forEach { dir.resolve("src/main/java/$it.java").delete() }
+
+        val result = ArmorTestFixture.run(dir, "jacocoTestCoverageVerification")
+
+        assertContains(result.output, "BUILD SUCCESSFUL")
+    }
 }

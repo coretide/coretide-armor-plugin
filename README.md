@@ -204,6 +204,11 @@ The flat settings of 0.4.0 and earlier, such as `coverageMinimum = 0.8`, still w
 it, machine-wide reporting and each developer's own opt-in or opt-out.
 
 
+### Samples
+
+[`samples/`](samples) holds complete builds that apply CodeArmor: a Java application with integration tests, a Kotlin
+library with strict compilation and detekt, and a multi-module build. CI builds each one on every change.
+
 ## 📋 Supported Project Types
 
 CodeArmor automatically detects and supports:
@@ -824,6 +829,9 @@ codeArmor {
     resourceProcessing = true                 // Enable token replacement
 }
 ```
+With `versionFromGit`, a build that sets no version of its own takes the latest git tag, without a leading `v`: the
+tag itself on a tagged commit, and `-SNAPSHOT` after it otherwise. It works from a build below the repository's root,
+as in a monorepo.
 
 ## 🏗️ Multi-Module Projects
 
