@@ -16,11 +16,7 @@ import org.gradle.api.Project
 
 object VeracodeConfigurator {
     /** What replaces `veracode = true`: the upload in the CI tier, which `fullAnalysis` runs. */
-    const val REPLACEMENT = "codeArmor { checks { ci.add(\"veracodeUpload\") } }"
-
-    const val DEPRECATION =
-        "veracode is deprecated, and 1.0.0 removes it. To keep running your Veracode plugin's upload in " +
-            "fullAnalysis, list it in the CI tier: $REPLACEMENT"
+    const val REPLACEMENT = "checks { ci.add(\"veracodeUpload\") }"
 
     /** Whether the build switched it on; the one place CodeArmor reads the deprecated setting. */
     @Suppress("DEPRECATION")

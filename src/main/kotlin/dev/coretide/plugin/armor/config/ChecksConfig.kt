@@ -24,7 +24,7 @@ import org.gradle.api.provider.ListProperty
  *   `codeQuality`. Defaults to the network checks switched on, and SonarQube once a server or token is
  *   configured.
  *
- * The SpotBugs plugin itself also makes `check` run every SpotBugs task; `spotbugs = false` is what
+ * The SpotBugs plugin itself also makes `check` run every SpotBugs task; `spotbugs { enabled = false }` is what
  * keeps SpotBugs out of `build` entirely.
  *
  * `ci = listOf(…)` replaces a tier; `ci.add(…)` adds to its defaults.

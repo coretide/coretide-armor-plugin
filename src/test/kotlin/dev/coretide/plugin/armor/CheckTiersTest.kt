@@ -94,7 +94,7 @@ class CheckTiersTest {
         @TempDir fromTheEnvironment: File,
         @TempDir listed: File,
     ) {
-        val host = plan(inTheBuild, "fullAnalysis", armorConfig = "    sonarHostUrl = \"https://sonar.example.com\"")
+        val host = plan(inTheBuild, "fullAnalysis", armorConfig = "    sonarqube { hostUrl = \"https://sonar.example.com\" }")
         // A token alone means SonarQube Cloud, the SonarScanner's default server.
         val token = plan(fromTheEnvironment, "fullAnalysis", environment = mapOf("SONAR_TOKEN" to "from-ci"))
         val explicit = plan(listed, "fullAnalysis", armorConfig = "    checks {\n        ci = listOf(\"sonar\")\n    }")
@@ -108,7 +108,7 @@ class CheckTiersTest {
     fun `fullAnalysis says why it left SonarQube out`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, armorConfig = "    owasp = false\n    dependencyUpdates = false\n    sbom = false")
+        ArmorTestFixture.writeProject(dir, armorConfig = "    owasp { enabled = false }\n    dependencyHealth { updates = false; sbom = false }")
 
         val result = ArmorTestFixture.runWithEnvironment(dir, "fullAnalysis", unset = SONAR_ENVIRONMENT)
 
@@ -119,9 +119,9 @@ class CheckTiersTest {
     fun `the default tiers follow the tool switches`(
         @TempDir dir: File,
     ) {
-        val build = plan(dir, "build", armorConfig = "    jacoco = false")
+        val build = plan(dir, "build", armorConfig = "    coverage { enabled = false }")
         val fullAnalysis =
-            plan(dir, "fullAnalysis", armorConfig = "    sonarqube = false\n    sbom = false\n    dependencyUpdates = false")
+            plan(dir, "fullAnalysis", armorConfig = "    sonarqube { enabled = false }\n    dependencyHealth { sbom = false; updates = false }")
 
         assertFalse("jacocoTestCoverageVerification" in build, "$build")
         assertFalse("sonar" in fullAnalysis, "$fullAnalysis")
@@ -164,8 +164,8 @@ class CheckTiersTest {
             }
 
             codeArmor {
-                enableGitHooks = false
-                enableVersionFromGit = false
+                gitHooks { enabled = false }
+                versionFromGit = false
             }
             """.trimIndent(),
         )
@@ -232,7 +232,7 @@ class CheckTiersTest {
     fun `checks prePush add keeps quickBuild`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, armorConfig = "    enableGitHooks = true\n    checks { prePush.add(\"spotbugsMain\") }")
+        ArmorTestFixture.writeProject(dir, armorConfig = "    gitHooks { enabled = true }\n    checks { prePush.add(\"spotbugsMain\") }")
 
         val output = ArmorTestFixture.run(dir, "armorInfo").output
 

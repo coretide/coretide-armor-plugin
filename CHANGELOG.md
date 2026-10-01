@@ -5,13 +5,41 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
 
 ## [0.5.0-alpha] - Unreleased
 
+### Changed
+- **Settings in blocks.** Each tool and area has a block of its own, and every setting is a Gradle property, so it
+  also takes a provider. The flat settings of 0.4.0 still work; see Deprecated, and
+  [Upgrading from 0.4.x](#upgrading-from-04x).
+  ```kotlin
+  codeArmor {
+      coverage {
+          minimum = 0.8
+          exclusions.add("Dto")
+      }
+      owasp { nvdApiKey = providers.environmentVariable("NVD_API_KEY") }
+      detekt { typeResolution = true }
+      gitHooks { conventionalCommits = true }
+  }
+  ```
+  `coverage`, `diffCoverage`, `tests`, `mutationTesting`, `compilation`, `spotbugs`, `detekt`, `owasp`,
+  `dependencyHealth`, `libraryApi`, `sonarqube` and `gitHooks` join `checks`, `codeStats` and `toolVersions`.
+  `projectType`, `logLevel` and `secretScan` stay where they were, and `versionFromGit` and `resourceProcessing`
+  replace `enableVersionFromGit` and `enableResourceProcessing`. A list with defaults, such as
+  `conventionalCommitTypes`, takes `add()` without losing them.
+- **`projectType` is used whenever it is set.** Until 0.5.0 it only counted with `autoDetect = false`.
+
 ### Deprecated
+- **The flat settings of 0.4.0**, such as `coverageMinimum` and `detekt = false`, which 1.0.0 removes. They set the
+  setting that replaced them. For each one a build uses, the build log and `armorInfo` say what to write instead,
+  with its value, such as `Use coverage { minimum = 0.8 }.`; in a Kotlin build script, the compiler warns as well.
+  `autoDetect` and `isMultiModule` have no replacement: CodeArmor detects the project type unless `projectType` is
+  set, and a multi-module build from its subprojects.
 - **`veracode`**, which 1.0.0 removes. CodeArmor never uploaded to Veracode itself: the switch ran the
   `veracodeUpload` task of a Veracode Gradle plugin the build applies. The build log and `armorInfo` say so, with the
   replacement: `checks { ci.add("veracodeUpload") }`. That runs the upload whether or not `VERACODE_USERNAME` and
   `VERACODE_PASSWORD` are set.
 
 ### Fixed
+- **`spotbugs { timeout }` had no effect.** It was only logged; it now limits each SpotBugs task, in milliseconds.
 - **`checks { ci.add("…") }` dropped the default checks.** The tiers' defaults were Gradle conventions, which `add()`
   replaces, so `fullAnalysis` ran only the added task. `add()` now adds to the defaults, for `build` and `prePush`
   too; `ci = listOf(…)` still replaces them.
@@ -24,6 +52,41 @@ versions follow [Semantic Versioning](https://semver.org/), and while in alpha, 
   `sonar.maintainability_rating`, `sonar.reliability_rating` and `sonar.security_rating` ratings, and
   `sonar.java.coveragePlugin`. Quality gates, thresholds and ratings are set on the SonarQube server, so these never
   had an effect.
+
+### Upgrading from 0.4.x
+Nothing breaks: the flat settings still work, and the build log names each one a build uses, with its replacement.
+Move them into their blocks before 1.0.0:
+
+| 0.4.0 | 0.5.0 |
+|---|---|
+| `jacoco`, `kover` | `coverage { enabled }`, `coverage { kover }` |
+| `coverageMinimum`, `coverageClassMinimum` | `coverage { minimum }`, `coverage { classMinimum }` |
+| `coverageInclusions`, `coverageExclusions` | `coverage { inclusions }`, `coverage { exclusions }` |
+| `coverageIncludeDefaultExclusions` | `coverage { defaultExclusions }` |
+| `diffCoverage = false`, `diffCoverageMinimum`, `diffCoverageBase` | `diffCoverage { enabled }`, `diffCoverage { minimum }`, `diffCoverage { base }` |
+| `integrationTests`, `architectureTests`, `junitPlatform` | `tests { integrationTests }`, `tests { architectureTests }`, `tests { junitPlatform }` |
+| `flakyTestRetries`, `slowTestThresholdMillis` | `tests { flakyRetries }`, `tests { slowThresholdMillis }` |
+| `mutationTesting = true`, `mutationThreshold` | `mutationTesting { enabled }`, `mutationTesting { threshold }` |
+| `strictCompilation`, `errorProne`, `nullAway` | `compilation { strict }`, `compilation { errorProne }`, `compilation { nullAway }` |
+| `spotbugs = false`, `spotbugsConfig` | `spotbugs { enabled }`, `spotbugs` |
+| `detekt = false`, `detektTypeResolution` | `detekt { enabled }`, `detekt { typeResolution }` |
+| `owasp = false`, `owaspFailBuildOnCVSS`, `owaspSuppressionFile`, `owaspAutoUpdate` | `owasp { enabled }`, `owasp { failBuildOnCvss }`, `owasp { suppressionFile }`, `owasp { autoUpdate }` |
+| `owaspNvdApiKey`, `owaspNvdApiDelay`, `owaspNvdMaxRetryCount`, `owaspNvdValidForHours` | `owasp { nvdApiKey }`, `nvdApiDelay`, `nvdMaxRetryCount`, `nvdValidForHours` |
+| `dependencyUpdates`, `sbom`, `forbiddenLicenses`, `dependencyAnalysis` | `dependencyHealth { updates }`, `sbom`, `forbiddenLicenses`, `analysis` |
+| `apiBaseline`, `kotlinAbiValidation` | `libraryApi { baseline }`, `libraryApi { kotlinAbiValidation }` |
+| `sonarqube = false`, `sonarHostUrl`, `sonarProjectKey`, `sonarProjectName` | `sonarqube { enabled }`, `sonarqube { hostUrl }`, `projectKey`, `projectName` |
+| `sonarToken`, `sonarQualityGateWait`, `sonarJavaVersion` | `sonarqube { token }`, `qualityGateWait`, `javaVersion` |
+| `enableGitHooks`, `prePushEnabled` | `gitHooks { enabled }`, `gitHooks { prePush }` |
+| `conventionalCommits`, `conventionalCommitTypes` | `gitHooks { conventionalCommits }`, `gitHooks { conventionalCommitTypes }` |
+| `enableVersionFromGit`, `enableResourceProcessing` | `versionFromGit`, `resourceProcessing` |
+| `autoDetect`, `isMultiModule` | Nothing: leave `projectType` unset to detect the type |
+| `veracode = true` | `checks { ci.add("veracodeUpload") }` |
+
+In a Groovy build script, the blocks read the same: `coverage { minimum = 0.8 }`.
+
+A build script that *reads* a setting needs a change now: the settings are Gradle properties, so
+`codeArmor.secretScan` is a `Property<Boolean>`, read with `.get()`, and `codeArmor.detekt` is the detekt block,
+whose switch is `detekt.enabled`. Assigning, as nearly every build does, works as before.
 
 ## [0.4.0-alpha] - 2026-09-30
 

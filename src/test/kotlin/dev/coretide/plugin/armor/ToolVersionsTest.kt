@@ -34,7 +34,7 @@ class ToolVersionsTest {
         }
         """.trimIndent()
 
-    private val tools = "    errorProne = true\n    nullAway = true\n    architectureTests = true\n    mutationTesting = true"
+    private val tools = "    compilation { errorProne = true; nullAway = true }\n    tests { architectureTests = true }\n    mutationTesting { enabled = true }"
 
     @Test
     fun `each tool runs the version toolVersions names`(

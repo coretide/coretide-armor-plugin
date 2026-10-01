@@ -37,7 +37,7 @@ class GitVersionTest {
     private fun writeVersionedProject(dir: File) {
         ArmorTestFixture.writeProject(
             dir,
-            armorConfig = "    enableVersionFromGit = true",
+            armorConfig = "    versionFromGit = true",
             extraScript = printVersion,
         )
     }

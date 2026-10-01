@@ -71,10 +71,10 @@ class MultiModuleReportsTest {
     }
 
     @Test
-    fun `jacoco = false leaves out the combined coverage report, not the test report`(
+    fun `coverage { enabled = false } leaves out the combined coverage report, not the test report`(
         @TempDir dir: File,
     ) {
-        writeBuild(dir, armorConfig = "    jacoco = false")
+        writeBuild(dir, armorConfig = "    coverage { enabled = false }")
 
         val result = ArmorTestFixture.run(dir, "allCodeQuality", "--dry-run")
 
@@ -153,7 +153,7 @@ class MultiModuleReportsTest {
         ArmorTestFixture.writeMultiModuleProject(
             dir,
             modules = listOf("module-a", "module-b") + extraModules,
-            armorConfig = "    spotbugs = false\n    coverageMinimum = 0.0\n    coverageClassMinimum = 0.0\n$armorConfig",
+            armorConfig = "    spotbugs { enabled = false }\n    coverage { minimum = 0.0; classMinimum = 0.0 }\n$armorConfig",
         )
         extraModules.forEach { dir.resolve(it).deleteRecursively() }
         val junit =

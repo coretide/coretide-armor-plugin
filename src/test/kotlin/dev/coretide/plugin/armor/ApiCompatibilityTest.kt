@@ -87,7 +87,7 @@ class ApiCompatibilityTest {
         writeCalculator(dir, "$add\n$subtract")
         ArmorTestFixture.run(dir, "publishAllPublicationsToLocalRepository")
 
-        writeLibrary(dir, repo, "1.1.0", armorConfig = "    apiBaseline = \"1.0.0\"")
+        writeLibrary(dir, repo, "1.1.0", armorConfig = "    libraryApi { baseline = \"1.0.0\" }")
         writeCalculator(dir, "$add\n$subtract\n    public int negate(int a) { return -a; }")
         // An added method is compatible. The configuration cache must not object to the baseline's resolution.
         ArmorTestFixture.run(dir, "armorApiCheck", "--configuration-cache")
@@ -104,7 +104,7 @@ class ApiCompatibilityTest {
     fun `the Kotlin ABI check fails on a public API change until the dump is updated`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, language = Language.KOTLIN, armorConfig = "    kotlinAbiValidation = true")
+        ArmorTestFixture.writeProject(dir, language = Language.KOTLIN, armorConfig = "    libraryApi { kotlinAbiValidation = true }")
 
         ArmorTestFixture.run(dir, "updateLegacyAbi")
         assertTrue(dir.resolve("api").listFiles().orEmpty().isNotEmpty(), "no ABI dump written")

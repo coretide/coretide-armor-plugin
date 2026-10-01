@@ -29,7 +29,7 @@ import org.gradle.jvm.tasks.Jar
 /**
  * Library API checks, both opt-in and for libraries only: an application has no API to keep.
  *
- * - `apiBaseline`: japicmp compares the jar with a released version and fails on binary incompatible changes.
+ * - `libraryApi { baseline }`: japicmp compares the jar with a released version and fails on binary incompatible changes.
  *   It works on bytecode, so for Java and Kotlin alike.
  * - `kotlinAbiValidation`: the Kotlin Gradle plugin's own ABI validation compares a Kotlin library's public
  *   API with a dump committed under `api/`.
@@ -47,8 +47,8 @@ object ApiCompatibilityConfigurator {
         projectType: ProjectType,
     ) {
         if (projectType.isApplication) return
-        extension.apiBaseline?.takeIf { it.isNotBlank() }?.let { configureJapicmp(project, it) }
-        if (extension.kotlinAbiValidation) configureKotlinAbi(project)
+        extension.libraryApi.baseline.orNull?.takeIf { it.isNotBlank() }?.let { configureJapicmp(project, it) }
+        if (extension.libraryApi.kotlinAbiValidation.get()) configureKotlinAbi(project)
     }
 
     /** `1.4.0`, or `group:name:1.4.0` when the published coordinates differ from the project's. */

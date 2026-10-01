@@ -20,7 +20,7 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 
 /**
- * Architecture tests with ArchUnit (`architectureTests = true`), for Java and Kotlin alike: ArchUnit reads
+ * Architecture tests with ArchUnit (`tests { architectureTests = true }`), for Java and Kotlin alike: ArchUnit reads
  * bytecode. The rules are ordinary tests, written once by `armorScaffoldArchitectureTests` and then the project's.
  */
 object ArchitectureTestsConfigurator {
@@ -31,7 +31,7 @@ object ArchitectureTestsConfigurator {
         project: Project,
         extension: CodeArmorExtension,
     ) {
-        if (!extension.architectureTests) return
+        if (!extension.tests.architectureTests.get()) return
         project.plugins.withType(JavaPlugin::class.java) {
             val version = extension.toolVersions.archUnit.get()
             project.dependencies.add(JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME, "com.tngtech.archunit:archunit-junit5:$version")

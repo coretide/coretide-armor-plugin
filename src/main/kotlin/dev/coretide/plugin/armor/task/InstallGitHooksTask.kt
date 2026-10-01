@@ -28,7 +28,7 @@ import javax.inject.Inject
  * Installs CodeArmor's git hooks into the repository's own hooks directory.
  *
  * - The pre-push hook runs the `checks.prePush` tasks and blocks the push when they fail. With
- *   `prePushEnabled = false`, a pre-push hook CodeArmor installed earlier is removed instead.
+ *   `gitHooks { prePush = false }`, a pre-push hook CodeArmor installed earlier is removed instead.
  * - With `conventionalCommits`, a commit-msg hook rejects messages that are not Conventional Commits.
  * - With `secretScan`, a pre-commit hook scans the staged changes with gitleaks.
  * - A hook CodeArmor did not write is never overwritten. One it wrote and that is now switched off is removed.
@@ -80,7 +80,7 @@ abstract class InstallGitHooksTask : DefaultTask() {
 
         val prePush = File(repository.hooksDir, "pre-push")
         when {
-            !prePushEnabled.get() -> remove(prePush, "prePushEnabled = false")
+            !prePushEnabled.get() -> remove(prePush, "gitHooks { prePush = false }")
             prePush.exists() && !GitHooksManager.isManagedByCodeArmor(prePush) -> {
                 logger.warn(
                     "⚠️ Left the existing pre-push hook alone because CodeArmor did not write it: $prePush. " +
@@ -106,29 +106,29 @@ abstract class InstallGitHooksTask : DefaultTask() {
         installIfEnabled(
             File(repository.hooksDir, "commit-msg"),
             conventionalCommits.get(),
-            "conventionalCommits",
+            "gitHooks { conventionalCommits = false }",
             "rejects messages that are not Conventional Commits",
         ) { GitHooksManager.commitMsgScript(types - invalidTypes.toSet()) }
         installIfEnabled(
             File(repository.hooksDir, "pre-commit"),
             secretScan.get(),
-            "secretScan",
+            "secretScan = false",
             "scans the staged changes with gitleaks",
         ) { GitHooksManager.secretScanScript() }
 
         GitHooksManager.reportHooksPath(repository, logger)
     }
 
-    /** Writes [hook] when [enabled]; otherwise removes the one CodeArmor wrote earlier, if any. */
+    /** Writes [hook] when [enabled]; otherwise, as [off] says, removes the one CodeArmor wrote earlier, if any. */
     private fun installIfEnabled(
         hook: File,
         enabled: Boolean,
-        setting: String,
+        off: String,
         purpose: String,
         script: () -> String,
     ) {
         when {
-            !enabled -> remove(hook, "$setting = false", quiet = true)
+            !enabled -> remove(hook, off, quiet = true)
             hook.exists() && !GitHooksManager.isManagedByCodeArmor(hook) -> {
                 logger.warn("⚠️ Left the existing ${hook.name} hook alone because CodeArmor did not write it: $hook")
             }

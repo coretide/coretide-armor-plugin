@@ -54,7 +54,7 @@ class ConfigurationCacheTest {
     ) {
         // CodeArmor 0.1.x wrote .git/hooks/pre-push while configuring, so the second run found a
         // file the first had created and threw the cache entry away.
-        ArmorTestFixture.writeProject(dir, armorConfig = "    enableGitHooks = true")
+        ArmorTestFixture.writeProject(dir, armorConfig = "    gitHooks { enabled = true }")
         ArmorTestFixture.initGitRepository(dir)
         val environment = ArmorTestFixture.isolatedGitEnvironment
 
@@ -122,7 +122,7 @@ class ConfigurationCacheTest {
     fun `a Kotlin project measured by Kover reuses the configuration cache on a second run`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, language = ArmorTestFixture.Language.KOTLIN, armorConfig = "    kover = true")
+        ArmorTestFixture.writeProject(dir, language = ArmorTestFixture.Language.KOTLIN, armorConfig = "    coverage { kover = true }")
 
         ArmorTestFixture.run(dir, "koverXmlReport", "--configuration-cache")
         val second = ArmorTestFixture.run(dir, "koverXmlReport", "--configuration-cache")
@@ -134,7 +134,7 @@ class ConfigurationCacheTest {
     fun `Error Prone and NullAway compilation reuses the configuration cache`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, armorConfig = "    errorProne = true\n    nullAway = true")
+        ArmorTestFixture.writeProject(dir, armorConfig = "    compilation { errorProne = true; nullAway = true }")
 
         ArmorTestFixture.run(dir, "compileJava", "--configuration-cache")
         val second = ArmorTestFixture.run(dir, "compileJava", "--configuration-cache")

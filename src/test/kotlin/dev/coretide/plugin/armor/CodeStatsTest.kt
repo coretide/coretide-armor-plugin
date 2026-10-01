@@ -408,7 +408,7 @@ class CodeStatsTest {
         @TempDir root: File,
     ) {
         val machine = Machine(root)
-        val repo = project(dir, armorConfig = "$ENABLED\n    enableGitHooks = true")
+        val repo = project(dir, armorConfig = "$ENABLED\n    gitHooks { enabled = true }")
         machine.run(repo, "armorCodeStatsInstall")
 
         val hooks = machine.run(repo, "armorInstallGitHooks")

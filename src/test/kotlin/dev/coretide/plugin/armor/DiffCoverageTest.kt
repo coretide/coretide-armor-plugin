@@ -100,7 +100,7 @@ class DiffCoverageTest {
     fun `build reports the coverage of the changed lines, and names the ones no test ran`(
         @TempDir dir: File,
     ) {
-        val base = writeChangedProject(dir, armorConfig = "    coverageMinimum = 0.0\n    coverageClassMinimum = 0.0")
+        val base = writeChangedProject(dir, armorConfig = "    coverage { minimum = 0.0; classMinimum = 0.0 }")
 
         val result = ArmorTestFixture.runWithEnvironment(dir, "build", set = git)
 
@@ -111,21 +111,21 @@ class DiffCoverageTest {
     }
 
     @Test
-    fun `diffCoverageMinimum fails the build below it`(
+    fun `diffCoverage minimum fails the build below it`(
         @TempDir dir: File,
     ) {
-        writeChangedProject(dir, armorConfig = "    coverageMinimum = 0.0\n    coverageClassMinimum = 0.0\n    diffCoverageMinimum = 0.8")
+        writeChangedProject(dir, armorConfig = "    coverage { minimum = 0.0; classMinimum = 0.0 }\n    diffCoverage { minimum = 0.8 }")
 
         val result = ArmorTestFixture.runAndFailWithEnvironment(dir, "armorDiffCoverage", set = git)
 
-        assertContains(result.output, "Diff coverage 50.0% is below diffCoverageMinimum 80.0%")
+        assertContains(result.output, "Diff coverage 50.0% is below its minimum, 80.0%")
     }
 
     @Test
     fun `Kover's report works as well as JaCoCo's`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, language = ArmorTestFixture.Language.KOTLIN, armorConfig = "    kover = true")
+        ArmorTestFixture.writeProject(dir, language = ArmorTestFixture.Language.KOTLIN, armorConfig = "    coverage { kover = true }")
         ArmorTestFixture.initGitRepository(dir)
         val base = ArmorTestFixture.git(dir, "rev-parse", "--abbrev-ref", "HEAD").trim()
         val sample = dir.resolve("src/main/kotlin/com/example/Sample.kt")
@@ -142,7 +142,7 @@ class DiffCoverageTest {
     fun `without a git repository it says so and passes`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, armorConfig = "    diffCoverageMinimum = 0.8", extraScript = junit)
+        ArmorTestFixture.writeProject(dir, armorConfig = "    diffCoverage { minimum = 0.8 }", extraScript = junit)
         dir.resolve("src/test/java/com/example").mkdirs()
         dir.resolve("src/test/java/com/example/SampleTest.java").writeText(test("assertEquals(3, new Sample().add(1, 2));"))
 

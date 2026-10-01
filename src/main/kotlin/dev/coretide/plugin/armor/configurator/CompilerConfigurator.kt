@@ -21,7 +21,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.compile.JavaCompile
 
 /**
- * `strictCompilation`: compiler warnings in production code fail the build.
+ * `compilation { strict }`: compiler warnings in production code fail the build.
  *
  * Only the main source set: tests often use deprecated APIs on purpose, to test them.
  */
@@ -44,7 +44,7 @@ object CompilerConfigurator {
         extension: CodeArmorExtension,
         projectType: ProjectType,
     ) {
-        if (!extension.strictCompilation) return
+        if (!extension.compilation.strict.get()) return
         project.plugins.withType(JavaPlugin::class.java) {
             project.tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, JavaCompile::class.java).configure { task ->
                 val args = task.options.compilerArgs

@@ -17,7 +17,7 @@ import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
-/** `integrationTests = true`: an `integrationTest` suite in the build tier, counted in coverage and the summary. */
+/** `tests { integrationTests = true }`: an `integrationTest` suite in the build tier, counted in coverage and the summary. */
 class IntegrationTestsTest {
     private val junit =
         """
@@ -52,7 +52,7 @@ class IntegrationTestsTest {
         @TempDir dir: File,
     ) {
         // No unit tests: without the integration tests' coverage, coverage verification would fail.
-        ArmorTestFixture.writeProject(dir, armorConfig = "    integrationTests = true", extraScript = junit)
+        ArmorTestFixture.writeProject(dir, armorConfig = "    tests { integrationTests = true }", extraScript = junit)
         writeIntegrationTest(dir)
 
         val result = ArmorTestFixture.run(dir, "build")
@@ -67,7 +67,7 @@ class IntegrationTestsTest {
     fun `a failing integration test fails the build`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, armorConfig = "    integrationTests = true", extraScript = junit)
+        ArmorTestFixture.writeProject(dir, armorConfig = "    tests { integrationTests = true }", extraScript = junit)
         writeIntegrationTest(dir)
         val test = dir.resolve("src/integrationTest/java/com/example/SampleIT.java")
         test.writeText(test.readText().replace("assertEquals(3,", "assertEquals(4,"))

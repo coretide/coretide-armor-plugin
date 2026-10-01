@@ -26,7 +26,7 @@ object ResourceConfigurator {
         extension: CodeArmorExtension,
         projectType: ProjectType,
     ) {
-        if (extension.enableResourceProcessing && projectType.isApplication) {
+        if (extension.resourceProcessing.get() && projectType.isApplication) {
             configureResourceProcessing(project)
         }
     }

@@ -19,7 +19,7 @@ import kotlinx.kover.gradle.plugin.dsl.KoverProjectExtension
 import org.gradle.api.Project
 
 /**
- * Kover instead of JaCoCo (`kover = true`) in Kotlin projects: JetBrains' coverage tool, which understands
+ * Kover instead of JaCoCo (`coverage { kover = true }`) in Kotlin projects: JetBrains' coverage tool, which understands
  * Kotlin's inline functions and coroutines. The same thresholds and exclusions apply. Kover only measures
  * projects that apply the Kotlin JVM plugin, so Java-only projects keep JaCoCo.
  */
@@ -36,7 +36,7 @@ object KoverConfigurator {
     fun usesKover(
         project: Project,
         extension: CodeArmorExtension,
-    ): Boolean = extension.kover && project.plugins.hasPlugin(KOTLIN_JVM_PLUGIN_ID)
+    ): Boolean = extension.coverage.kover.get() && project.plugins.hasPlugin(KOTLIN_JVM_PLUGIN_ID)
 
     fun configure(
         project: Project,
@@ -48,16 +48,16 @@ object KoverConfigurator {
                 reports.filters { filters ->
                     // JaCoCo's class-name wildcards (*Config*, *.dto.*) are also Kover's.
                     filters.excludes { it.classes(ExclusionUtil.generateJacocoVerificationExclusions(extension)) }
-                    if (extension.coverageInclusions.isNotEmpty()) {
-                        filters.includes { it.classes(extension.coverageInclusions.map(::toClassPattern)) }
+                    if (extension.coverage.inclusions.get().isNotEmpty()) {
+                        filters.includes { it.classes(extension.coverage.inclusions.get().map(::toClassPattern)) }
                     }
                 }
                 reports.verify { verify ->
-                    verify.rule { rule -> rule.minBound(percent(extension.coverageMinimum)) }
+                    verify.rule { rule -> rule.minBound(percent(extension.coverage.minimum.get())) }
                     verify.rule("classes") { rule ->
                         rule.groupBy.set(GroupingEntityType.CLASS)
                         rule.bound { bound ->
-                            bound.minValue.set(percent(extension.coverageClassMinimum))
+                            bound.minValue.set(percent(extension.coverage.classMinimum.get()))
                             bound.coverageUnits.set(CoverageUnit.LINE)
                         }
                     }

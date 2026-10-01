@@ -49,7 +49,7 @@ class OwaspTest {
     ) {
         ArmorTestFixture.writeProject(
             dir,
-            armorConfig = "    owaspNvdApiKey = \"test-key\"\n    owaspNvdApiDelay = 1234",
+            armorConfig = "    owasp { nvdApiKey = \"test-key\"; nvdApiDelay = 1234 }",
             extraScript = printOwasp,
         )
 
@@ -73,7 +73,7 @@ class OwaspTest {
     ) {
         // Offline: the test downloads no NVD data, so the analysis itself then fails for want of it. What matters is
         // that it starts; until 0.4.0 it failed at once, reading a default suppression file from a task that had not run.
-        ArmorTestFixture.writeProject(dir, armorConfig = "    owaspAutoUpdate = false")
+        ArmorTestFixture.writeProject(dir, armorConfig = "    owasp { autoUpdate = false }")
 
         val output = ArmorTestFixture.runWhateverTheOutcome(dir, "dependencyCheckAnalyze").output
 
@@ -87,7 +87,7 @@ class OwaspTest {
         @TempDir configured: File,
     ) {
         ArmorTestFixture.writeProject(unset, extraScript = printOwasp)
-        ArmorTestFixture.writeProject(configured, armorConfig = "    owaspSuppressionFile = \"config/owasp/suppressions.xml\"", extraScript = printOwasp)
+        ArmorTestFixture.writeProject(configured, armorConfig = "    owasp { suppressionFile = \"config/owasp/suppressions.xml\" }", extraScript = printOwasp)
         configured.resolve("config/owasp").mkdirs()
         configured.resolve("config/owasp/suppressions.xml").writeText(FileUtil.defaultOwaspSuppressionContent())
 

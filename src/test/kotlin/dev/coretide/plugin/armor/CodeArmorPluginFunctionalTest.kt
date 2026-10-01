@@ -78,13 +78,12 @@ class CodeArmorPluginFunctionalTest {
             dir,
             armorConfig =
                 """
-                    jacoco = false
-                    spotbugs = false
-                    sonarqube = false
-                    owasp = false
+                    coverage { enabled = false }
+                    spotbugs { enabled = false }
+                    sonarqube { enabled = false }
+                    owasp { enabled = false }
                     veracode = false
-                    dependencyUpdates = false
-                    sbom = false
+                    dependencyHealth { updates = false; sbom = false }
                 """.trimIndent(),
         )
 
@@ -117,8 +116,7 @@ class CodeArmorPluginFunctionalTest {
             dir,
             armorConfig =
                 """
-                    coverageMinimum = 0.75
-                    coverageExclusions = mutableListOf("**/generated/**", "**/dto/**")
+                    coverage { minimum = 0.75; exclusions = mutableListOf("**/generated/**", "**/dto/**") }
                 """.trimIndent(),
         )
 
@@ -134,7 +132,7 @@ class CodeArmorPluginFunctionalTest {
     ) {
         ArmorTestFixture.writeProject(
             dir,
-            armorConfig = "    coverageIncludeDefaultExclusions = false",
+            armorConfig = "    coverage { defaultExclusions = false }",
         )
 
         val result = ArmorTestFixture.run(dir, "logExclusionInfo")
@@ -146,7 +144,7 @@ class CodeArmorPluginFunctionalTest {
     fun `jacoco and spotbugs tasks are registered when enabled`(
         @TempDir dir: File,
     ) {
-        ArmorTestFixture.writeProject(dir, armorConfig = "    sonarqube = false\n    owasp = false")
+        ArmorTestFixture.writeProject(dir, armorConfig = "    sonarqube { enabled = false }\n    owasp { enabled = false }")
 
         val result = ArmorTestFixture.run(dir, "tasks", "--all")
 
@@ -160,7 +158,7 @@ class CodeArmorPluginFunctionalTest {
     ) {
         ArmorTestFixture.writeProject(
             dir,
-            armorConfig = "    jacoco = false\n    spotbugs = false\n    sonarqube = false",
+            armorConfig = "    coverage { enabled = false }\n    spotbugs { enabled = false }\n    sonarqube { enabled = false }",
         )
 
         val result = ArmorTestFixture.run(dir, "tasks", "--all")
@@ -218,7 +216,8 @@ class CodeArmorPluginFunctionalTest {
     ) {
         ArmorTestFixture.writeProject(
             dir,
-            extraScript = "tasks.register(\"veracodeUpload\")\n" + VeracodeConfigurator.REPLACEMENT,
+            armorConfig = "    " + VeracodeConfigurator.REPLACEMENT,
+            extraScript = "tasks.register(\"veracodeUpload\")",
         )
 
         val output = ArmorTestFixture.run(dir, "fullAnalysis", "--dry-run").output.lines()

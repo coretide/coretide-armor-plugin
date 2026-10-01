@@ -26,7 +26,7 @@ import org.junit.jupiter.api.io.TempDir
  * ([ArmorTestFixture.writeFakeGradlew]) instead of a nested Gradle build.
  */
 class GitHooksTest {
-    private val hooksEnabled = "    enableGitHooks = true"
+    private val hooksEnabled = "    gitHooks { enabled = true }"
 
     /** The pre-push hook CodeArmor 0.1.x wrote during configuration, trimmed to what identifies it. */
     private val legacyPrePush =
@@ -198,7 +198,7 @@ class GitHooksTest {
     ) {
         val hooks = gitProject(dir)
         installHooks(dir)
-        ArmorTestFixture.writeProject(dir, armorConfig = "$hooksEnabled\n    prePushEnabled = false")
+        ArmorTestFixture.writeProject(dir, armorConfig = "$hooksEnabled\n    gitHooks { prePush = false }")
 
         installHooks(dir)
 
@@ -224,7 +224,7 @@ class GitHooksTest {
     fun `conventionalCommits rejects a commit message that is not a Conventional Commit`(
         @TempDir dir: File,
     ) {
-        val hooks = gitProject(dir, "$hooksEnabled\n    conventionalCommits = true")
+        val hooks = gitProject(dir, "$hooksEnabled\n    gitHooks { conventionalCommits = true }")
         installHooks(dir)
 
         val rejected = commit(dir, "updated the parser")
@@ -245,7 +245,7 @@ class GitHooksTest {
     fun `conventionalCommitTypes sets the types a commit may start with`(
         @TempDir dir: File,
     ) {
-        gitProject(dir, "$hooksEnabled\n    conventionalCommits = true\n    conventionalCommitTypes = mutableListOf(\"feature\", \"bad type\")")
+        gitProject(dir, "$hooksEnabled\n    gitHooks { conventionalCommits = true; conventionalCommitTypes = mutableListOf(\"feature\", \"bad type\") }")
         val install = installHooks(dir)
 
         val accepted = commit(dir, "feature: accept dates without a year")
@@ -307,14 +307,14 @@ class GitHooksTest {
     fun `switching a hook off removes the one CodeArmor wrote, and uninstall removes them all`(
         @TempDir dir: File,
     ) {
-        val hooks = gitProject(dir, "$hooksEnabled\n    conventionalCommits = true\n    secretScan = true")
+        val hooks = gitProject(dir, "$hooksEnabled\n    gitHooks { conventionalCommits = true }\n    secretScan = true")
         installHooks(dir)
         assertTrue(hooks.resolve("commit-msg").exists() && hooks.resolve("pre-commit").exists())
 
         ArmorTestFixture.writeProject(dir, armorConfig = "$hooksEnabled\n    secretScan = true")
         val result = installHooks(dir)
         assertFalse(hooks.resolve("commit-msg").exists())
-        assertContains(result.output, "conventionalCommits = false: removed CodeArmor's commit-msg hook")
+        assertContains(result.output, "gitHooks { conventionalCommits = false }: removed CodeArmor's commit-msg hook")
 
         ArmorTestFixture.runWithEnvironment(dir, "armorUninstallGitHooks", set = ArmorTestFixture.isolatedGitEnvironment)
         assertFalse(hooks.resolve("pre-commit").exists())

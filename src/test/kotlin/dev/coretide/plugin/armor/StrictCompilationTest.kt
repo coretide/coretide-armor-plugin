@@ -24,7 +24,7 @@ class StrictCompilationTest {
         @TempDir lenient: File,
         @TempDir strict: File,
     ) {
-        listOf(lenient to "", strict to "    strictCompilation = true").forEach { (dir, config) ->
+        listOf(lenient to "", strict to "    compilation { strict = true }").forEach { (dir, config) ->
             ArmorTestFixture.writeProject(dir, armorConfig = config)
             writeJavaDeprecationUse(dir.resolve("src/main/java/com/example"))
         }
@@ -41,7 +41,7 @@ class StrictCompilationTest {
         @TempDir dir: File,
     ) {
         // Tests use deprecated APIs on purpose, to test them.
-        ArmorTestFixture.writeProject(dir, armorConfig = "    strictCompilation = true")
+        ArmorTestFixture.writeProject(dir, armorConfig = "    compilation { strict = true }")
         writeJavaDeprecationUse(dir.resolve("src/test/java/com/example"))
 
         ArmorTestFixture.run(dir, "compileTestJava")
@@ -52,7 +52,7 @@ class StrictCompilationTest {
         @TempDir lenient: File,
         @TempDir strict: File,
     ) {
-        listOf(lenient to "", strict to "    strictCompilation = true").forEach { (dir, config) ->
+        listOf(lenient to "", strict to "    compilation { strict = true }").forEach { (dir, config) ->
             ArmorTestFixture.writeProject(dir, language = Language.KOTLIN, armorConfig = config)
             dir.resolve("src/main/kotlin/com/example/Old.kt").writeText(
                 """
@@ -79,13 +79,13 @@ class StrictCompilationTest {
         @TempDir application: File,
     ) {
         val implicitApi = "package com.example\n\nfun greet() = \"hello\"\n"
-        ArmorTestFixture.writeProject(library, language = Language.KOTLIN, armorConfig = "    strictCompilation = true")
+        ArmorTestFixture.writeProject(library, language = Language.KOTLIN, armorConfig = "    compilation { strict = true }")
         library.resolve("src/main/kotlin/com/example/Greet.kt").writeText(implicitApi)
         ArmorTestFixture.writeProject(
             application,
             language = Language.KOTLIN,
             extraPlugins = listOf("application"),
-            armorConfig = "    strictCompilation = true",
+            armorConfig = "    compilation { strict = true }",
         )
         application.resolve("src/main/kotlin/com/example/Greet.kt").writeText(implicitApi)
 
@@ -102,7 +102,7 @@ class StrictCompilationTest {
         ArmorTestFixture.writeProject(
             dir,
             language = Language.KOTLIN,
-            armorConfig = "    strictCompilation = true",
+            armorConfig = "    compilation { strict = true }",
             extraScript =
                 """
                 kotlin {

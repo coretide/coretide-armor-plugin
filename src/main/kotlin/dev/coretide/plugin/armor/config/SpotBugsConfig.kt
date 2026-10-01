@@ -10,28 +10,65 @@
 
 package dev.coretide.plugin.armor.config
 
-open class SpotBugsConfig {
-    var toolVersion: String = "4.10.3"
-    var effort: String = "MAX"
-    var reportLevel: String = "HIGH"
-    var ignoreFailures: Boolean = false
-    var showStackTraces: Boolean = true
-    var showProgress: Boolean = true
-    var excludeFile: String? = null
+import org.gradle.api.SupportsKotlinAssignmentOverloading
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.Property
+import javax.inject.Inject
 
-    /**
-     * The findings already in the code, which `spotbugsMain` leaves out: written by `armorSpotbugsBaseline`, and
-     * meant to be committed. Used when the file exists.
-     */
-    var baselineFile: String = "config/spotbugs/baseline.xml"
-    var includeFile: String? = null
-    var xmlReports: Boolean = true
-    var htmlReports: Boolean = true
-    var textReports: Boolean = false
-    /** For GitHub code scanning and other SARIF viewers; see `armorSarifReport`. */
-    var sarifReports: Boolean = true
-    var maxHeap: String? = null
-    var timeout: Int? = null
-    var bugCategories: List<String> = emptyList()
-    var extraArgs: List<String> = emptyList()
-}
+/** SpotBugs, on the main sources; `spotbugsMain` is in the build tier. */
+@SupportsKotlinAssignmentOverloading
+abstract class SpotBugsConfig
+    @Inject
+    constructor(
+        deprecations: Deprecations,
+    ) : ToolConfig("spotbugs", deprecations) {
+        abstract val toolVersion: Property<String>
+
+        /** `MIN`, `LESS`, `DEFAULT`, `MORE` or `MAX`. */
+        abstract val effort: Property<String>
+
+        /** The lowest confidence reported: `LOW`, `MEDIUM`, `DEFAULT` or `HIGH`. */
+        abstract val reportLevel: Property<String>
+
+        abstract val ignoreFailures: Property<Boolean>
+
+        abstract val showStackTraces: Property<Boolean>
+
+        abstract val showProgress: Property<Boolean>
+
+        /** An exclude filter of the build's own, relative to the project. Unset, CodeArmor's default filter. */
+        abstract val excludeFile: Property<String>
+
+        /**
+         * The findings already in the code, which `spotbugsMain` leaves out: written by `armorSpotbugsBaseline`, and
+         * meant to be committed. Used when the file exists.
+         */
+        abstract val baselineFile: Property<String>
+
+        /** An include filter, relative to the project: only what it matches is reported. */
+        abstract val includeFile: Property<String>
+
+        abstract val xmlReports: Property<Boolean>
+
+        abstract val htmlReports: Property<Boolean>
+
+        abstract val textReports: Property<Boolean>
+
+        /** For GitHub code scanning and other SARIF viewers; see `armorSarifReport`. */
+        abstract val sarifReports: Property<Boolean>
+
+        /** The SpotBugs JVM's maximum heap, such as `1g`. */
+        abstract val maxHeap: Property<String>
+
+        /** Milliseconds a SpotBugs task may run before it fails. */
+        abstract val timeout: Property<Int>
+
+        /** Only these detectors run, when set. */
+        abstract val bugCategories: ListProperty<String>
+
+        abstract val extraArgs: ListProperty<String>
+
+        companion object {
+            const val DEFAULT_TOOL_VERSION = "4.10.3"
+        }
+    }

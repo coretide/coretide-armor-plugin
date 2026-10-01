@@ -37,7 +37,7 @@ object LogUtil {
         @Suppress("UNUSED_PARAMETER") project: Project,
         extension: CodeArmorExtension,
     ) {
-        currentLogLevel = extension.logLevel
+        currentLogLevel = extension.logLevel.get()
     }
 
     fun verbose(message: String) {

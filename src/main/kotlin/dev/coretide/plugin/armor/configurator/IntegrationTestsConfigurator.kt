@@ -35,7 +35,7 @@ object IntegrationTestsConfigurator {
         project: Project,
         extension: CodeArmorExtension,
     ) {
-        if (!extension.integrationTests) return
+        if (!extension.tests.integrationTests.get()) return
         project.plugins.withType(JavaPlugin::class.java) {
             val sourceSets = project.extensions.getByType(SourceSetContainer::class.java)
             val main = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME)

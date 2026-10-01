@@ -27,7 +27,7 @@ object TestConventions {
         project.afterEvaluate {
             if (!project.plugins.hasPlugin(JavaPlugin::class.java)) return@afterEvaluate
             project.tasks.withType(Test::class.java).configureEach { testTask ->
-                if (extension.junitPlatform && usesDefaultRunner(testTask)) {
+                if (extension.tests.junitPlatform.get() && usesDefaultRunner(testTask)) {
                     testTask.useJUnitPlatform()
                 }
                 // Failures in full; passing tests and their output stay quiet.

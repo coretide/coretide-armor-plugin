@@ -62,8 +62,8 @@ object ArmorTestFixture {
 
             codeArmor {
                 // Fixtures are not git repositories; these would otherwise shell out to git.
-                enableGitHooks = false
-                enableVersionFromGit = false
+                gitHooks { enabled = false }
+                versionFromGit = false
             $armorConfig
             }
 
@@ -94,8 +94,8 @@ object ArmorTestFixture {
             }
 
             codeArmor {
-                enableGitHooks = false
-                enableVersionFromGit = false
+                gitHooks { enabled = false }
+                versionFromGit = false
             $armorConfig
             }
             """.trimIndent(),
@@ -142,8 +142,8 @@ object ArmorTestFixture {
             }
 
             codeArmor {
-                enableGitHooks = false
-                enableVersionFromGit = false
+                gitHooks { enabled = false }
+                versionFromGit = false
             }
             """.trimIndent(),
         )
