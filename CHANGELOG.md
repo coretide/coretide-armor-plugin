@@ -3,7 +3,7 @@
 All notable changes to CodeArmor. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [Semantic Versioning](https://semver.org/), and while in alpha, a minor version may break things.
 
-## [0.5.0-alpha] - Unreleased
+## [0.5.0-alpha] - 2026-10-01
 
 The settings move into blocks, as Gradle properties, in a shape meant to last to 1.0: `coverage { minimum = 0.8 }`.
 The flat settings of 0.4.0 still work until 1.0.0, and the build log says what to write instead;
@@ -473,7 +473,7 @@ The first release built for Gradle 9. It changes when checks and git hooks run, 
   wiring, project type detection, git hooks and git-derived versions, published to Maven Central and
   the Gradle Plugin Portal.
 
-[0.5.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.4.0-alpha...HEAD
+[0.5.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.4.0-alpha...0.5.0-alpha
 [0.4.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.3.0-alpha...0.4.0-alpha
 [0.3.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.2.0-alpha...0.3.0-alpha
 [0.2.0-alpha]: https://github.com/coretide/coretide-armor-plugin/compare/0.1.4-alpha...0.2.0-alpha
