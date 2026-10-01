@@ -26,6 +26,8 @@ import org.gradle.api.provider.ListProperty
  *
  * The SpotBugs plugin itself also makes `check` run every SpotBugs task; `spotbugs = false` is what
  * keeps SpotBugs out of `build` entirely.
+ *
+ * `ci = listOf(…)` replaces a tier; `ci.add(…)` adds to its defaults.
  */
 abstract class ChecksConfig {
     abstract val prePush: ListProperty<String>

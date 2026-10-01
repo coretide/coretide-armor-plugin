@@ -16,6 +16,7 @@ import dev.coretide.plugin.armor.configurator.DiffCoverageConfigurator
 import dev.coretide.plugin.armor.configurator.KoverConfigurator
 import dev.coretide.plugin.armor.configurator.OwaspConfigurator
 import dev.coretide.plugin.armor.configurator.SonarqubeConfigurator
+import dev.coretide.plugin.armor.configurator.VeracodeConfigurator
 import dev.coretide.plugin.armor.git.GitHooksManager
 import dev.coretide.plugin.armor.git.GitRepository
 import dev.coretide.plugin.armor.util.PluginVersion
@@ -314,8 +315,9 @@ abstract class ArmorInfoTask : DefaultTask() {
                         "sonarHostUrl or SONAR_HOST_URL, or SONAR_TOKEN alone for SonarQube Cloud; or sonarqube = false"
                 }
             }
-            if (extension.veracode) {
+            if (VeracodeConfigurator.enabled(extension)) {
                 on += "Veracode, through your Veracode plugin's veracodeUpload"
+                warnings += VeracodeConfigurator.DEPRECATION
                 if ("veracodeUpload" !in project.tasks.names) {
                     warnings += "veracode = true, but there is no veracodeUpload task: apply your Veracode Gradle plugin"
                 }

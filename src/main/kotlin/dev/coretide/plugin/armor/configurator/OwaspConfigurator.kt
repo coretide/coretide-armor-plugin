@@ -16,8 +16,18 @@ import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 import org.owasp.dependencycheck.gradle.extension.DependencyCheckExtension
 import org.owasp.dependencycheck.gradle.extension.NvdExtension
+import java.io.File
 
 object OwaspConfigurator {
+    private const val REPORT_DIRECTORY = "reports/dependency-check"
+
+    /** The JSON report, one of the formats CodeArmor asks for; SonarQube reads it. */
+    fun jsonReport(project: Project): File =
+        project.layout.buildDirectory
+            .file("$REPORT_DIRECTORY/dependency-check-report.json")
+            .get()
+            .asFile
+
     fun configureOwasp(
         project: Project,
         extension: CodeArmorExtension,
@@ -28,7 +38,7 @@ object OwaspConfigurator {
             // set() explicitly (the `=` form is a Kotlin DSL script-only convenience).
             failBuildOnCVSS.set(extension.owaspFailBuildOnCVSS.toFloat())
             formats.set(listOf("HTML", "XML", "JSON", "SARIF"))
-            outputDirectory.set(project.layout.buildDirectory.dir("reports/dependency-check"))
+            outputDirectory.set(project.layout.buildDirectory.dir(REPORT_DIRECTORY))
             autoUpdate.set(extension.owaspAutoUpdate)
             // What ships, as in the SBOM. Left empty, every configuration is scanned, CodeArmor's own tools
             // (SpotBugs, detekt, PIT, Error Prone, JaCoCo) included, and a CVE in one of them fails the build.

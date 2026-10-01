@@ -19,6 +19,7 @@ import dev.coretide.plugin.armor.configurator.DiffCoverageConfigurator
 import dev.coretide.plugin.armor.configurator.IntegrationTestsConfigurator
 import dev.coretide.plugin.armor.configurator.KoverConfigurator
 import dev.coretide.plugin.armor.configurator.SonarqubeConfigurator
+import dev.coretide.plugin.armor.configurator.VeracodeConfigurator
 import dev.coretide.plugin.armor.util.LogUtil
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaBasePlugin
@@ -48,7 +49,7 @@ object TaskCreator {
             if (buildTier.isNotEmpty()) {
                 createCodeQualityTask(project, extension, buildTier)
             }
-            if (buildTier.isNotEmpty() || ciTier.isNotEmpty() || extension.veracode) {
+            if (buildTier.isNotEmpty() || ciTier.isNotEmpty() || VeracodeConfigurator.enabled(extension)) {
                 createFullAnalysisTask(project, extension, ciTier)
             }
             tiers = ArmorInfoTask.Tiers(buildTier, ciTier)
@@ -205,7 +206,7 @@ object TaskCreator {
                 task.dependsOn("codeQuality")
             }
             task.dependsOn(ciTier)
-            if (extension.veracode && hasVeracodeCredentials()) {
+            if (VeracodeConfigurator.enabled(extension) && hasVeracodeCredentials()) {
                 // CodeArmor does not create veracodeUpload; a separately applied Veracode plugin
                 // does. Matched by name, lazily, so fullAnalysis still runs when no such plugin
                 // is applied and no other task gets created just to be checked.
@@ -227,7 +228,7 @@ object TaskCreator {
                             "or SONAR_TOKEN for SonarQube Cloud.",
                     )
                 }
-                if (extension.veracode) {
+                if (VeracodeConfigurator.enabled(extension)) {
                     when {
                         !hasVeracodeCredentials() -> LogUtil.verbose("⚠️  Veracode credentials not found - scan skipped")
                         !veracodeUploadPresent -> LogUtil.verbose("⚠️  No veracodeUpload task - scan skipped")

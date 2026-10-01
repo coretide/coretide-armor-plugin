@@ -35,6 +35,33 @@ class ProjectConventionsTest {
     }
 
     @Test
+    fun `sonar gets only properties the SonarScanner and its plugins read`(
+        @TempDir dir: File,
+    ) {
+        ArmorTestFixture.writeProject(dir, extraScript = PRINT_SONAR)
+
+        val properties = sonar(ArmorTestFixture.run(dir, "printSonarProperties"))
+
+        // Until 0.5.0, CodeArmor also sent thresholds and ratings, which are set on the server, and report paths that
+        // no plugin reads; SonarQube ignored them all.
+        listOf(
+            "sonar.coverage.minimum",
+            "sonar.duplicated_lines_density",
+            "sonar.maintainability_rating",
+            "sonar.reliability_rating",
+            "sonar.security_rating",
+            "sonar.java.coveragePlugin",
+            "sonar.dependencyCheck.reportPath",
+            "sonar.dependencyCheck.htmlReportPath",
+        ).forEach { key -> assertFalse(key in properties, "$key is set") }
+        // The Dependency-Check SonarQube plugin reads the JSON report only.
+        assertEquals(
+            dir.resolve("build/reports/dependency-check/dependency-check-report.json").canonicalFile,
+            File(properties.getValue("sonar.dependencyCheck.jsonReportPath")).canonicalFile,
+        )
+    }
+
+    @Test
     fun `sonar_token is set only when configured, so SONAR_TOKEN from the environment still counts`(
         @TempDir unset: File,
         @TempDir configured: File,

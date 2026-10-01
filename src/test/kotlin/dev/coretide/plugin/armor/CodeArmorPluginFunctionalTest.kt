@@ -10,6 +10,7 @@
 
 package dev.coretide.plugin.armor
 
+import dev.coretide.plugin.armor.configurator.VeracodeConfigurator
 import java.io.File
 import kotlin.test.assertContains
 import kotlin.test.assertFalse
@@ -208,6 +209,22 @@ class CodeArmorPluginFunctionalTest {
 
         assertContains(result.output.lines(), ":veracodeUpload SKIPPED")
         assertFalse(result.output.contains("no veracodeUpload task exists"))
+        assertContains(result.output, "veracode is deprecated, and 1.0.0 removes it")
+    }
+
+    @Test
+    fun `what the veracode deprecation suggests runs veracodeUpload in fullAnalysis, with the CI tier`(
+        @TempDir dir: File,
+    ) {
+        ArmorTestFixture.writeProject(
+            dir,
+            extraScript = "tasks.register(\"veracodeUpload\")\n" + VeracodeConfigurator.REPLACEMENT,
+        )
+
+        val output = ArmorTestFixture.run(dir, "fullAnalysis", "--dry-run").output.lines()
+
+        assertContains(output, ":veracodeUpload SKIPPED")
+        assertContains(output, ":dependencyCheckAnalyze SKIPPED")
     }
 
     @Test
